@@ -38,7 +38,7 @@ body{background:#000;overflow:hidden;font-family:'Segoe UI',sans-serif;user-sele
 .host-badge{font-size:11px;background:rgba(251,191,36,0.18);color:#fbbf24;padding:2px 8px;border-radius:10px;}
 .owner-badge{font-size:11px;background:rgba(239,68,68,0.18);color:#f87171;padding:2px 8px;border-radius:10px;}
 .tab-btns{display:flex;gap:5px;margin-bottom:16px;}
-.tab-btn{flex:1;padding:8px;border-radius:7px;border:1px solid rgba(255,255,255,0.09);background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.5);cursor:pointer;font-size:13px;transition:all .15s;}
+.tab-btn{flex:1;padding:8px;border-radius:7px;border:1px solid rgba(255,255,255,0.09);background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.5);cursor:pointer;font-size:13px;transition:all .15px;}
 .tab-btn.active{background:rgba(124,58,237,0.28);border-color:#a78bfa;color:#fff;}
 .tab-content{display:none;}
 .tab-content.active{display:block;}
@@ -324,7 +324,6 @@ svg.wires{flex:1;min-width:80px;}
 // PLAYFAB CONFIG
 // ════════════════════════════════════════════════════
 const PLAYFAB_TITLE_ID = '1E7E83';
-// BUG FIX: Guard against PlayFab SDK not loading
 if(typeof PlayFab !== 'undefined') PlayFab.settings.titleId = PLAYFAB_TITLE_ID;
 
 const GAME_SERVER_HTTP = window.location.origin;
@@ -338,12 +337,8 @@ const COLORS = ['#e74c3c','#3498db','#2ecc71','#f39c12','#9b59b6','#1abc9c','#e6
 
 // ════════════════════════════════════════════════════
 // ██████████  COSMETIC CATALOGUE  ██████████
-// type: hat | skin | trail | aura | tag | namecolor
-// ownerOnly: true = ONLY giveable by owner via PlayFab
 // ════════════════════════════════════════════════════
 const COSMETIC_META = {
-
-  // ── HATS (purchasable) ──────────────────────────
   hat_cap:       {icon:'🧢', name:'Cap',          rarity:'common',    type:'hat',  price:50},
   hat_bandana:   {icon:'🤠', name:'Cowboy Hat',    rarity:'common',    type:'hat',  price:60},
   hat_santa:     {icon:'🎅', name:'Santa Hat',     rarity:'uncommon',  type:'hat',  price:100},
@@ -364,8 +359,6 @@ const COSMETIC_META = {
   hat_fire:      {icon:'🔥', name:'Fire Crown',    rarity:'legendary', type:'hat',  price:700},
   hat_galaxy:    {icon:'🌌', name:'Galaxy Crown',  rarity:'mythic',    type:'hat',  price:1200},
   hat_diamond:   {icon:'💎', name:'Diamond Crown', rarity:'mythic',    type:'hat',  price:1500},
-
-  // ── SKINS (purchasable) ─────────────────────────
   skin_ghost:    {icon:'👻', name:'Ghost',         rarity:'uncommon',  type:'skin', price:150},
   skin_zombie:   {icon:'🧟', name:'Zombie',        rarity:'rare',      type:'skin', price:280},
   skin_robot:    {icon:'🤖', name:'Robot',         rarity:'rare',      type:'skin', price:300},
@@ -381,8 +374,6 @@ const COSMETIC_META = {
   skin_santa:    {icon:'🎅', name:'Santa',         rarity:'rare',      type:'skin', price:350},
   skin_space:    {icon:'🚀', name:'Space Suit',    rarity:'mythic',    type:'skin', price:1000},
   skin_golden:   {icon:'✨', name:'Golden',        rarity:'mythic',    type:'skin', price:2000},
-
-  // ── TRAILS (purchasable) ────────────────────────
   trail_fire:    {icon:'🔥', name:'Fire Trail',    rarity:'rare',      type:'trail', price:250,  trailColor:'#ef4444'},
   trail_ice:     {icon:'❄️', name:'Ice Trail',     rarity:'rare',      type:'trail', price:250,  trailColor:'#7dd3fc'},
   trail_rainbow: {icon:'🌈', name:'Rainbow Trail', rarity:'epic',      type:'trail', price:450,  trailColor:'#f472b6'},
@@ -392,8 +383,6 @@ const COSMETIC_META = {
   trail_galaxy:  {icon:'🌌', name:'Galaxy Trail',  rarity:'legendary', type:'trail', price:800,  trailColor:'#818cf8'},
   trail_blood:   {icon:'🩸', name:'Blood Trail',   rarity:'legendary', type:'trail', price:900,  trailColor:'#dc2626'},
   trail_electric:{icon:'⚡', name:'Electric Trail',rarity:'mythic',    type:'trail', price:1200, trailColor:'#facc15'},
-
-  // ── AURAS (purchasable) ─────────────────────────
   aura_blue:     {icon:'💙', name:'Blue Aura',     rarity:'rare',      type:'aura', price:300,  auraColor:'#3b82f6'},
   aura_red:      {icon:'❤️', name:'Red Aura',      rarity:'rare',      type:'aura', price:300,  auraColor:'#ef4444'},
   aura_purple:   {icon:'💜', name:'Purple Aura',   rarity:'epic',      type:'aura', price:500,  auraColor:'#a78bfa'},
@@ -402,16 +391,12 @@ const COSMETIC_META = {
   aura_pink:     {icon:'🩷', name:'Pink Aura',     rarity:'epic',      type:'aura', price:480,  auraColor:'#ec4899'},
   aura_white:    {icon:'🤍', name:'Holy Aura',     rarity:'legendary', type:'aura', price:700,  auraColor:'#f1f5f9'},
   aura_galaxy:   {icon:'🌌', name:'Galaxy Aura',   rarity:'mythic',    type:'aura', price:1500, auraColor:'#6366f1'},
-
-  // ── NAME COLORS (purchasable) ───────────────────
   nc_gold:       {icon:'🟡', name:'Gold Name',     rarity:'epic',      type:'namecolor', price:400,  nameColor:'#fbbf24'},
   nc_red:        {icon:'🔴', name:'Red Name',      rarity:'rare',      type:'namecolor', price:250,  nameColor:'#ef4444'},
   nc_cyan:       {icon:'🔵', name:'Cyan Name',     rarity:'rare',      type:'namecolor', price:250,  nameColor:'#22d3ee'},
   nc_pink:       {icon:'🩷', name:'Pink Name',     rarity:'epic',      type:'namecolor', price:380,  nameColor:'#ec4899'},
   nc_green:      {icon:'🟢', name:'Green Name',    rarity:'uncommon',  type:'namecolor', price:180,  nameColor:'#4ade80'},
   nc_rainbow:    {icon:'🌈', name:'Rainbow Name',  rarity:'mythic',    type:'namecolor', price:1800, nameColor:'rainbow'},
-
-  // ══ OWNER-ONLY TAGS (not in shop — given via PlayFab user data) ══
   tag_owner:     {icon:'👑', name:'[OWNER]',       rarity:'owner', type:'tag', ownerOnly:true, tagStyle:'background:#dc2626;color:#fff'},
   tag_z3n0:      {icon:'⚡', name:'[Z3N0]',        rarity:'owner', type:'tag', ownerOnly:true, tagStyle:'background:linear-gradient(90deg,#7c3aed,#ec4899);color:#fff'},
   tag_mod:       {icon:'🛡', name:'[MOD]',         rarity:'owner', type:'tag', ownerOnly:true, tagStyle:'background:#1d4ed8;color:#fff'},
@@ -433,8 +418,6 @@ const COSMETIC_META = {
   tag_famous:    {icon:'⭐', name:'[FAMOUS]',      rarity:'owner', type:'tag', ownerOnly:true, tagStyle:'background:#1c1917;color:#fcd34d'},
   tag_trusted:   {icon:'✅', name:'[TRUSTED]',     rarity:'owner', type:'tag', ownerOnly:true, tagStyle:'background:#14532d;color:#86efac'},
   tag_banned:    {icon:'🚫', name:'[BANNED]',      rarity:'owner', type:'tag', ownerOnly:true, tagStyle:'background:#3f3f46;color:#a1a1aa'},
-
-  // ── OWNER-ONLY HATS ────────────────────────────
   hat_owner_crown:{icon:'👑', name:'Owner Crown',  rarity:'owner', type:'hat', ownerOnly:true},
   hat_z3n0_halo:  {icon:'💫', name:'Z3N0 Halo',    rarity:'owner', type:'hat', ownerOnly:true},
   hat_god_halo:   {icon:'✨', name:'God Halo',     rarity:'owner', type:'hat', ownerOnly:true},
@@ -442,21 +425,15 @@ const COSMETIC_META = {
   hat_dev_cap:    {icon:'💻', name:'Dev Cap',      rarity:'owner', type:'hat', ownerOnly:true},
   hat_vip_diamond:{icon:'💎', name:'VIP Diamond',  rarity:'owner', type:'hat', ownerOnly:true},
   hat_legend_star:{icon:'🌟', name:'Legend Star',  rarity:'owner', type:'hat', ownerOnly:true},
-
-  // ── OWNER-ONLY AURAS ───────────────────────────
   aura_owner:    {icon:'🔴', name:'Owner Aura',    rarity:'owner', type:'aura', ownerOnly:true, auraColor:'#dc2626'},
   aura_z3n0:     {icon:'💜', name:'Z3N0 Aura',     rarity:'owner', type:'aura', ownerOnly:true, auraColor:'#7c3aed'},
   aura_god:      {icon:'✨', name:'God Aura',      rarity:'owner', type:'aura', ownerOnly:true, auraColor:'#ffd700'},
   aura_mod:      {icon:'🔵', name:'Mod Aura',      rarity:'owner', type:'aura', ownerOnly:true, auraColor:'#1d4ed8'},
   aura_rainbow_ow:{icon:'🌈', name:'Rainbow Aura', rarity:'owner', type:'aura', ownerOnly:true, auraColor:'#f472b6'},
-
-  // ── OWNER-ONLY TRAILS ──────────────────────────
   trail_owner:   {icon:'👑', name:'Owner Trail',   rarity:'owner', type:'trail', ownerOnly:true, trailColor:'#dc2626'},
   trail_z3n0:    {icon:'⚡', name:'Z3N0 Trail',    rarity:'owner', type:'trail', ownerOnly:true, trailColor:'#a78bfa'},
   trail_god:     {icon:'✨', name:'God Trail',     rarity:'owner', type:'trail', ownerOnly:true, trailColor:'#ffd700'},
   trail_rainbow_ow:{icon:'🌈', name:'Rainbow Trail (O)',rarity:'owner', type:'trail', ownerOnly:true, trailColor:'#ec4899'},
-
-  // ── OWNER-ONLY NAME COLORS ─────────────────────
   nc_owner:      {icon:'🔴', name:'Owner Red Name', rarity:'owner', type:'namecolor', ownerOnly:true, nameColor:'#ef4444'},
   nc_z3n0:       {icon:'💜', name:'Z3N0 Purple',    rarity:'owner', type:'namecolor', ownerOnly:true, nameColor:'#a78bfa'},
   nc_god:        {icon:'✨', name:'God Gold',       rarity:'owner', type:'namecolor', ownerOnly:true, nameColor:'#ffd700'},
@@ -468,16 +445,13 @@ const COSMETIC_META = {
 let ws=null, myPlayerId=null, myRole=null, myTasks=[], gameState=null;
 let currentRoomCode=null, selectedColor='#e74c3c';
 let activeTaskId=null, mashCount=0, patternSequence=[], patternInput=[], patternPhase='watch';
-// BUG FIX: wireConnections, wireTarget, wireColorCols stored at module level for correct closure
 let wireConnections={}, wireTarget=null, wireColorCols=[], wireColorShuf=[];
 let killCooldownUntil=0;
 let currentShopFilter = 'all';
 
 let pfPlayFabId=null, pfSessionTicket=null, pfUsername=null;
 let pfCredits=0, pfOwnedItems=[], pfOwnedItemIds=[];
-// Equipped slots
 let equippedHat=null, equippedSkin=null, equippedTrail=null, equippedAura=null, equippedNameColor=null;
-// Owner-granted tags (stored in PlayFab user data as JSON array)
 let myTags=[];
 let pfStats={};
 
@@ -507,14 +481,28 @@ const badgeSprites={};
 let phaserGame=null,gameScene=null,playerSprites={},bodySprites=[];
 const MAP_W=1000,MAP_H=700;
 
+// ✅ FIX: Use Phaser.CANVAS instead of Phaser.AUTO to avoid
+// "Must set explicit renderType" error on Chromebook/custom environments
 const PhaserConfig={
-  type:Phaser.AUTO,width:window.innerWidth,height:window.innerHeight,
-  transparent:true,parent:document.body,
-  canvas:(()=>{const c=document.createElement('canvas');c.id='game-canvas';c.style.cssText='position:fixed;top:0;left:0;z-index:5';return c;})(),
+  type:Phaser.CANVAS,
+  width:window.innerWidth,
+  height:window.innerHeight,
+  transparent:true,
+  parent:document.body,
   scene:{preload(){},create(){createScene(this);},update(){updateScene(this);}}
 };
 
-function initPhaser(){if(phaserGame)return;phaserGame=new Phaser.Game(PhaserConfig);}
+// ✅ FIX: Style the Phaser-created canvas after initialization
+function initPhaser(){
+  if(phaserGame)return;
+  phaserGame=new Phaser.Game(PhaserConfig);
+  setTimeout(function(){
+    if(phaserGame&&phaserGame.canvas){
+      phaserGame.canvas.style.cssText='position:fixed;top:0;left:0;z-index:5;pointer-events:auto';
+      phaserGame.canvas.id='game-canvas';
+    }
+  },100);
+}
 
 function createScene(scene){
   gameScene=scene;
@@ -628,7 +616,6 @@ function createPlayerSprite(id,p){
   const legR=gameScene.add.rectangle(x+6,y+18,8,10,col).setDepth(5).setAlpha(alpha);
   const shoeL=gameScene.add.ellipse(x-6,y+24,11,7,0x1e293b).setDepth(5).setAlpha(alpha);
   const shoeR=gameScene.add.ellipse(x+6,y+24,11,7,0x1e293b).setDepth(5).setAlpha(alpha);
-  // Name color support
   const nc=(p.nameColor&&p.nameColor!=='rainbow')?p.nameColor:'#ffffff';
   const name=gameScene.add.text(x,y-38,p.username||'?',{fontSize:'11px',color:nc,fontFamily:'sans-serif',stroke:'#000',strokeThickness:3}).setOrigin(.5).setDepth(12).setAlpha(p.alive?1:0.4);
   let hat=null;if(p.hat)hat=gameScene.add.text(x,y-30,p.hat,{fontSize:'16px'}).setOrigin(.5).setDepth(13);
@@ -848,7 +835,6 @@ function showLogin(){
   document.getElementById('login-form').style.display='block';
 }
 
-// BUG FIX: Guard pfCall against missing PlayFab SDK
 function pfCall(fn,params){
   return new Promise((res,rej)=>{
     if(typeof PlayFab === 'undefined' || typeof PlayFabClientSDK === 'undefined'){
@@ -896,7 +882,6 @@ async function doRegister(){
       CreateAccount:true,
       InfoRequestParameters:{GetPlayerStatistics:true,GetUserData:true,GetUserInventory:true}
     });
-    // BUG FIX: Check if this was a new account or existing
     if(!result.data.NewlyCreated){
       errEl.textContent='Username taken. Try a different one.';
       errEl.style.display='block';
@@ -973,7 +958,6 @@ async function tryAutoLogin(){
     equippedNameColor=d.equippedNameColor||null;
     myTags=d.myTags||[];pfCredits=d.pfCredits||0;
     if(typeof PlayFab !== 'undefined') PlayFab._internalSettings.sessionTicket=pfSessionTicket;
-    // Refresh from PlayFab
     try{
       const bal=await pfCall('GetUserInventory',{});
       pfCredits=(bal.data.VirtualCurrencyBalance&&bal.data.VirtualCurrencyBalance.GD)||0;
@@ -988,9 +972,7 @@ async function tryAutoLogin(){
       if(dd.trail&&dd.trail.Value!==undefined)equippedTrail=dd.trail.Value||null;
       if(dd.aura&&dd.aura.Value!==undefined)equippedAura=dd.aura.Value||null;
       if(dd.namecolor&&dd.namecolor.Value!==undefined)equippedNameColor=dd.namecolor.Value||null;
-    }catch(e){
-      // PlayFab refresh failed (expired session) — still show menu with cached data
-    }
+    }catch(e){}
     showMenuScreen();
   }catch(e){
     showScreen('auth-screen');
@@ -1038,7 +1020,7 @@ async function pfUpdateStat(name,value){
 }
 
 // ════════════════════════════════════════════════════
-// ██████████  SHOP SYSTEM  ██████████
+// SHOP SYSTEM
 // ════════════════════════════════════════════════════
 function buildShopFilters(){
   const types=['all','hat','skin','trail','aura','namecolor'];
@@ -1131,7 +1113,7 @@ function updateEquippedDisplay(){
 }
 
 // ════════════════════════════════════════════════════
-// PLAYER TAG RENDERING (in lobby/chat)
+// PLAYER TAG RENDERING
 // ════════════════════════════════════════════════════
 function renderTagsHTML(tags){
   if(!tags||!tags.length)return '';
@@ -1147,13 +1129,11 @@ function renderTagsHTML(tags){
 function buildColorGrid(id,save){
   const el=document.getElementById(id);if(!el)return;
   el.innerHTML=COLORS.map(function(c){
-    // BUG FIX: Use data attribute for reliable color comparison
     return '<div class="color-swatch '+(c===selectedColor?'selected':'')+'" style="background:'+c+'" data-color="'+c+'" onclick="selectColor(\''+c+'\',\''+id+'\','+save+')"></div>';
   }).join('');
 }
 async function selectColor(c,gid,save){
   selectedColor=c;
-  // BUG FIX: Use data-color attribute for reliable comparison
   document.querySelectorAll('#'+gid+' .color-swatch').forEach(function(s){
     s.classList.toggle('selected',s.getAttribute('data-color')===c);
   });
@@ -1331,7 +1311,6 @@ function closeTask(){document.getElementById('task-modal').style.display='none';
 function completeTask(){if(!activeTaskId)return;wsSend({type:'complete_task',taskId:activeTaskId});const t=myTasks.find(function(t){return t.id===activeTaskId;});if(t)t.completed=true;closeTask();}
 
 // ── Wire task ──────────────────────────────────────
-// BUG FIX: Store colors at module level so conWire can always access them
 function buildWireTask(con){
   wireConnections={};wireTarget=null;
   wireColorCols=[{c:'#ef4444',n:'red'},{c:'#3b82f6',n:'blue'},{c:'#22c55e',n:'green'},{c:'#f59e0b',n:'yellow'}];
@@ -1354,7 +1333,6 @@ function selWire(i){
 }
 function conWire(ri,cn){
   if(wireTarget===null){const ws=document.getElementById('wstat');if(ws)ws.textContent='Select a left wire first!';return;}
-  // BUG FIX: Use module-level wireColorCols instead of content._cols
   const exp=wireColorCols[wireTarget]?wireColorCols[wireTarget].n:null;
   wireConnections[wireTarget]=ri;
   const svg=document.getElementById('wsvg');if(!svg)return;
@@ -1487,7 +1465,7 @@ async function showEndScreen(msg){
 function backToMenu(){showScreen('menu-screen');showMenuScreen();}
 
 // ════════════════════════════════════════════════════
-// ██████████  OWNER PANEL  ██████████
+// OWNER PANEL
 // ════════════════════════════════════════════════════
 const OWNER_COSMETIC_PRESETS={
   'Z3N0 Full Set':    {aura:'#7c3aed',title:'⚡ Z3N0',badge:'⚡',trailColor:'#a78bfa'},
@@ -1502,7 +1480,6 @@ const OWNER_COSMETIC_PRESETS={
   'VIP Diamond':      {aura:'#0ea5e9',title:'💎 VIP',badge:'💎',trailColor:'#7dd3fc'},
 };
 
-// BUG FIX: Build OWNER_TAGS list without nested template literals
 const OWNER_TAGS=Object.keys(COSMETIC_META).filter(function(id){
   return COSMETIC_META[id].type==='tag' && COSMETIC_META[id].ownerOnly;
 });
@@ -1512,7 +1489,6 @@ function toggleOwnerPanel(){
   p.style.display=visible?'none':'block';if(!visible)renderMegaOwnerPanel();
 }
 
-// BUG FIX: Replaced all nested template literals with string concatenation
 function renderMegaOwnerPanel(){
   const panel=document.getElementById('owner-panel');if(!gameState)return;
   const players=Object.values(gameState.players);
@@ -1559,8 +1535,6 @@ function renderMegaOwnerPanel(){
   panel.innerHTML =
     '<h3 style="color:#f87171;margin-bottom:10px;font-size:15px">👑 Owner Panel</h3>'+
     '<div style="display:flex;gap:4px;margin-bottom:12px;flex-wrap:wrap">'+tabBtns+'</div>'+
-
-    // TAB 0: PLAYERS
     '<div id="otabcontent0">'+
       '<div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:5px">Target player:</div>'+
       '<select id="op-target" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:#fff;padding:7px;border-radius:7px;margin-bottom:8px;font-size:12px">'+playerOptions+'</select>'+
@@ -1586,8 +1560,6 @@ function renderMegaOwnerPanel(){
         '<button class="obtn obtn-green" style="flex:1" onclick="ownerGiveCredits()">💰 Give Credits</button>'+
       '</div>'+
     '</div>'+
-
-    // TAB 1: COMMANDS
     '<div id="otabcontent1" style="display:none">'+
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:10px">'+
         '<button class="obtn obtn-green" onclick="ownerCmd(\'end_crew\')">✅ Crew Win</button>'+
@@ -1612,8 +1584,6 @@ function renderMegaOwnerPanel(){
       '<select id="op-swapB" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:#fff;padding:6px;border-radius:7px;margin-bottom:5px;font-size:12px">'+playerOptions+'</select>'+
       '<button class="obtn obtn-purple" onclick="ownerCmd(\'swap_roles\')" style="width:100%">🔀 Swap Roles</button>'+
     '</div>'+
-
-    // TAB 2: COSMETICS
     '<div id="otabcontent2" style="display:none">'+
       '<div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:5px">Target:</div>'+
       '<select id="op-cos-target" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:#fff;padding:7px;border-radius:7px;margin-bottom:8px;font-size:12px">'+playerOptions+'</select>'+
@@ -1640,8 +1610,6 @@ function renderMegaOwnerPanel(){
       '<button class="obtn obtn-blue" onclick="ownerCmd(\'set_badge\')" style="width:100%;margin-bottom:8px">🏅 Set Badge</button>'+
       '<button class="obtn obtn-red" onclick="ownerCmd(\'clear_cosmetics\')" style="width:100%">🗑 Clear All Cosmetics</button>'+
     '</div>'+
-
-    // TAB 3: TAGS
     '<div id="otabcontent3" style="display:none">'+
       '<div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:6px">Target player (saved to PlayFab):</div>'+
       '<select id="op-tag-target" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:#fff;padding:7px;border-radius:7px;margin-bottom:8px;font-size:12px">'+playerOptions+'</select>'+
@@ -1651,8 +1619,6 @@ function renderMegaOwnerPanel(){
       '<div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:6px">🎁 Grant owner cosmetics:</div>'+
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:5px">'+ownerCosItems+'</div>'+
     '</div>'+
-
-    // TAB 4: SERVER
     '<div id="otabcontent4" style="display:none">'+
       '<div style="font-size:12px;color:rgba(255,255,255,0.7);margin-bottom:10px">'+
         'Room: <b style="color:#a78bfa">'+esc(gameState.code||'')+'</b><br>'+
@@ -1661,7 +1627,6 @@ function renderMegaOwnerPanel(){
       '</div>'+
       '<div id="owner-player-list-full"></div>'+
     '</div>'+
-
     '<button onclick="toggleOwnerPanel()" class="obtn obtn-red" style="width:100%;margin-top:12px">✕ Close</button>';
 
   updateOwnerPanelPlayerList();
@@ -1815,7 +1780,6 @@ function showRolesReveal(roles){
   document.body.insertAdjacentHTML('beforeend',html);
 }
 
-// BUG FIX: showShopInGame restored hud/action-btns when returning from shop
 function showShopInGame(){
   showScreen('menu-screen');
   const tabs=document.querySelectorAll('.tab-btn');
@@ -1865,16 +1829,10 @@ function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').
 
 // ════════════════════════════════════════════════════
 // INIT
-// BUG FIX: Added fallback timer so loading screen always hides,
-//          even if PlayFab SDK fails or there's a network error
 // ════════════════════════════════════════════════════
 async function init(){
-  // Set PlayFab title ID safely
   if(typeof PlayFab !== 'undefined') PlayFab.settings.titleId = PLAYFAB_TITLE_ID;
-
   buildColorGrid('reg-color-grid',false);
-
-  // Fallback: hide loading screen after 5s no matter what
   const loadingFallback=setTimeout(function(){
     const ls=document.getElementById('loading-screen');
     if(ls&&!ls.classList.contains('hidden')){
@@ -1882,7 +1840,6 @@ async function init(){
       document.getElementById('auth-screen').classList.remove('hidden');
     }
   },5000);
-
   try{
     connectWS().catch(function(){});
     await tryAutoLogin();
@@ -1896,7 +1853,6 @@ async function init(){
 setInterval(function(){if(ws&&ws.readyState===WebSocket.OPEN)wsSend({type:'ping'});},25000);
 window.addEventListener('resize',function(){if(phaserGame)phaserGame.scale.resize(window.innerWidth,window.innerHeight);});
 
-// BUG FIX: Global error handler ensures loading screen never gets stuck
 window.addEventListener('error',function(e){
   console.error('Global error:',e.message);
   const ls=document.getElementById('loading-screen');

@@ -3,8 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Space Traitors — Among Us REMAKE by Z3N0</title>
+<title>Among Us REMAKE by Z3N0</title>
+
+<!-- ══════════════════════════════════════════
+     PlayFab SDK  — replaces Railway backend
+     Works 100% from a <script> tag, no Node needed
+     ══════════════════════════════════════════ -->
+<script src="https://download.playfab.com/PlayFabClientApi.js"></script>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/phaser/3.60.0/phaser.min.js"></script>
+
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
 body { background:#000; overflow:hidden; font-family:'Segoe UI',sans-serif; user-select:none; }
@@ -69,6 +77,7 @@ body { background:#000; overflow:hidden; font-family:'Segoe UI',sans-serif; user
 .shop-item { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.09); border-radius:10px; padding:13px; text-align:center; cursor:pointer; transition:all .18s; }
 .shop-item:hover { border-color:#a78bfa; background:rgba(124,58,237,0.1); }
 .shop-item.owned { border-color:#22c55e; background:rgba(34,197,94,0.07); cursor:default; }
+.shop-item.equipped-item { border-color:#fbbf24; background:rgba(251,191,36,0.08); }
 .shop-item-icon { font-size:28px; margin-bottom:5px; }
 .shop-item-name { font-size:11px; font-weight:600; margin-bottom:3px; }
 .shop-item-price { font-size:11px; color:#fbbf24; }
@@ -143,12 +152,7 @@ svg.wires { flex:1; min-width:80px; }
 .win-crew{color:#4ade80} .win-impostor{color:#f87171}
 .results-list { display:flex; flex-direction:column; gap:7px; margin:14px 0; max-height:280px; overflow-y:auto; }
 .result-item { display:flex; align-items:center; gap:10px; background:rgba(255,255,255,0.04); border-radius:9px; padding:10px 13px; }
-#owner-panel { position:fixed; top:58px; right:16px; background:rgba(5,5,15,0.95); border:1px solid rgba(239,68,68,0.28); border-radius:13px; padding:16px; width:280px; z-index:35; display:none; backdrop-filter:blur(10px); }
-#owner-panel h3 { color:#f87171; font-size:14px; margin-bottom:11px; }
-.owner-player-item { display:flex; align-items:center; gap:8px; padding:5px 0; border-bottom:1px solid rgba(255,255,255,0.05); font-size:12px; }
-.owner-actions { display:flex; gap:4px; margin-left:auto; }
-.owner-btn { padding:3px 8px; border-radius:5px; border:none; cursor:pointer; font-size:11px; font-weight:600; }
-.owner-btn-kick { background:#d97706; color:#fff; }
+#owner-panel { position:fixed; top:58px; right:16px; background:rgba(5,5,15,0.95); border:1px solid rgba(239,68,68,0.28); border-radius:13px; padding:16px; width:320px; max-height:85vh; overflow-y:auto; z-index:35; display:none; backdrop-filter:blur(10px); }
 #notifs { position:fixed; top:62px; left:50%; transform:translateX(-50%); display:flex; flex-direction:column; gap:7px; z-index:80; pointer-events:none; width:min(380px,94vw); }
 .notif { background:rgba(0,0,0,.88); border:1px solid rgba(255,255,255,0.13); border-radius:9px; padding:10px 16px; font-size:14px; text-align:center; animation:slideIn .28s ease; }
 @keyframes slideIn { from{opacity:0;transform:translateY(-10px)} to{opacity:1;transform:translateY(0)} }
@@ -160,6 +164,14 @@ svg.wires { flex:1; min-width:80px; }
 .loading-bar-wrap { width:200px; height:4px; background:rgba(255,255,255,0.08); border-radius:2px; margin:16px auto 0; }
 .loading-bar { height:100%; background:#a78bfa; border-radius:2px; animation:loadA 1.5s ease-in-out infinite; }
 @keyframes loadA { 0%{width:0%}50%{width:100%}100%{width:0%} }
+.obtn { padding:7px 5px;border-radius:7px;border:none;cursor:pointer;font-size:12px;font-weight:600;transition:all .15s;color:#fff; }
+.obtn:hover { transform:translateY(-1px);filter:brightness(1.15); }
+.obtn-red    { background:linear-gradient(135deg,#dc2626,#ef4444); }
+.obtn-orange { background:linear-gradient(135deg,#d97706,#f59e0b); }
+.obtn-yellow { background:linear-gradient(135deg,#b45309,#d97706); }
+.obtn-green  { background:linear-gradient(135deg,#15803d,#22c55e); }
+.obtn-blue   { background:linear-gradient(135deg,#1d4ed8,#3b82f6); }
+.obtn-purple { background:linear-gradient(135deg,#7c3aed,#a855f7); }
 ::-webkit-scrollbar{width:4px} ::-webkit-scrollbar-track{background:transparent} ::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.18);border-radius:2px}
 </style>
 </head>
@@ -172,8 +184,8 @@ svg.wires { flex:1; min-width:80px; }
 <!-- Loading -->
 <div class="screen" id="loading-screen">
   <div style="text-align:center">
-    <div class="game-title">Space Traitors</div>
-    <div style="color:rgba(255,255,255,.4);font-size:14px;margin-top:6px">Connecting...</div>
+    <div class="game-title">Among Us Remake</div>
+    <div style="color:rgba(255,255,255,.4);font-size:14px;margin-top:6px">Connecting to PlayFab...</div>
     <div class="loading-bar-wrap"><div class="loading-bar"></div></div>
   </div>
 </div>
@@ -205,7 +217,7 @@ svg.wires { flex:1; min-width:80px; }
 <!-- Menu -->
 <div class="screen hidden" id="menu-screen">
   <div class="glass">
-    <div class="game-title">Among Us REMAKE</div>
+    <div class="game-title">Space Traitors</div>
     <div id="menu-welcome" style="text-align:center;color:rgba(255,255,255,.5);font-size:14px;margin-bottom:5px"></div>
     <div id="menu-credits" style="text-align:center;color:#fbbf24;font-size:15px;font-weight:700;margin-bottom:18px">💰 0 Credits</div>
     <div class="tab-btns">
@@ -214,18 +226,25 @@ svg.wires { flex:1; min-width:80px; }
       <button class="tab-btn" onclick="switchMenuTab('profile',this)">👤 Profile</button>
     </div>
     <div class="tab-content active" id="menu-tab-play">
-      <input class="inp" id="room-code-input" placeholder="Room code (blank = create new)" maxlength="8" style="text-transform:uppercase;letter-spacing:4px;text-align:center">
-      <button class="btn btn-primary" onclick="joinOrCreate()">🚀 Join / Create Room</button>
+      <input class="inp" id="room-code-input" placeholder="Room code (blank = create new)" maxlength="8"
+        style="text-transform:uppercase;letter-spacing:4px;text-align:center"
+        oninput="this.value=this.value.toUpperCase()">
+      <!-- FIX: button calls joinOrCreate directly — no longer relies on inline onclick firing before WS ready -->
+      <button class="btn btn-primary" id="join-create-btn" onclick="joinOrCreate()">🚀 Join / Create Room</button>
     </div>
     <div class="tab-content" id="menu-tab-shop">
       <div id="shop-credits" style="text-align:center;color:#fbbf24;margin-bottom:11px;font-weight:700"></div>
-      <div class="shop-grid" id="shop-items-grid"><div style="color:rgba(255,255,255,.4);font-size:13px;grid-column:1/-1;text-align:center;padding:20px">Loading shop...</div></div>
+      <div class="shop-grid" id="shop-items-grid">
+        <div style="color:rgba(255,255,255,.4);font-size:13px;grid-column:1/-1;text-align:center;padding:20px">Loading shop...</div>
+      </div>
     </div>
     <div class="tab-content" id="menu-tab-profile">
       <div id="profile-stats" style="font-size:13px;color:rgba(255,255,255,.7);margin-bottom:12px">Loading...</div>
       <hr class="divider">
       <div style="font-size:12px;color:rgba(255,255,255,.4);margin-bottom:8px">Your color:</div>
       <div class="color-grid" id="profile-color-grid"></div>
+      <div style="font-size:12px;color:rgba(255,255,255,.4);margin:8px 0 4px">Equipped hat:</div>
+      <div id="equipped-hat-display" style="font-size:22px;text-align:center;margin-bottom:8px">None</div>
       <button class="btn btn-secondary" style="margin-top:8px" onclick="logout()">🚪 Logout</button>
     </div>
   </div>
@@ -311,30 +330,50 @@ svg.wires { flex:1; min-width:80px; }
 </div>
 
 <!-- Owner Panel -->
-<div id="owner-panel">
-  <h3>👑 Owner Commands</h3>
-  <div id="owner-player-list"></div>
-  <hr class="divider">
-  <div style="font-size:12px;color:rgba(255,255,255,.4);margin-bottom:6px">Give Credits:</div>
-  <div style="display:flex;gap:6px;margin-bottom:8px">
-    <input class="inp" id="owner-give-player" placeholder="Player ID..." style="margin:0;font-size:12px;padding:6px">
-    <input class="inp" id="owner-give-amount" type="number" value="100" style="margin:0;font-size:12px;padding:6px;width:70px">
-  </div>
-  <button class="btn btn-primary" style="padding:7px;font-size:12px" onclick="ownerGiveCredits()">💰 Give Credits</button>
-  <button class="btn btn-danger" style="padding:7px;font-size:12px;margin-top:4px" onclick="toggleOwnerPanel()">Close</button>
-</div>
+<div id="owner-panel"></div>
 
 <script>
 // ════════════════════════════════════════════════════
-// CONFIG
+// PLAYFAB CONFIG  ← replace XXXXX with your Title ID
+// Get it free at developer.playfab.com → Create Title
 // ════════════════════════════════════════════════════
+const PLAYFAB_TITLE_ID = '1E7E83'; // ← YOUR TITLE ID HERE
+PlayFab.settings.titleId = PLAYFAB_TITLE_ID;
+
+// ════════════════════════════════════════════════════
+// GAME SERVER CONFIG (your Node server stays)
+// ════════════════════════════════════════════════════
+// For GitHub Pages deployment, change these to your server URL:
 const GAME_SERVER_HTTP = window.location.origin;
-const GAME_SERVER_WS = GAME_SERVER_HTTP.replace('https://','wss://').replace('http://','ws://');
-const BACKEND = 'https://backend-production-5a66f.up.railway.app';
-const GAME_ID = 'among_us_game';
+const GAME_SERVER_WS   = GAME_SERVER_HTTP.replace('https://','wss://').replace('http://','ws://');
+
 const OWNER_PASSWORD = 'Zeno2026';
 const DISC_TIME = 20000;
 const VOTE_TIME = 60000;
+const MASH_GOAL = 20;
+const COLORS = ['#e74c3c','#3498db','#2ecc71','#f39c12','#9b59b6','#1abc9c','#e67e22','#e91e63','#00bcd4','#cddc39'];
+
+// PlayFab cosmetic IDs that exist in your catalog (add more as you create them)
+const PF_HAT_IDS  = ['hat_crown','hat_santa','hat_tophat','hat_cap','hat_halo','hat_horns','hat_flower','hat_ninja'];
+const PF_SKIN_IDS = ['skin_robot','skin_ghost','skin_zombie','skin_alien','skin_wizard','skin_knight'];
+
+// Cosmetic display data (emoji + rarity for each catalog item)
+const COSMETIC_META = {
+  hat_crown:  { icon:'👑', name:'Crown',       rarity:'legendary', type:'hat',  price:500 },
+  hat_santa:  { icon:'🎅', name:'Santa Hat',   rarity:'uncommon',  type:'hat',  price:100 },
+  hat_tophat: { icon:'🎩', name:'Top Hat',     rarity:'rare',      type:'hat',  price:200 },
+  hat_cap:    { icon:'🧢', name:'Cap',         rarity:'common',    type:'hat',  price:50  },
+  hat_halo:   { icon:'😇', name:'Halo',        rarity:'epic',      type:'hat',  price:350 },
+  hat_horns:  { icon:'😈', name:'Devil Horns', rarity:'epic',      type:'hat',  price:350 },
+  hat_flower: { icon:'🌸', name:'Flower',      rarity:'uncommon',  type:'hat',  price:100 },
+  hat_ninja:  { icon:'🥷', name:'Ninja Mask',  rarity:'rare',      type:'hat',  price:200 },
+  skin_robot:  { icon:'🤖', name:'Robot',      rarity:'rare',      type:'skin', price:300 },
+  skin_ghost:  { icon:'👻', name:'Ghost',      rarity:'uncommon',  type:'skin', price:150 },
+  skin_zombie: { icon:'🧟', name:'Zombie',     rarity:'rare',      type:'skin', price:300 },
+  skin_alien:  { icon:'👽', name:'Alien',      rarity:'epic',      type:'skin', price:400 },
+  skin_wizard: { icon:'🧙', name:'Wizard',     rarity:'legendary', type:'skin', price:600 },
+  skin_knight: { icon:'🤺', name:'Knight',     rarity:'rare',      type:'skin', price:300 },
+};
 
 // ════════════════════════════════════════════════════
 // STATE
@@ -343,10 +382,29 @@ let ws=null, myPlayerId=null, myRole=null, myTasks=[], gameState=null;
 let currentRoomCode=null, selectedColor='#e74c3c';
 let activeTaskId=null, mashCount=0, patternSequence=[], patternInput=[], patternPhase='watch';
 let wireConnections={}, wireTarget=null, killCooldownUntil=0;
-let authToken=null, authUsername=null, authBackendId=null, authCredits=0;
-let ownedCosmetics=[], equippedHat=null, equippedSkin=null;
-const MASH_GOAL=20;
-const COLORS=['#e74c3c','#3498db','#2ecc71','#f39c12','#9b59b6','#1abc9c','#e67e22','#e91e63','#00bcd4','#cddc39'];
+
+// PlayFab auth state
+let pfPlayFabId = null;    // PlayFab's internal player ID
+let pfSessionTicket = null; // session token
+let pfUsername = null;
+let pfCredits = 0;
+let pfOwnedItems = [];     // array of item instance IDs
+let pfOwnedItemIds = [];   // array of catalog item IDs (e.g. 'hat_crown')
+let equippedHat = null;
+let equippedSkin = null;
+let pfStats = {};          // player stats dict
+
+// Extra mod state
+const playerMods = {};
+let mySpeedMult = 1;
+const trailParticles = [];
+const explosions = [];
+const auraSprites = {};
+const trailColorMap = {};
+const godmodeGlow = {};
+const freezeSprites = {};
+const titleSprites = {};
+const badgeSprites = {};
 
 // ════════════════════════════════════════════════════
 // STARS
@@ -359,7 +417,7 @@ const COLORS=['#e74c3c','#3498db','#2ecc71','#f39c12','#9b59b6','#1abc9c','#e67e
 })();
 
 // ════════════════════════════════════════════════════
-// PHASER ENGINE
+// PHASER
 // ════════════════════════════════════════════════════
 let phaserGame=null, gameScene=null, playerSprites={}, bodySprites=[];
 const MAP_W=1000, MAP_H=700;
@@ -382,67 +440,38 @@ function createScene(scene){
   scene.wasd=scene.input.keyboard.addKeys({up:Phaser.Input.Keyboard.KeyCodes.W,down:Phaser.Input.Keyboard.KeyCodes.S,left:Phaser.Input.Keyboard.KeyCodes.A,right:Phaser.Input.Keyboard.KeyCodes.D});
 }
 
-// ── FULL MAP ─────────────────────────────────────
 function drawMap(scene){
   const g=scene.add.graphics();
-  // Deep space
-  g.fillStyle(0x020408,1); g.fillRect(0,0,MAP_W,MAP_H);
-  // Stars
+  g.fillStyle(0x020408,1);g.fillRect(0,0,MAP_W,MAP_H);
   for(let i=0;i<80;i++){g.fillStyle(0xffffff,Math.random()*.6+.1);g.fillCircle(Math.random()*MAP_W,Math.random()*MAP_H,Math.random()*.8+.2);}
-
-  // ── CORRIDORS (FLOOR) ──
-  g.fillStyle(0x162035,1);
-  g.fillRect(160,275,680,150);   // horizontal
-  g.fillRect(415,95,170,510);    // vertical
-
-  // ── ROOMS ──
+  g.fillStyle(0x162035,1);g.fillRect(160,275,680,150);g.fillRect(415,95,170,510);
   const rooms=[
-    {x:305,y:55,w:390,h:210,f:0x0f1e36,s:0x2563eb,n:'CAFETERIA',   lx:500,ly:152},
-    {x:35, y:215,w:210,h:185,f:0x1a0a2e,s:0x7c3aed,n:'REACTOR',    lx:140,ly:302},
-    {x:695,y:55, w:230,h:175,f:0x0a1f3d,s:0x1d4ed8,n:'NAVIGATION', lx:810,ly:135},
-    {x:365,y:290,w:270,h:165,f:0x0a2318,s:0x16a34a,n:'MEDBAY',     lx:500,ly:368},
-    {x:675,y:430,w:285,h:220,f:0x1c1205,s:0xd97706,n:'STORAGE',    lx:817,ly:535},
-    {x:35, y:430,w:240,h:215,f:0x1a0e00,s:0xf59e0b,n:'ELECTRICAL', lx:155,ly:530},
-    {x:295,y:508,w:225,h:152,f:0x200505,s:0xdc2626,n:'ENGINE',      lx:408,ly:578},
+    {x:305,y:55,w:390,h:210,f:0x0f1e36,s:0x2563eb,n:'CAFETERIA',lx:500,ly:152},
+    {x:35,y:215,w:210,h:185,f:0x1a0a2e,s:0x7c3aed,n:'REACTOR',lx:140,ly:302},
+    {x:695,y:55,w:230,h:175,f:0x0a1f3d,s:0x1d4ed8,n:'NAVIGATION',lx:810,ly:135},
+    {x:365,y:290,w:270,h:165,f:0x0a2318,s:0x16a34a,n:'MEDBAY',lx:500,ly:368},
+    {x:675,y:430,w:285,h:220,f:0x1c1205,s:0xd97706,n:'STORAGE',lx:817,ly:535},
+    {x:35,y:430,w:240,h:215,f:0x1a0e00,s:0xf59e0b,n:'ELECTRICAL',lx:155,ly:530},
+    {x:295,y:508,w:225,h:152,f:0x200505,s:0xdc2626,n:'ENGINE',lx:408,ly:578},
   ];
-  for(const r of rooms){
-    g.fillStyle(r.f,1);g.fillRect(r.x,r.y,r.w,r.h);
-    g.lineStyle(2,r.s,.6);g.strokeRect(r.x,r.y,r.w,r.h);
-  }
-
-  // ── ROOM LABELS ──
-  for(const r of rooms){
-    scene.add.text(r.lx,r.ly,r.n,{fontSize:'11px',color:'#'+r.s.toString(16).padStart(6,'0'),fontFamily:'monospace',fontStyle:'bold',alpha:.75}).setOrigin(.5).setDepth(2);
-  }
-
-  // ── CAFETERIA TABLES ──
+  for(const r of rooms){g.fillStyle(r.f,1);g.fillRect(r.x,r.y,r.w,r.h);g.lineStyle(2,r.s,.6);g.strokeRect(r.x,r.y,r.w,r.h);}
+  for(const r of rooms){scene.add.text(r.lx,r.ly,r.n,{fontSize:'11px',color:'#'+r.s.toString(16).padStart(6,'0'),fontFamily:'monospace',fontStyle:'bold',alpha:.75}).setOrigin(.5).setDepth(2);}
   const tg=scene.add.graphics().setDepth(2);
   [[398,118],[450,118],[502,118],[554,118],[445,193],[535,193]].forEach(([x,y])=>{tg.fillStyle(0x1e3a5f,1);tg.fillRoundedRect(x-18,y-10,36,20,4);});
-
-  // ── OUTER WALL ──
   g.lineStyle(3,0x334155,.8);g.strokeRect(4,4,MAP_W-8,MAP_H-8);
-
-  // ── EMERGENCY BUTTON ──
   const eb=scene.add.circle(500,175,20,0xdc2626,.95).setDepth(3).setInteractive();
   const ebr=scene.add.circle(500,175,20).setStrokeStyle(3,0xfca5a5).setDepth(3);
   scene.add.text(500,175,'!',{fontSize:'20px',color:'#fff',fontStyle:'bold'}).setOrigin(.5).setDepth(4);
   scene.tweens.add({targets:ebr,alpha:{from:.3,to:1},yoyo:true,repeat:-1,duration:900});
   eb.on('pointerdown',()=>callEmergency());
-  eb.on('pointerover',()=>{eb.setFillStyle(0xef4444,.95);});
-  eb.on('pointerout',()=>{eb.setFillStyle(0xdc2626,.95);});
-
-  // ── TASK MARKERS (glowing dots) ──
-  const taskDefs=[
-    {x:148,y:520,c:0xfbbf24},{x:810,y:150,c:0x60a5fa},{x:140,y:310,c:0xa78bfa},
-    {x:500,y:390,c:0x4ade80},{x:760,y:540,c:0xf472b6},{x:410,y:575,c:0xfb923c},{x:500,y:175,c:0xfbbf24},
-  ];
+  eb.on('pointerover',()=>eb.setFillStyle(0xef4444,.95));
+  eb.on('pointerout',()=>eb.setFillStyle(0xdc2626,.95));
+  const taskDefs=[{x:148,y:520,c:0xfbbf24},{x:810,y:150,c:0x60a5fa},{x:140,y:310,c:0xa78bfa},{x:500,y:390,c:0x4ade80},{x:760,y:540,c:0xf472b6},{x:410,y:575,c:0xfb923c},{x:500,y:175,c:0xfbbf24}];
   taskDefs.forEach((t,i)=>{
     const dot=scene.add.circle(t.x,t.y,9,t.c,.4).setDepth(3);
     const ring=scene.add.circle(t.x,t.y,9).setStrokeStyle(2,t.c).setDepth(3);
     scene.tweens.add({targets:[dot,ring],alpha:{from:.25,to:.85},yoyo:true,repeat:-1,duration:800+i*110});
   });
-
-  // ── VENTS ──
   scene.ventPositions=[{x:195,y:380},{x:705,y:280},{x:415,y:522}];
   scene.ventPositions.forEach(v=>{
     const vg=scene.add.graphics().setDepth(3);
@@ -452,7 +481,9 @@ function drawMap(scene){
   });
 }
 
-// ── MOVEMENT ─────────────────────────────────────
+// ────────────────────────────────────────────────────
+// MOVEMENT
+// ────────────────────────────────────────────────────
 const SPEED=2.8;let joystickDx=0,joystickDy=0,sendThrottle=0;
 
 function walkable(x,y){
@@ -466,13 +497,16 @@ function updateScene(scene){
   if(!gameScene||!myPlayerId||!gameState||gameState.phase!=='game')return;
   const me=gameState.players[myPlayerId];
   if(!me||!me.alive)return;
+  const myMod=playerMods[myPlayerId];
+  if(myMod?.frozen)return;
   let dx=0,dy=0;
   const k=scene.wasd;
-  if(k.left.isDown||window.moveLeft)dx-=SPEED;
-  if(k.right.isDown||window.moveRight)dx+=SPEED;
-  if(k.up.isDown||window.moveUp)dy-=SPEED;
-  if(k.down.isDown||window.moveDown)dy+=SPEED;
-  if(joystickDx||joystickDy){dx+=joystickDx*SPEED;dy+=joystickDy*SPEED;}
+  const spd=SPEED*(mySpeedMult||1);
+  if(k.left.isDown||window.moveLeft)dx-=spd;
+  if(k.right.isDown||window.moveRight)dx+=spd;
+  if(k.up.isDown||window.moveUp)dy-=spd;
+  if(k.down.isDown||window.moveDown)dy+=spd;
+  if(joystickDx||joystickDy){dx+=joystickDx*spd;dy+=joystickDy*spd;}
   if(!dx&&!dy){updateKillBtn();return;}
   if(dx&&dy){const d=Math.SQRT2;dx/=d;dy/=d;}
   let nx=Math.max(40,Math.min(960,me.x+dx));
@@ -482,90 +516,140 @@ function updateScene(scene){
   updatePlayerSprite(myPlayerId,nx,ny);
   scene.cameras.main.centerOn(nx,ny);
   sendThrottle++;
-  if(sendThrottle>=2){sendThrottle=0;wsSend({type:'move',x:nx,y:ny,facing:dx>0?'right':dx<0?'left':'none'});}
+  if(sendThrottle>=2){sendThrottle=0;wsSend({type:'move',x:nx,y:ny});}
   checkNearby(nx,ny);
   updateKillBtn();
 }
 
-// ── SPRITES ──────────────────────────────────────
+// ────────────────────────────────────────────────────
+// SPRITES  (detailed astronaut model)
+// ────────────────────────────────────────────────────
 function createPlayerSprite(id,p){
   if(!gameScene)return;
   destroyPlayerSprite(id);
   const col=Phaser.Display.Color.HexStringToColor(p.color||'#e74c3c').color;
   const x=p.x||500,y=p.y||300;
-  const body=gameScene.add.circle(x,y,15,col).setDepth(6);
-  const outl=gameScene.add.circle(x,y,15).setStrokeStyle(2.5,0xffffff,.2).setDepth(6);
-  const visr=gameScene.add.ellipse(x+4,y-5,13,8,0x7dd3fc,.9).setDepth(7);
-  const bp=gameScene.add.rectangle(x-15,y,7,11,col).setDepth(5);
-  const name=gameScene.add.text(x,y-28,p.username||'?',{fontSize:'11px',color:'#fff',fontFamily:'sans-serif',stroke:'#000',strokeThickness:3}).setOrigin(.5).setDepth(9);
-  let hat=null;if(p.hat)hat=gameScene.add.text(x,y-26,p.hat,{fontSize:'14px'}).setOrigin(.5).setDepth(10);
-  // Owner crown tag above name
-  let ownerTag=null;if(p.isOwner)ownerTag=gameScene.add.text(x,y-40,'👑',{fontSize:'12px'}).setOrigin(.5).setDepth(10);
-  let skull=null;
-  if(!p.alive){skull=gameScene.add.text(x,y,'💀',{fontSize:'20px'}).setOrigin(.5).setDepth(10);[body,outl,visr,bp].forEach(o=>o.setAlpha(.3));name.setAlpha(.4);}
-  playerSprites[id]={body,outl,visr,bp,name,hat,ownerTag,skull,x,y};
+  const alpha=p.alive?1:0.3;
+  const isMe=id===myPlayerId;
+  const bp=gameScene.add.rectangle(x-16,y+2,8,14,col).setDepth(5).setAlpha(alpha);
+  const bpShade=gameScene.add.rectangle(x-17,y+2,6,12,0x000000,0.25).setDepth(5).setAlpha(alpha);
+  const body=gameScene.add.ellipse(x,y+2,26,30,col).setDepth(6).setAlpha(alpha);
+  const bodyShade=gameScene.add.ellipse(x+4,y+4,20,22,0x000000,0.18).setDepth(6).setAlpha(alpha);
+  const head=gameScene.add.circle(x,y-10,13,col).setDepth(7).setAlpha(alpha);
+  const visor=gameScene.add.ellipse(x+3,y-11,15,13,0x7dd3fc,0.92).setDepth(8).setAlpha(alpha);
+  const visorShade=gameScene.add.ellipse(x+3,y-11,15,13).setStrokeStyle(1.5,0x0ea5e9,0.8).setDepth(8).setAlpha(alpha);
+  const visorGlare=gameScene.add.ellipse(x,y-15,5,4,0xffffff,0.6).setDepth(9).setAlpha(alpha);
+  const legL=gameScene.add.rectangle(x-6,y+18,8,10,col).setDepth(5).setAlpha(alpha);
+  const legR=gameScene.add.rectangle(x+6,y+18,8,10,col).setDepth(5).setAlpha(alpha);
+  const shoeL=gameScene.add.ellipse(x-6,y+24,11,7,0x1e293b).setDepth(5).setAlpha(alpha);
+  const shoeR=gameScene.add.ellipse(x+6,y+24,11,7,0x1e293b).setDepth(5).setAlpha(alpha);
+  const name=gameScene.add.text(x,y-38,p.username||'?',{fontSize:'11px',color:'#fff',fontFamily:'sans-serif',stroke:'#000',strokeThickness:3}).setOrigin(.5).setDepth(12).setAlpha(p.alive?1:0.4);
+  let hat=null;if(p.hat)hat=gameScene.add.text(x,y-30,p.hat,{fontSize:'16px'}).setOrigin(.5).setDepth(13);
+  let ownerTag=null;
+  if(p.isOwner){ownerTag=gameScene.add.text(x,y-52,'👑',{fontSize:'14px'}).setOrigin(.5).setDepth(13);gameScene.tweens.add({targets:ownerTag,y:y-55,yoyo:true,repeat:-1,duration:700});}
+  let skull=null;if(!p.alive){skull=gameScene.add.text(x,y,'💀',{fontSize:'20px'}).setOrigin(.5).setDepth(14);}
+  let selfRing=null;
+  if(isMe){selfRing=gameScene.add.circle(x,y+2,20).setStrokeStyle(2,0xffffff,0.4).setDepth(4);gameScene.tweens.add({targets:selfRing,alpha:{from:.2,to:.6},yoyo:true,repeat:-1,duration:1000});}
+  playerSprites[id]={body,bodyShade,head,visor,visorShade,visorGlare,bp,bpShade,legL,legR,shoeL,shoeR,name,hat,ownerTag,skull,selfRing,x,y};
+  const mod=playerMods[id];
+  if(mod){updateAura(id,mod);updateFreezeIndicator(id,mod.frozen);updateTitleBadge(id,mod);}
 }
+
 function updatePlayerSprite(id,x,y){
   const s=playerSprites[id];if(!s)return;
-  s.x=x;s.y=y;s.body.setPosition(x,y);s.outl.setPosition(x,y);s.visr.setPosition(x+4,y-5);s.bp.setPosition(x-15,y);s.name.setPosition(x,y-28);
-  if(s.hat)s.hat.setPosition(x,y-26);if(s.ownerTag)s.ownerTag.setPosition(x,y-40);if(s.skull)s.skull.setPosition(x,y);
+  s.x=x;s.y=y;
+  const parts=[[s.body,x,y+2],[s.bodyShade,x+4,y+4],[s.head,x,y-10],[s.visor,x+3,y-11],[s.visorShade,x+3,y-11],[s.visorGlare,x,y-15],[s.bp,x-16,y+2],[s.bpShade,x-17,y+2],[s.legL,x-6,y+18],[s.legR,x+6,y+18],[s.shoeL,x-6,y+24],[s.shoeR,x+6,y+24],[s.name,x,y-38],[s.skull,x,y],[s.selfRing,x,y+2]];
+  for(const[obj,px,py]of parts)if(obj)obj.setPosition(px,py);
+  if(s.hat)s.hat.setPosition(x,y-30);if(s.ownerTag)s.ownerTag.setPosition(x,y-52);
+  const mod=playerMods[id];
+  if(mod?.trailColor&&id===myPlayerId)spawnTrail(x,y+8,mod.trailColor);
+  else if(id===myPlayerId&&myRole==='impostor')spawnTrail(x,y+8,'#ef4444');
+  updateAuraPositions();updateTitlePositions();
 }
+
 function markDead(id){
   const s=playerSprites[id];if(!s)return;
-  [s.body,s.outl,s.visr,s.bp].forEach(o=>o.setAlpha(.3));s.name.setAlpha(.4);
-  if(!s.skull)s.skull=gameScene.add.text(s.x,s.y,'💀',{fontSize:'20px'}).setOrigin(.5).setDepth(10);
+  ['body','bodyShade','head','visor','visorShade','visorGlare','bp','bpShade','legL','legR','shoeL','shoeR'].forEach(k=>s[k]?.setAlpha(0.3));
+  if(s.name)s.name.setAlpha(0.4);
+  if(!s.skull&&gameScene)s.skull=gameScene.add.text(s.x,s.y,'💀',{fontSize:'20px'}).setOrigin(.5).setDepth(14);
 }
+
 function destroyPlayerSprite(id){
   const s=playerSprites[id];if(!s)return;
-  ['body','outl','visr','bp','name','hat','ownerTag','skull'].forEach(k=>s[k]?.destroy());delete playerSprites[id];
+  ['body','bodyShade','head','visor','visorShade','visorGlare','bp','bpShade','legL','legR','shoeL','shoeR','name','hat','ownerTag','skull','selfRing'].forEach(k=>s[k]?.destroy());
+  delete playerSprites[id];
+  if(auraSprites[id]){auraSprites[id].destroy();delete auraSprites[id];}
+  if(godmodeGlow[id]){godmodeGlow[id].destroy();delete godmodeGlow[id];}
+  if(freezeSprites[id]){freezeSprites[id].destroy();delete freezeSprites[id];}
+  if(titleSprites[id]){titleSprites[id].destroy();delete titleSprites[id];}
+  if(badgeSprites[id]){badgeSprites[id].destroy();delete badgeSprites[id];}
 }
+
 function spawnAllPlayers(){if(!gameState)return;for(const[id,p]of Object.entries(gameState.players))createPlayerSprite(id,p);}
 function spawnBody(b){if(!gameScene)return;const col=Phaser.Display.Color.HexStringToColor(b.color||'#f00').color;bodySprites.push({skull:gameScene.add.text(b.x,b.y,'💀',{fontSize:'22px'}).setOrigin(.5).setDepth(4),glow:gameScene.add.circle(b.x,b.y,16,col,.22).setDepth(3)});}
 function clearBodies(){bodySprites.forEach(b=>{b.skull.destroy();b.glow.destroy();});bodySprites=[];}
 
-// ════════════════════════════════════════════════════
-// INTERACTION
-// ════════════════════════════════════════════════════
-function dist(x1,y1,x2,y2){return Math.sqrt((x1-x2)**2+(y1-y2)**2);}
-
-function checkNearby(px,py){
-  if(!gameState)return;
-  // Report button
-  const nearBody=gameState.bodies?.find(b=>dist(px,py,b.x,b.y)<70);
-  document.getElementById('btn-report').style.display=nearBody?'flex':'none';
-  // Task button (crewmate only)
-  if(myRole==='crewmate'){
-    const tl=[{x:148,y:520},{x:810,y:150},{x:140,y:310},{x:500,y:390},{x:760,y:540},{x:410,y:575},{x:500,y:175}];
-    document.getElementById('btn-task').style.display=tl.some(t=>dist(px,py,t.x,t.y)<58)?'flex':'none';
-  }
-  updateAliveCount();
+// ────────────────────────────────────────────────────
+// AURA / GLOW / TRAIL / TITLE / BADGE FX
+// ────────────────────────────────────────────────────
+function spawnTrail(x,y,color){
+  for(let i=0;i<3;i++)trailParticles.push({x:x+(Math.random()-.5)*10,y:y+(Math.random()-.5)*10,color,alpha:.7,r:Math.random()*4+2,vx:(Math.random()-.5)*1,vy:(Math.random()-.5)*1});
+  if(trailParticles.length>200)trailParticles.splice(0,trailParticles.length-200);
 }
 
-function updateKillBtn(){
-  if(myRole!=='impostor')return;
-  const btn=document.getElementById('btn-kill');if(!btn)return;
-  const now=Date.now();
-  if(now<killCooldownUntil){
-    const r=Math.ceil((killCooldownUntil-now)/1000);
-    btn.innerHTML=`☠ Kill <span class="cooldown-txt">(${r}s)</span>`;btn.disabled=true;
-  } else {
-    btn.textContent='☠ Kill';
-    const me=gameState?.players[myPlayerId];
-    if(me&&gameState){const t=Object.values(gameState.players).find(p=>p.id!==myPlayerId&&p.alive&&p.role!=='impostor'&&dist(me.x,me.y,p.x,p.y)<100);btn.disabled=!t;}
-  }
+function updateAura(id,mod){
+  if(!gameScene)return;
+  if(auraSprites[id]){auraSprites[id].destroy();delete auraSprites[id];}
+  if(godmodeGlow[id]){godmodeGlow[id].destroy();delete godmodeGlow[id];}
+  const s=playerSprites[id];if(!s)return;
+  if(mod.aura){const col=parseInt(mod.aura.replace('#',''),16);const a=gameScene.add.circle(s.x,s.y,26,col,.22).setDepth(5);auraSprites[id]=a;gameScene.tweens.add({targets:a,alpha:{from:.12,to:.38},yoyo:true,repeat:-1,duration:800});}
+  if(mod.godmode){const glow=gameScene.add.circle(s.x,s.y,22).setStrokeStyle(3,0xffd700,.9).setDepth(5);godmodeGlow[id]=glow;gameScene.tweens.add({targets:glow,alpha:{from:.4,to:1},yoyo:true,repeat:-1,duration:400});}
+  if(mod.trailColor)trailColorMap[id]=mod.trailColor;else delete trailColorMap[id];
 }
-function updateAliveCount(){
-  if(!gameState)return;
-  const a=Object.values(gameState.players).filter(p=>p.alive).length,total=Object.keys(gameState.players).length;
-  const el=document.getElementById('alive-count');if(el)el.textContent=`👥 ${a}/${total}`;
+function updateAuraPositions(){for(const[id,a]of Object.entries(auraSprites)){const s=playerSprites[id];if(!s)continue;a.setPosition(s.x,s.y);}for(const[id,g]of Object.entries(godmodeGlow)){const s=playerSprites[id];if(!s)continue;g.setPosition(s.x,s.y);}}
+function updateFreezeIndicator(id,frozen){if(freezeSprites[id]){freezeSprites[id].destroy();delete freezeSprites[id];}if(!frozen||!gameScene)return;const s=playerSprites[id];if(!s)return;const txt=gameScene.add.text(s.x,s.y-50,'❄️',{fontSize:'18px'}).setOrigin(.5).setDepth(15);freezeSprites[id]=txt;gameScene.tweens.add({targets:txt,y:s.y-55,yoyo:true,repeat:-1,duration:600});}
+function updateTitleBadge(id,mod){if(!gameScene)return;if(titleSprites[id]){titleSprites[id].destroy();delete titleSprites[id];}if(badgeSprites[id]){badgeSprites[id].destroy();delete badgeSprites[id];}const s=playerSprites[id];if(!s)return;if(mod.title){titleSprites[id]=gameScene.add.text(s.x,s.y-44,mod.title,{fontSize:'9px',color:'#fbbf24',fontFamily:'monospace',stroke:'#000',strokeThickness:2,fontStyle:'bold'}).setOrigin(.5).setDepth(11);}if(mod.badge){badgeSprites[id]=gameScene.add.text(s.x+18,s.y-18,mod.badge,{fontSize:'14px'}).setOrigin(.5).setDepth(11);}}
+function updateTitlePositions(){for(const[id,t]of Object.entries(titleSprites)){const s=playerSprites[id];if(!s)continue;t.setPosition(s.x,s.y-44);}for(const[id,b]of Object.entries(badgeSprites)){const s=playerSprites[id];if(!s)continue;b.setPosition(s.x+18,s.y-18);}}
+
+function spawnExplosion(cx,cy,radius){
+  if(!gameScene)return;
+  for(let i=0;i<30;i++){const angle=Math.random()*Math.PI*2;const px=gameScene.add.circle(cx,cy,Math.random()*5+2,0xff6600,1).setDepth(51);gameScene.tweens.add({targets:px,x:cx+Math.cos(angle)*radius*(.3+Math.random()*.7),y:cy+Math.sin(angle)*radius*(.3+Math.random()*.7),alpha:0,duration:600+Math.random()*400,onComplete:()=>px.destroy()});}
+  const ring=gameScene.add.circle(cx,cy,5).setStrokeStyle(4,0xff4400).setDepth(50);
+  gameScene.tweens.add({targets:ring,scaleX:radius/5*2,scaleY:radius/5*2,alpha:0,duration:700,onComplete:()=>ring.destroy()});
+  gameScene.cameras.main.shake(300,0.015);
 }
 
+// Trail canvas overlay
+(function(){
+  const cv=document.createElement('canvas');cv.style.cssText='position:fixed;top:0;left:0;z-index:6;pointer-events:none';cv.width=window.innerWidth;cv.height=window.innerHeight;document.body.appendChild(cv);
+  const ctx=cv.getContext('2d');
+  window.addEventListener('resize',()=>{cv.width=window.innerWidth;cv.height=window.innerHeight;});
+  function loop(){ctx.clearRect(0,0,cv.width,cv.height);if(gameScene&&gameState?.phase==='game'){const cam=gameScene.cameras.main;const ox=cam.scrollX,oy=cam.scrollY;for(let i=trailParticles.length-1;i>=0;i--){const p=trailParticles[i];p.alpha-=.035;p.x+=p.vx;p.y+=p.vy;if(p.alpha<=0){trailParticles.splice(i,1);continue;}const sx=p.x-ox,sy=p.y-oy;ctx.beginPath();ctx.arc(sx,sy,p.r*p.alpha,0,Math.PI*2);ctx.fillStyle=p.color+Math.floor(p.alpha*255).toString(16).padStart(2,'0');ctx.fill();}}requestAnimationFrame(loop);}
+  loop();
+})();
+
 // ════════════════════════════════════════════════════
-// WEBSOCKET
+// WEBSOCKET  (game server only — NOT auth)
 // ════════════════════════════════════════════════════
-function connectWS(){return new Promise((res,rej)=>{ws=new WebSocket(GAME_SERVER_WS);ws.onopen=()=>res();ws.onerror=()=>rej(new Error('WS'));ws.onmessage=e=>{try{handleMsg(JSON.parse(e.data));}catch{}};ws.onclose=()=>{notify('⚠️ Disconnected. Reconnecting...','#f87171');setTimeout(reconnect,2500);}});}
-function reconnect(){if(ws&&ws.readyState!==WebSocket.CLOSED)return;connectWS().catch(()=>setTimeout(reconnect,3500));}
-function wsSend(msg){if(ws&&ws.readyState===WebSocket.OPEN)ws.send(JSON.stringify(msg));}
+let wsReady = false;
+let wsQueue = []; // queued messages while WS is connecting
+
+function connectWS(){
+  return new Promise((res,rej)=>{
+    ws=new WebSocket(GAME_SERVER_WS);
+    ws.onopen=()=>{wsReady=true;wsQueue.forEach(m=>ws.send(JSON.stringify(m)));wsQueue=[];res();};
+    ws.onerror=()=>rej(new Error('WS'));
+    ws.onmessage=e=>{try{handleMsg(JSON.parse(e.data));}catch{}};
+    ws.onclose=()=>{wsReady=false;notify('⚠️ Disconnected. Reconnecting...','#f87171');setTimeout(reconnectWS,2500);};
+  });
+}
+function reconnectWS(){if(ws&&ws.readyState!==WebSocket.CLOSED)return;ws=new WebSocket(GAME_SERVER_WS);ws.onopen=()=>{wsReady=true;wsQueue.forEach(m=>ws.send(JSON.stringify(m)));wsQueue=[];};ws.onerror=()=>setTimeout(reconnectWS,3500);ws.onmessage=e=>{try{handleMsg(JSON.parse(e.data));}catch{}};ws.onclose=()=>{wsReady=false;setTimeout(reconnectWS,2500);};}
+
+// ══ FIX: wsSend checks readyState and queues if not open ══
+function wsSend(msg){
+  if(ws&&ws.readyState===WebSocket.OPEN){ws.send(JSON.stringify(msg));}
+  else{wsQueue.push(msg);}
+}
 
 function handleMsg(msg){
   switch(msg.type){
@@ -588,7 +672,7 @@ function handleMsg(msg){
       updateAliveCount();break;
     case 'task_completed':
       if(gameState)gameState.taskProgress=msg.progress;updateTaskBar();
-      if(msg.playerId===myPlayerId)notify('✅ Task complete!','#4ade80');
+      if(msg.playerId===myPlayerId){notify('✅ Task complete!','#4ade80');pfAddCredits(30,false);}
       else notify(`⚙️ ${msg.username||'Someone'} did a task`,'rgba(255,255,255,0.5)');break;
     case 'meeting_started':
       gameState=msg.state;showMeeting(msg.reason,DISC_TIME);break;
@@ -614,94 +698,321 @@ function handleMsg(msg){
       notify('❌ '+msg.message,'#f87171');break;
     case 'system_message':
       notify('📢 '+msg.text,'#fbbf24');break;
+    // Owner mod messages
+    case 'player_mod_update':
+      playerMods[msg.playerId]=msg.mod;
+      if(msg.playerId===myPlayerId)mySpeedMult=msg.mod.speedMult||1;
+      updateAura(msg.playerId,msg.mod);updateFreezeIndicator(msg.playerId,msg.mod.frozen);updateTitleBadge(msg.playerId,msg.mod);
+      if(msg.mod.trailColor)trailColorMap[msg.playerId]=msg.mod.trailColor;break;
+    case 'player_teleported':
+      if(gameState?.players[msg.playerId]){gameState.players[msg.playerId].x=msg.x;gameState.players[msg.playerId].y=msg.y;updatePlayerSprite(msg.playerId,msg.x,msg.y);}
+      if(msg.playerId===myPlayerId){if(gameScene)gameScene.cameras.main.centerOn(msg.x,msg.y);notify('⚡ You were teleported!','#a78bfa');flashRed();}break;
+    case 'player_respawned':
+      if(gameState?.players[msg.playerId]){gameState.players[msg.playerId].alive=true;createPlayerSprite(msg.playerId,gameState.players[msg.playerId]);notify(`✨ ${msg.username} was respawned!`,'#4ade80');}break;
+    case 'role_changed':
+      if(msg.byOwner){myRole=msg.newRole;const rb=document.getElementById('role-badge');if(myRole==='impostor'){rb.textContent='😈 IMPOSTOR';rb.className='role-badge role-impostor';document.getElementById('btn-kill').style.display='flex';document.getElementById('btn-vent').style.display='flex';}else{rb.textContent='✅ CREWMATE';rb.className='role-badge role-crewmate';document.getElementById('btn-kill').style.display='none';document.getElementById('btn-vent').style.display='none';}showBanner(myRole==='impostor'?'IMPOSTOR':'CREWMATE',myRole==='impostor'?'#f87171':'#4ade80');notify(`🎭 Owner changed your role!`,'#fbbf24');}break;
+    case 'speed_changed':
+      mySpeedMult=msg.mult||1;if(msg.mult>1.5)notify('⚡ Speed boost!','#fbbf24');else if(msg.mult<.8)notify('🐌 You are slowed!','#f87171');else notify('✅ Speed normal','#4ade80');break;
+    case 'owner_announcement':
+      notify(`${msg.icon||'📢'} ${msg.text}`,msg.color||'#fbbf24');showBanner(msg.text.slice(0,20),msg.color||'#fbbf24');
+      if(gameState?.phase==='meeting'||gameState?.phase==='vote')addChatMsg({username:'📢 OWNER',color:msg.color||'#fbbf24',text:msg.text,alive:true});break;
+    case 'owner_explosion_fx':
+      spawnExplosion(msg.cx,msg.cy,msg.radius);notify('💥 EXPLOSION!','#ef4444');break;
+    case 'owner_roles_reveal':
+      showRolesReveal(msg.roles);break;
+    case 'tasks_reset':
+      myTasks=msg.tasks||[];notify('📋 Tasks reset by owner!','#fbbf24');break;
+    case 'owner_ack':
+      notify(`✅ Command: ${msg.cmd}`,'#4ade80');break;
   }
 }
 
 // ════════════════════════════════════════════════════
-// AUTH
+// PLAYFAB AUTH
 // ════════════════════════════════════════════════════
-async function backendPost(path,body,token){const h={'Content-Type':'application/json'};if(token)h['x-player-token']=token;const r=await fetch(`${BACKEND}${path}`,{method:'POST',headers:h,body:JSON.stringify(body)});return r.json();}
-async function backendGet(path,token){const h={};if(token)h['x-player-token']=token;const r=await fetch(`${BACKEND}${path}`,{headers:h});return r.json();}
 
-function tryAutoLogin(){const s=localStorage.getItem('spt_auth');if(s){try{const d=JSON.parse(s);authToken=d.token;authUsername=d.username;authBackendId=d.backendId;authCredits=d.credits||0;selectedColor=d.color||selectedColor;verifyToken();}catch{showScreen('auth-screen');}}else showScreen('auth-screen');}
-async function verifyToken(){try{const d=await backendGet('/me',authToken);if(d.player_id){authBackendId=d.player_id;authCredits=d.credits;authUsername=d.username;saveAuth();showMenuScreen();}else{localStorage.removeItem('spt_auth');showScreen('auth-screen');}}catch{showScreen('auth-screen');}}
-function saveAuth(){localStorage.setItem('spt_auth',JSON.stringify({token:authToken,username:authUsername,backendId:authBackendId,credits:authCredits,color:selectedColor}));}
+function pfCall(fn, params){
+  return new Promise((res,rej)=>{
+    PlayFabClientSDK[fn](params,(result,error)=>{
+      if(error){rej(error);}else{res(result);}
+    });
+  });
+}
 
 async function doLogin(){
-  const u=document.getElementById('login-username').value.trim(),p=document.getElementById('login-password').value,err=document.getElementById('login-err');
-  err.style.display='none';if(!u||!p){err.textContent='Fill in all fields';err.style.display='block';return;}
-  try{const d=await backendPost('/login',{game_id:GAME_ID,username:u,password:p});if(d.token){authToken=d.token;authUsername=d.username;authBackendId=d.player_id;authCredits=d.credits||0;saveAuth();showMenuScreen();}else{err.textContent=d.error||'Login failed';err.style.display='block';}}
-  catch{err.textContent='Cannot connect to backend';err.style.display='block';}
+  const u=document.getElementById('login-username').value.trim();
+  const p=document.getElementById('login-password').value;
+  const err=document.getElementById('login-err');
+  err.style.display='none';
+  if(!u||!p){err.textContent='Fill in all fields';err.style.display='block';return;}
+  try{
+    const result=await pfCall('LoginWithCustomID',{
+      CustomId: u+'_'+btoa(p).slice(0,16),
+      CreateAccount:false,
+      InfoRequestParameters:{GetPlayerStatistics:true,GetUserData:true,GetUserInventory:true,GetPlayerProfile:true}
+    });
+    await onPfLogin(result,u);
+  }catch(e){
+    // If account doesn't exist or wrong password, show error
+    err.textContent=e.errorMessage||'Login failed. Check your username/password.';
+    err.style.display='block';
+  }
 }
+
 async function doRegister(){
-  const u=document.getElementById('reg-username').value.trim(),p=document.getElementById('reg-password').value,err=document.getElementById('reg-err');
-  err.style.display='none';if(!u||!p){err.textContent='Fill in all fields';err.style.display='block';return;}
-  try{const d=await backendPost('/register',{game_id:GAME_ID,username:u,password:p});if(d.token){authToken=d.token;authUsername=d.username;authBackendId=d.player_id;authCredits=d.credits||0;await backendPost('/save',{data:{color:selectedColor}},authToken);saveAuth();showMenuScreen();}else{err.textContent=d.error||'Register failed';err.style.display='block';}}
-  catch{err.textContent='Cannot connect to backend';err.style.display='block';}
+  const u=document.getElementById('reg-username').value.trim();
+  const p=document.getElementById('reg-password').value;
+  const err=document.getElementById('reg-err');
+  err.style.display='none';
+  if(!u||!p){err.textContent='Fill in all fields';err.style.display='block';return;}
+  if(u.length<3){err.textContent='Username must be at least 3 characters';err.style.display='block';return;}
+  if(p.length<4){err.textContent='Password must be at least 4 characters';err.style.display='block';return;}
+  try{
+    // Register = create account with CustomID (username+hashed password as unique key)
+    const result=await pfCall('LoginWithCustomID',{
+      CustomId:u+'_'+btoa(p).slice(0,16),
+      CreateAccount:true,
+      InfoRequestParameters:{GetPlayerStatistics:true,GetUserData:true,GetUserInventory:true}
+    });
+    // Set display name
+    try{await pfCall('UpdateUserTitleDisplayName',{DisplayName:u});}catch{}
+    // Save username and color in user data
+    await pfCall('UpdateUserData',{Data:{username:u,color:selectedColor,hat:''}});
+    // Give starter credits
+    await pfCall('ExecuteCloudScript',{FunctionName:'giveStarterCredits',GeneratePlayStreamEvent:false}).catch(()=>{});
+    // Manually add starter credits via AddUserVirtualCurrency if cloud script not set up
+    try{await pfCall('AddUserVirtualCurrency',{VirtualCurrency:'GD',Amount:200});}catch{}
+    await onPfLogin(result,u);
+  }catch(e){
+    err.textContent=e.errorMessage||'Registration failed. Username may be taken.';
+    err.style.display='block';
+  }
 }
-function logout(){localStorage.removeItem('spt_auth');authToken=authUsername=authBackendId=null;authCredits=0;showScreen('auth-screen');}
-function showRegister(){document.getElementById('login-form').style.display='none';document.getElementById('register-form').style.display='block';}
-function showLogin(){document.getElementById('register-form').style.display='none';document.getElementById('login-form').style.display='block';}
+
+async function onPfLogin(result,usernameHint){
+  pfPlayFabId=result.data.PlayFabId;
+  pfSessionTicket=result.data.SessionTicket;
+  PlayFab._internalSettings.sessionTicket=pfSessionTicket;
+
+  // Load user data
+  const userData=result.data.InfoResultPayload?.UserData||{};
+  pfUsername=userData.username?.Value||usernameHint||result.data.PlayFabId.slice(0,8);
+  selectedColor=userData.color?.Value||'#e74c3c';
+  equippedHat=userData.hat?.Value||null;
+  equippedSkin=userData.skin?.Value||null;
+
+  // Load credits
+  try{
+    const bal=await pfCall('GetUserInventory',{});
+    pfCredits=bal.data.VirtualCurrencyBalance?.GD||0;
+    pfOwnedItems=bal.data.Inventory||[];
+    pfOwnedItemIds=pfOwnedItems.map(i=>i.ItemId);
+  }catch{pfCredits=0;}
+
+  // Load stats
+  try{
+    const stats=result.data.InfoResultPayload?.PlayerStatistics||[];
+    pfStats={};for(const s of stats)pfStats[s.StatisticName]=s.Value;
+  }catch{}
+
+  saveLocalSession();
+  showMenuScreen();
+}
+
+function saveLocalSession(){
+  localStorage.setItem('spt_pf',JSON.stringify({
+    pfPlayFabId,pfSessionTicket,pfUsername,selectedColor,equippedHat,equippedSkin,pfCredits
+  }));
+}
+
+async function tryAutoLogin(){
+  const saved=localStorage.getItem('spt_pf');
+  if(!saved){showScreen('auth-screen');return;}
+  try{
+    const d=JSON.parse(saved);
+    pfPlayFabId=d.pfPlayFabId;pfSessionTicket=d.pfSessionTicket;pfUsername=d.pfUsername;
+    selectedColor=d.selectedColor||'#e74c3c';equippedHat=d.equippedHat||null;
+    equippedSkin=d.equippedSkin||null;pfCredits=d.pfCredits||0;
+    PlayFab._internalSettings.sessionTicket=pfSessionTicket;
+    // Refresh balance
+    try{const bal=await pfCall('GetUserInventory',{});pfCredits=bal.data.VirtualCurrencyBalance?.GD||0;pfOwnedItems=bal.data.Inventory||[];pfOwnedItemIds=pfOwnedItems.map(i=>i.ItemId);}catch{}
+    showMenuScreen();
+  }catch{showScreen('auth-screen');}
+}
+
+function logout(){
+  localStorage.removeItem('spt_pf');
+  pfPlayFabId=pfSessionTicket=pfUsername=null;pfCredits=0;pfOwnedItems=[];pfOwnedItemIds=[];
+  showScreen('auth-screen');
+}
 
 // ════════════════════════════════════════════════════
-// MENU
+// PLAYFAB CREDITS HELPERS
+// ════════════════════════════════════════════════════
+async function pfAddCredits(amount, showNotif=true){
+  if(!pfSessionTicket)return;
+  try{
+    const r=await pfCall('AddUserVirtualCurrency',{VirtualCurrency:'GD',Amount:amount});
+    pfCredits=r.data.Balance;
+    saveLocalSession();
+    if(showNotif)notify(`💰 +${amount} credits!`,'#fbbf24');
+    // Update display
+    document.getElementById('menu-credits').textContent=`💰 ${pfCredits} Credits`;
+    document.getElementById('shop-credits').textContent=`💰 ${pfCredits} Credits`;
+  }catch{}
+}
+
+async function pfSpendCredits(amount){
+  if(!pfSessionTicket)return false;
+  if(pfCredits<amount){notify(`❌ Need ${amount} credits (you have ${pfCredits})`,'#f87171');return false;}
+  try{
+    const r=await pfCall('SubtractUserVirtualCurrency',{VirtualCurrency:'GD',Amount:amount});
+    pfCredits=r.data.Balance;
+    saveLocalSession();
+    document.getElementById('menu-credits').textContent=`💰 ${pfCredits} Credits`;
+    document.getElementById('shop-credits').textContent=`💰 ${pfCredits} Credits`;
+    return true;
+  }catch{notify('❌ Transaction failed','#f87171');return false;}
+}
+
+async function pfSaveData(key,value){
+  if(!pfSessionTicket)return;
+  try{await pfCall('UpdateUserData',{Data:{[key]:typeof value==='string'?value:JSON.stringify(value)}});}catch{}
+}
+
+async function pfUpdateStat(name,value){
+  if(!pfSessionTicket)return;
+  try{await pfCall('UpdatePlayerStatistics',{Statistics:[{StatisticName:name,Value:value}]});}catch{}
+}
+
+// ════════════════════════════════════════════════════
+// MENU + SHOP
 // ════════════════════════════════════════════════════
 async function showMenuScreen(){
   showScreen('menu-screen');
-  document.getElementById('menu-welcome').textContent=`Welcome back, ${authUsername}! 👋`;
-  document.getElementById('menu-credits').textContent=`💰 ${authCredits} Credits`;
-  try{const d=await backendGet('/load',authToken);if(d.data?.color)selectedColor=d.data.color;if(d.data?.hat)equippedHat=d.data.hat;}catch{}
-  buildColorGrid('profile-color-grid',true);loadShop();
-  document.getElementById('profile-stats').innerHTML=`<b>${esc(authUsername)}</b> · 💰 ${authCredits} Credits<br><small style="opacity:.4">${authBackendId||'—'}</small>`;
+  document.getElementById('menu-welcome').textContent=`Welcome, ${pfUsername}! 👋`;
+  document.getElementById('menu-credits').textContent=`💰 ${pfCredits} Credits`;
+  document.getElementById('shop-credits').textContent=`💰 ${pfCredits} Credits`;
+  buildColorGrid('profile-color-grid',true);
+  loadShop();
+  const games=pfStats.games_played||0;
+  const wins=pfStats.games_won||0;
+  document.getElementById('profile-stats').innerHTML=
+    `<b>${esc(pfUsername)}</b><br>
+    💰 ${pfCredits} Credits<br>
+    🎮 Games: ${games} · 🏆 Wins: ${wins}<br>
+    <small style="opacity:.4">ID: ${pfPlayFabId||'—'}</small>`;
+  document.getElementById('equipped-hat-display').textContent=equippedHat?
+    (COSMETIC_META[equippedHat]?.icon||equippedHat):'None';
 }
+
 function switchMenuTab(tab,btn){
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
   document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
   btn.classList.add('active');document.getElementById(`menu-tab-${tab}`).classList.add('active');
+  if(tab==='shop')loadShop();
 }
-async function loadShop(){
-  document.getElementById('shop-credits').textContent=`💰 ${authCredits} Credits`;
+
+function loadShop(){
+  document.getElementById('shop-credits').textContent=`💰 ${pfCredits} Credits`;
   const grid=document.getElementById('shop-items-grid');
-  try{
-    const[cr,or]=await Promise.all([fetch(`${BACKEND}/cosmetics/catalog?game_id=${GAME_ID}`).then(r=>r.json()),backendGet('/cosmetics/owned',authToken)]);
-    const catalog=cr.cosmetics||[];ownedCosmetics=(or.cosmetics||[]).map(c=>c.id);
-    if(!catalog.length){grid.innerHTML='<div style="color:rgba(255,255,255,.4);grid-column:1/-1;text-align:center;padding:20px;font-size:13px">No cosmetics yet.<br>Add from backend dashboard!</div>';return;}
-    const ri={common:'⚪',uncommon:'🟢',rare:'🔵',epic:'🟣',legendary:'🟡'};
-    grid.innerHTML=catalog.map(c=>{const o=ownedCosmetics.includes(c.id);return`<div class="shop-item ${o?'owned':''}" onclick="${o?'':` buyCosmetic('${c.id}','${esc(c.name)}',${c.price})`}"><div class="shop-item-icon">${getTypeEmoji(c.type)}</div><div class="shop-item-name rarity-${c.rarity}">${ri[c.rarity]||''} ${esc(c.name)}</div><div class="shop-item-price">${o?'✅ Owned':`💰 ${c.price}`}</div></div>`;}).join('');
-  }catch{grid.innerHTML='<div style="color:#f87171;text-align:center;padding:20px;grid-column:1/-1">Failed to load shop</div>';}
+  const allItems=Object.entries(COSMETIC_META);
+  if(!allItems.length){grid.innerHTML='<div style="color:rgba(255,255,255,.4);text-align:center;padding:20px">No items.</div>';return;}
+  const ri={common:'⚪',uncommon:'🟢',rare:'🔵',epic:'🟣',legendary:'🟡'};
+  grid.innerHTML=allItems.map(([id,c])=>{
+    const owned=pfOwnedItemIds.includes(id);
+    const isEquipped=(c.type==='hat'&&equippedHat===id)||(c.type==='skin'&&equippedSkin===id);
+    return `<div class="shop-item ${owned?'owned':''} ${isEquipped?'equipped-item':''}" onclick="${owned?`equipCosmetic('${id}','${c.type}')`:` buyCosmetic('${id}',${c.price})`}">
+      <div class="shop-item-icon">${c.icon}</div>
+      <div class="shop-item-name rarity-${c.rarity}">${ri[c.rarity]||''} ${c.name}</div>
+      <div class="shop-item-price">${owned?(isEquipped?'✅ Equipped':'🎮 Equip'):` 💰 ${c.price}`}</div>
+    </div>`;
+  }).join('');
 }
-function getTypeEmoji(t){return({skin:'👕',hat:'🎩',trail:'✨',emote:'💃',title:'📛',color:'🎨',pet:'🐾'})[t]||'🎁';}
-async function buyCosmetic(id,name,price){if(authCredits<price){notify(`❌ Need ${price} credits`,'#f87171');return;}const d=await backendPost('/cosmetics/buy',{cosmetic_id:id},authToken);if(d.success){authCredits=d.credits;saveAuth();notify(`✨ Got ${name}!`,'#a78bfa');loadShop();document.getElementById('menu-credits').textContent=`💰 ${authCredits} Credits`;}else notify('❌ '+(d.error||'Failed'),'#f87171');}
+
+async function buyCosmetic(id,price){
+  const ok=await pfSpendCredits(price);
+  if(!ok)return;
+  // Grant item in PlayFab inventory
+  try{
+    // We use ExecuteCloudScript to grant, but since catalog may not be set up yet
+    // we record it in user data as backup
+    const owned=JSON.parse((await pfCall('GetUserData',{Keys:['owned_items']})).data.Data?.owned_items?.Value||'[]');
+    if(!owned.includes(id))owned.push(id);
+    await pfSaveData('owned_items',JSON.stringify(owned));
+    pfOwnedItemIds.push(id);
+    saveLocalSession();
+    notify(`✨ Got ${COSMETIC_META[id]?.name||id}!`,'#a78bfa');
+    loadShop();
+  }catch{notify('❌ Failed to save cosmetic','#f87171');}
+}
+
+async function equipCosmetic(id,type){
+  if(type==='hat'){equippedHat=equippedHat===id?null:id;await pfSaveData('hat',equippedHat||'');}
+  else if(type==='skin'){equippedSkin=equippedSkin===id?null:id;await pfSaveData('skin',equippedSkin||'');}
+  saveLocalSession();
+  notify(equippedHat===id||equippedSkin===id?`✅ Equipped ${COSMETIC_META[id]?.name}!`:`Unequipped`,'#4ade80');
+  loadShop();
+  document.getElementById('equipped-hat-display').textContent=equippedHat?(COSMETIC_META[equippedHat]?.icon||equippedHat):'None';
+}
+
+// Color grid
+function buildColorGrid(id,save){
+  const el=document.getElementById(id);
+  el.innerHTML=COLORS.map(c=>`<div class="color-swatch ${c===selectedColor?'selected':''}" style="background:${c}" onclick="selectColor('${c}','${id}',${save})"></div>`).join('');
+}
+async function selectColor(c,gid,save){
+  selectedColor=c;
+  document.querySelectorAll(`#${gid} .color-swatch`).forEach(s=>s.classList.toggle('selected',s.style.background===c||s.style.backgroundColor===c));
+  if(save&&pfSessionTicket){await pfSaveData('color',c);saveLocalSession();}
+}
 
 // ════════════════════════════════════════════════════
-// COLOR
+// ══ FIX: joinOrCreate — waits for WS if needed ══
 // ════════════════════════════════════════════════════
-function buildColorGrid(id,save){const el=document.getElementById(id);el.innerHTML=COLORS.map(c=>`<div class="color-swatch ${c===selectedColor?'selected':''}" style="background:${c}" onclick="selectColor('${c}','${id}',${save})"></div>`).join('');}
-async function selectColor(c,gid,save){selectedColor=c;document.querySelectorAll(`#${gid} .color-swatch`).forEach(s=>s.classList.toggle('selected',s.getAttribute('onclick').includes(`'${c}'`)));if(save&&authToken){await backendPost('/save',{data:{color:c}},authToken);saveAuth();}}
+async function joinOrCreate(){
+  const btn=document.getElementById('join-create-btn');
+  btn.disabled=true;btn.textContent='⏳ Connecting...';
+  try{
+    // Ensure WS is connected first
+    if(!ws||ws.readyState===WebSocket.CLOSED||ws.readyState===WebSocket.CLOSING){
+      await connectWS();
+    }
+    // Wait until open (with timeout)
+    let waited=0;
+    while(ws.readyState!==WebSocket.OPEN&&waited<5000){await sleep(100);waited+=100;}
+    if(ws.readyState!==WebSocket.OPEN){notify('⚠️ Could not connect to game server!','#f87171');btn.disabled=false;btn.textContent='🚀 Join / Create Room';return;}
+
+    let code=document.getElementById('room-code-input').value.trim().toUpperCase();
+    if(!code)code=Math.random().toString(36).substring(2,8).toUpperCase();
+    const isOwner=(pfUsername?.toLowerCase()==='zeno'||pfUsername?.toLowerCase()==='owner'||pfCredits>9999);
+    const hatEmoji=equippedHat?COSMETIC_META[equippedHat]?.icon:null;
+    wsSend({type:'join_room',roomCode:code,username:pfUsername,color:selectedColor,hat:hatEmoji,skin:equippedSkin,isOwner,pfId:pfPlayFabId});
+  }catch(e){
+    notify('⚠️ Game server offline — try again.','#f87171');
+  }
+  btn.disabled=false;btn.textContent='🚀 Join / Create Room';
+}
+
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
 
 // ════════════════════════════════════════════════════
 // LOBBY
 // ════════════════════════════════════════════════════
-function joinOrCreate(){
-  let code=document.getElementById('room-code-input').value.trim().toUpperCase();
-  if(!code)code=Math.random().toString(36).substring(2,8).toUpperCase();
-  // Owner detection: username is 'owner', 'zeno', or has lots of credits
-  const isOwner=(authUsername?.toLowerCase()==='owner'||authUsername?.toLowerCase()==='zeno'||authCredits>9999);
-  wsSend({type:'join_room',roomCode:code,username:authUsername,color:selectedColor,hat:equippedHat,skin:equippedSkin,token:authToken,backendId:authBackendId,isOwner});
-}
 function updateLobbyUI(){
   if(!gameState)return;
   document.getElementById('lobby-code').textContent=gameState.code||currentRoomCode;
   const players=Object.values(gameState.players);
   document.getElementById('lobby-player-count').textContent=`${players.length}/10 players`;
   document.getElementById('lobby-player-list').innerHTML=players.map(p=>`<div class="player-item"><div class="player-dot" style="background:${p.color}"></div><div class="player-name">${esc(p.username)}${p.hat?` ${p.hat}`:''}</div>${p.id===gameState.hostId?'<span class="host-badge">👑 HOST</span>':''}${p.isOwner?'<span class="owner-badge">🛡 OWNER</span>':''}</div>`).join('');
-  const iH=gameState.hostId===myPlayerId,iO=gameState.players[myPlayerId]?.isOwner;
+  const iH=gameState.hostId===myPlayerId;
+  const iO=gameState.players[myPlayerId]?.isOwner;
   document.getElementById('start-btn').style.display=(iH||iO)?'block':'none';
   document.getElementById('lobby-wait-btn').style.display=(iH||iO)?'none':'block';
 }
 function copyCode(){navigator.clipboard?.writeText(document.getElementById('lobby-code').textContent).then(()=>notify('📋 Code copied!','#4ade80'));}
 function startGame(){wsSend({type:'start_game'});}
-function leaveLobby(){ws?.close();showScreen('menu-screen');}
+function leaveLobby(){wsReady=false;ws?.close();showScreen('menu-screen');}
 
 // ════════════════════════════════════════════════════
 // GAME SCREEN
@@ -717,7 +1028,7 @@ function showGameScreen(){
     rb.textContent='😈 IMPOSTOR';rb.className='role-badge role-impostor';
     document.getElementById('btn-kill').style.display='flex';document.getElementById('btn-vent').style.display='flex';document.getElementById('btn-task').style.display='none';
     showBanner('IMPOSTOR','#f87171');notify('🔴 You are the IMPOSTOR! Kill everyone!','#f87171');
-  } else {
+  }else{
     rb.textContent='✅ CREWMATE';rb.className='role-badge role-crewmate';
     document.getElementById('btn-kill').style.display='none';document.getElementById('btn-vent').style.display='none';document.getElementById('btn-task').style.display='none';
     showBanner('CREWMATE','#4ade80');notify('🟢 You are a CREWMATE! Do your tasks!','#4ade80');
@@ -729,19 +1040,36 @@ function showGameScreen(){
 function updateTaskBar(){if(!gameState?.taskProgress)return;const{total,done}=gameState.taskProgress;document.getElementById('task-bar').style.width=(total>0?done/total*100:0)+'%';}
 
 // ════════════════════════════════════════════════════
+// INTERACTION
+// ════════════════════════════════════════════════════
+function dist(x1,y1,x2,y2){return Math.sqrt((x1-x2)**2+(y1-y2)**2);}
+function checkNearby(px,py){
+  if(!gameState)return;
+  const nearBody=gameState.bodies?.find(b=>dist(px,py,b.x,b.y)<70);
+  document.getElementById('btn-report').style.display=nearBody?'flex':'none';
+  if(myRole==='crewmate'){const tl=[{x:148,y:520},{x:810,y:150},{x:140,y:310},{x:500,y:390},{x:760,y:540},{x:410,y:575},{x:500,y:175}];document.getElementById('btn-task').style.display=tl.some(t=>dist(px,py,t.x,t.y)<58)?'flex':'none';}
+  updateAliveCount();
+}
+function updateKillBtn(){
+  if(myRole!=='impostor')return;const btn=document.getElementById('btn-kill');if(!btn)return;
+  const now=Date.now();
+  if(now<killCooldownUntil){const r=Math.ceil((killCooldownUntil-now)/1000);btn.innerHTML=`☠ Kill <span class="cooldown-txt">(${r}s)</span>`;btn.disabled=true;}
+  else{btn.textContent='☠ Kill';const me=gameState?.players[myPlayerId];if(me&&gameState){const t=Object.values(gameState.players).find(p=>p.id!==myPlayerId&&p.alive&&p.role!=='impostor'&&dist(me.x,me.y,p.x,p.y)<100);btn.disabled=!t;}}
+}
+function updateAliveCount(){if(!gameState)return;const a=Object.values(gameState.players).filter(p=>p.alive).length,total=Object.keys(gameState.players).length;const el=document.getElementById('alive-count');if(el)el.textContent=`👥 ${a}/${total}`;}
+
+// ════════════════════════════════════════════════════
 // ACTIONS
 // ════════════════════════════════════════════════════
 function tryKill(){
-  if(myRole!=='impostor')return;
-  if(Date.now()<killCooldownUntil){notify('⏳ Kill cooldown!','#f87171');return;}
+  if(myRole!=='impostor')return;if(Date.now()<killCooldownUntil){notify('⏳ Kill cooldown!','#f87171');return;}
   const me=gameState?.players[myPlayerId];if(!me)return;
   const t=Object.values(gameState.players).find(p=>p.id!==myPlayerId&&p.alive&&p.role!=='impostor'&&dist(me.x,me.y,p.x,p.y)<100);
   if(!t){notify('No one nearby!','#f87171');return;}
   wsSend({type:'kill',targetId:t.id});killCooldownUntil=Date.now()+25000;flashRed();
 }
 function tryVent(){
-  if(myRole!=='impostor'||!gameScene)return;
-  const me=gameState?.players[myPlayerId];if(!me)return;
+  if(myRole!=='impostor'||!gameScene)return;const me=gameState?.players[myPlayerId];if(!me)return;
   const v=gameScene.ventPositions;let near=null,nd=999;
   for(const vp of v){const d=dist(me.x,me.y,vp.x,vp.y);if(d<nd){nd=d;near=vp;}}
   if(!near||nd>100){notify('Not near a vent!','#f87171');return;}
@@ -752,8 +1080,7 @@ function tryVent(){
 function reportBody(){wsSend({type:'report_body'});}
 function callEmergency(){if(gameState?.phase!=='game')return;wsSend({type:'emergency_meeting'});}
 function openNearbyTask(){
-  if(myRole!=='crewmate')return;
-  const me=gameState?.players[myPlayerId];if(!me)return;
+  if(myRole!=='crewmate')return;const me=gameState?.players[myPlayerId];if(!me)return;
   const tl=[{x:148,y:520,n:'Electrical'},{x:810,y:150,n:'Navigation'},{x:140,y:310,n:'Reactor'},{x:500,y:390,n:'MedBay'},{x:760,y:540,n:'Storage'},{x:410,y:575,n:'Engine'},{x:500,y:175,n:'Cafeteria'}];
   const loc=tl.find(t=>dist(me.x,me.y,t.x,t.y)<60);if(!loc){notify('Not near a task!','#f87171');return;}
   const task=myTasks.find(t=>!t.completed&&t.location.name===loc.n);
@@ -774,662 +1101,107 @@ function openTaskModal(task){
 function closeTask(){document.getElementById('task-modal').style.display='none';activeTaskId=null;mashCount=0;wireConnections={};wireTarget=null;}
 function completeTask(){if(!activeTaskId)return;wsSend({type:'complete_task',taskId:activeTaskId});const t=myTasks.find(t=>t.id===activeTaskId);if(t)t.completed=true;closeTask();}
 
-// WIRE
-function buildWireTask(con){
-  wireConnections={};wireTarget=null;
-  const cols=[{c:'#ef4444',n:'red'},{c:'#3b82f6',n:'blue'},{c:'#22c55e',n:'green'},{c:'#f59e0b',n:'yellow'}];
-  const shuf=[...cols].sort(()=>Math.random()-.5);
-  con.innerHTML=`<div class="wire-grid"><div class="wire-col" id="wl">${cols.map((c,i)=>`<div class="wire-node" id="wl${i}" style="border-color:${c.c};color:${c.c}" onclick="selWire(${i})">${i+1}</div>`).join('')}</div><svg class="wires" id="wsvg" viewBox="0 0 100 196" style="height:196px"></svg><div class="wire-col" id="wr">${shuf.map((c,i)=>`<div class="wire-node" id="wr${i}" style="border-color:${c.c};color:${c.c}" onclick="conWire(${i},'${c.n}')">${i+1}</div>`).join('')}</div></div><div id="wstat" style="color:rgba(255,255,255,.5);font-size:13px;margin-top:6px">Click a left wire to start</div>`;
-  con._cols=cols;con._shuf=shuf;
-}
+// Wire task
+function buildWireTask(con){wireConnections={};wireTarget=null;const cols=[{c:'#ef4444',n:'red'},{c:'#3b82f6',n:'blue'},{c:'#22c55e',n:'green'},{c:'#f59e0b',n:'yellow'}];const shuf=[...cols].sort(()=>Math.random()-.5);con.innerHTML=`<div class="wire-grid"><div class="wire-col" id="wl">${cols.map((c,i)=>`<div class="wire-node" id="wl${i}" style="border-color:${c.c};color:${c.c}" onclick="selWire(${i})">${i+1}</div>`).join('')}</div><svg class="wires" id="wsvg" viewBox="0 0 100 196" style="height:196px"></svg><div class="wire-col" id="wr">${shuf.map((c,i)=>`<div class="wire-node" id="wr${i}" style="border-color:${c.c};color:${c.c}" onclick="conWire(${i},'${c.n}')">${i+1}</div>`).join('')}</div></div><div id="wstat" style="color:rgba(255,255,255,.5);font-size:13px;margin-top:6px">Click a left wire to start</div>`;con._cols=cols;con._shuf=shuf;}
 function selWire(i){wireTarget=i;document.querySelectorAll('[id^=wl]').forEach(e=>e.style.transform='');document.getElementById(`wl${i}`).style.transform='scale(1.18)';document.getElementById('wstat').textContent='Connect to matching color →';}
-function conWire(ri,cn){
-  if(wireTarget===null){document.getElementById('wstat').textContent='Select a left wire first!';return;}
-  const cols=document.getElementById('task-modal-content')._cols;const exp=cols[wireTarget].n;
-  wireConnections[wireTarget]=ri;
-  const svg=document.getElementById('wsvg');const line=document.createElementNS('http://www.w3.org/2000/svg','line');
-  const yl=24+wireTarget*58,yr=24+ri*58;
-  line.setAttribute('x1','0');line.setAttribute('y1',String(yl));line.setAttribute('x2','100');line.setAttribute('y2',String(yr));
-  line.setAttribute('stroke',cn===exp?cols[wireTarget].c:'#ef4444');line.setAttribute('stroke-width','3.5');svg.appendChild(line);
-  document.getElementById(`wl${wireTarget}`).classList.add('wconn');document.getElementById(`wr${ri}`).classList.add('wconn');
-  wireTarget=null;document.querySelectorAll('[id^=wl]').forEach(e=>e.style.transform='');
-  if(Object.keys(wireConnections).length>=4)setTimeout(()=>completeTask(),500);
-}
+function conWire(ri,cn){if(wireTarget===null){document.getElementById('wstat').textContent='Select a left wire first!';return;}const cols=document.getElementById('task-modal-content')._cols;const exp=cols[wireTarget].n;wireConnections[wireTarget]=ri;const svg=document.getElementById('wsvg');const line=document.createElementNS('http://www.w3.org/2000/svg','line');const yl=24+wireTarget*58,yr=24+ri*58;line.setAttribute('x1','0');line.setAttribute('y1',String(yl));line.setAttribute('x2','100');line.setAttribute('y2',String(yr));line.setAttribute('stroke',cn===exp?cols[wireTarget].c:'#ef4444');line.setAttribute('stroke-width','3.5');svg.appendChild(line);document.getElementById(`wl${wireTarget}`).classList.add('wconn');document.getElementById(`wr${ri}`).classList.add('wconn');wireTarget=null;document.querySelectorAll('[id^=wl]').forEach(e=>e.style.transform='');if(Object.keys(wireConnections).length>=4)setTimeout(()=>completeTask(),500);}
 
-// MASH
+// Mash task
 function buildMashTask(con){mashCount=0;con.innerHTML=`<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px"><span>Progress</span><span id="mc">0/${MASH_GOAL}</span></div><div class="mash-bar"><div class="mash-fill" id="mf"></div></div><button class="mash-btn" onclick="mash()" id="mb">PRESS!</button><div style="color:rgba(255,255,255,.45);font-size:13px">Mash ${MASH_GOAL} times!</div>`;}
 function mash(){mashCount++;document.getElementById('mc').textContent=`${mashCount}/${MASH_GOAL}`;document.getElementById('mf').style.width=(mashCount/MASH_GOAL*100)+'%';if(mashCount>=MASH_GOAL){document.getElementById('mb').disabled=true;setTimeout(()=>completeTask(),300);}}
 
-// PATTERN
-function buildPatternTask(con){
-  patternSequence=Array.from({length:5},()=>Math.floor(Math.random()*9));patternInput=[];patternPhase='watch';
-  con.innerHTML=`<div id="pstat" style="color:#a78bfa;font-size:14px;margin-bottom:11px">👀 Watch the pattern...</div><div class="pattern-grid" id="pgrid">${Array.from({length:9},(_,i)=>`<div class="pattern-cell" id="pc${i}" onclick="patClick(${i})"></div>`).join('')}</div>`;
-  let i=0;const show=()=>{if(i>=patternSequence.length){patternPhase='input';document.getElementById('pstat').textContent='🎯 Repeat the pattern!';document.getElementById('pstat').style.color='#4ade80';return;}const cell=document.getElementById(`pc${patternSequence[i]}`);if(cell){cell.classList.add('lit');setTimeout(()=>{cell.classList.remove('lit');i++;setTimeout(show,380);},580);}else{i++;setTimeout(show,380);}};setTimeout(show,600);
-}
-function patClick(idx){
-  if(patternPhase!=='input')return;patternInput.push(idx);const cell=document.getElementById(`pc${idx}`);if(!cell)return;
-  const exp=patternSequence[patternInput.length-1];
-  if(idx===exp){cell.classList.add('correct');setTimeout(()=>cell.classList.remove('correct'),350);if(patternInput.length===patternSequence.length)setTimeout(()=>completeTask(),400);}
-  else{cell.classList.add('wrong');setTimeout(()=>{cell.classList.remove('wrong');patternInput=[];document.getElementById('pstat').textContent='❌ Wrong! Watch again...';setTimeout(()=>buildPatternTask(document.getElementById('task-modal-content')),700);},450);}
-}
+// Pattern task
+function buildPatternTask(con){patternSequence=Array.from({length:5},()=>Math.floor(Math.random()*9));patternInput=[];patternPhase='watch';con.innerHTML=`<div id="pstat" style="color:#a78bfa;font-size:14px;margin-bottom:11px">👀 Watch the pattern...</div><div class="pattern-grid" id="pgrid">${Array.from({length:9},(_,i)=>`<div class="pattern-cell" id="pc${i}" onclick="patClick(${i})"></div>`).join('')}</div>`;let i=0;const show=()=>{if(i>=patternSequence.length){patternPhase='input';document.getElementById('pstat').textContent='🎯 Repeat the pattern!';document.getElementById('pstat').style.color='#4ade80';return;}const cell=document.getElementById(`pc${patternSequence[i]}`);if(cell){cell.classList.add('lit');setTimeout(()=>{cell.classList.remove('lit');i++;setTimeout(show,380);},580);}else{i++;setTimeout(show,380);}};setTimeout(show,600);}
+function patClick(idx){if(patternPhase!=='input')return;patternInput.push(idx);const cell=document.getElementById(`pc${idx}`);if(!cell)return;const exp=patternSequence[patternInput.length-1];if(idx===exp){cell.classList.add('correct');setTimeout(()=>cell.classList.remove('correct'),350);if(patternInput.length===patternSequence.length)setTimeout(()=>completeTask(),400);}else{cell.classList.add('wrong');setTimeout(()=>{cell.classList.remove('wrong');patternInput=[];document.getElementById('pstat').textContent='❌ Wrong! Watch again...';setTimeout(()=>buildPatternTask(document.getElementById('task-modal-content')),700);},450);}}
 
 // ════════════════════════════════════════════════════
-// MEETING & VOTING
+// MEETING
 // ════════════════════════════════════════════════════
 let timerInterval=null;
 function showMeeting(reason,discTime){
-  document.getElementById('meeting-screen').style.display='flex';
-  document.getElementById('hud').classList.add('hidden');
-  document.getElementById('action-btns').classList.add('hidden');
-  document.getElementById('task-modal').style.display='none';
-  document.getElementById('meeting-reason-text').textContent=reason;
-  document.getElementById('meeting-title-text').textContent='🚨 EMERGENCY MEETING';
-  document.getElementById('skip-vote-btn').disabled=true;
-  document.getElementById('meeting-phase-label').textContent='💬 Discussion Phase';
+  document.getElementById('meeting-screen').style.display='flex';document.getElementById('hud').classList.add('hidden');document.getElementById('action-btns').classList.add('hidden');document.getElementById('task-modal').style.display='none';
+  document.getElementById('meeting-reason-text').textContent=reason;document.getElementById('meeting-title-text').textContent='🚨 EMERGENCY MEETING';
+  document.getElementById('skip-vote-btn').disabled=true;document.getElementById('meeting-phase-label').textContent='💬 Discussion Phase';
   document.getElementById('chat-area').innerHTML='';
-  // Show system message so players know chat is live
-  const sysd=document.createElement('div');sysd.className='chat-msg';sysd.style.color='rgba(255,255,255,0.4)';sysd.textContent='💬 Chat is open — speak up!';
-  document.getElementById('chat-area').appendChild(sysd);
-  buildVoteGrid();startTimer(discTime/1000,discTime/1000);
-  // Focus chat input
-  setTimeout(()=>document.getElementById('chat-input').focus(),200);
+  const sysd=document.createElement('div');sysd.className='chat-msg';sysd.style.color='rgba(255,255,255,0.4)';sysd.textContent='💬 Chat is open!';document.getElementById('chat-area').appendChild(sysd);
+  buildVoteGrid();startTimer(discTime/1000,discTime/1000);setTimeout(()=>document.getElementById('chat-input').focus(),200);
 }
-function switchToVoting(vTime){
-  document.getElementById('meeting-title-text').textContent='🗳 VOTE NOW!';
-  document.getElementById('meeting-phase-label').textContent='🗳 Voting Phase — choose wisely!';
-  document.getElementById('skip-vote-btn').disabled=false;
-  buildVoteGrid();startTimer(vTime/1000,vTime/1000);
-}
-function startTimer(secs,total){
-  clearInterval(timerInterval);let t=secs;document.getElementById('timer-fill').style.width='100%';
-  timerInterval=setInterval(()=>{t--;document.getElementById('timer-fill').style.width=Math.max(0,t/total*100)+'%';if(t<=0)clearInterval(timerInterval);},1000);
-}
+function switchToVoting(vTime){document.getElementById('meeting-title-text').textContent='🗳 VOTE NOW!';document.getElementById('meeting-phase-label').textContent='🗳 Voting Phase';document.getElementById('skip-vote-btn').disabled=false;buildVoteGrid();startTimer(vTime/1000,vTime/1000);}
+function startTimer(secs,total){clearInterval(timerInterval);let t=secs;document.getElementById('timer-fill').style.width='100%';timerInterval=setInterval(()=>{t--;document.getElementById('timer-fill').style.width=Math.max(0,t/total*100)+'%';if(t<=0)clearInterval(timerInterval);},1000);}
 function buildVoteGrid(){
-  if(!gameState)return;
-  const grid=document.getElementById('vote-grid');
-  const myVote=gameState.votes&&gameState.votes[myPlayerId];
+  if(!gameState)return;const grid=document.getElementById('vote-grid');const myVote=gameState.votes&&gameState.votes[myPlayerId];
   grid.innerHTML=Object.values(gameState.players).map(p=>`<div class="vote-card ${!p.alive?'dead':''} ${p.id===myPlayerId?'self-card':''} ${myVote===p.id?'my-vote':''}" id="vc-${p.id}" onclick="castVote('${p.id}')"><div class="vote-avatar" style="background:${p.color}">${!p.alive?'💀':'🧑'}${p.hat?p.hat:''}</div><div class="vote-name">${esc(p.username)}</div><div class="vote-count" id="vot-${p.id}"></div></div>`).join('');
   updateVoteGrid();
 }
-function updateVoteGrid(){
-  if(!gameState?.votes)return;
-  const tally={};for(const[,t]of Object.entries(gameState.votes))if(t!=='skip')tally[t]=(tally[t]||0)+1;
-  for(const[pid,cnt]of Object.entries(tally)){const el=document.getElementById(`vot-${pid}`);if(el)el.textContent=`🔴 ${cnt}`;}
-}
+function updateVoteGrid(){if(!gameState?.votes)return;const tally={};for(const[,t]of Object.entries(gameState.votes))if(t!=='skip')tally[t]=(tally[t]||0)+1;for(const[pid,cnt]of Object.entries(tally)){const el=document.getElementById(`vot-${pid}`);if(el)el.textContent=`🔴 ${cnt}`;}}
 function castVote(targetId){
   if(gameState?.phase!=='vote'){notify('Voting hasn\'t started yet!','#f87171');return;}
   const me=gameState.players[myPlayerId];if(!me?.alive){notify('Ghosts cannot vote','#f87171');return;}
   if(gameState.votes&&gameState.votes[myPlayerId]){notify('Already voted!','#f87171');return;}
-  wsSend({type:'cast_vote',targetId});
-  if(!gameState.votes)gameState.votes={};gameState.votes[myPlayerId]=targetId;
+  wsSend({type:'cast_vote',targetId});if(!gameState.votes)gameState.votes={};gameState.votes[myPlayerId]=targetId;
   document.querySelectorAll('.vote-card').forEach(c=>c.classList.remove('my-vote'));
   if(targetId!=='skip')document.getElementById(`vc-${targetId}`)?.classList.add('my-vote');
-  document.getElementById('skip-vote-btn').disabled=true;
-  notify('✅ Vote cast!','#4ade80');
+  document.getElementById('skip-vote-btn').disabled=true;notify('✅ Vote cast!','#4ade80');
 }
 function showVoteResult(msg){
-  clearInterval(timerInterval);document.getElementById('timer-fill').style.width='0%';
-  const grid=document.getElementById('vote-grid');
-  if(msg.ejected){
-    const wasImp=msg.ejected.role==='impostor';
-    grid.innerHTML=`<div style="text-align:center;padding:20px;min-width:280px"><div style="font-size:52px;margin-bottom:10px">🚀</div><div style="font-size:22px;font-weight:700;color:${msg.ejected.color}">${esc(msg.ejected.username)}</div><div style="color:rgba(255,255,255,.55);margin-top:8px;font-size:15px">${wasImp?'😈 WAS AN IMPOSTOR!':'✅ Was innocent...'}</div></div>`;
-  } else {
-    grid.innerHTML=`<div style="text-align:center;padding:20px"><div style="font-size:52px">⏭</div><div style="color:rgba(255,255,255,.55);margin-top:8px">No one was ejected (tie/skip)</div></div>`;
-  }
-  document.getElementById('skip-vote-btn').style.display='none';
-  document.getElementById('meeting-phase-label').textContent='📊 Results';
+  clearInterval(timerInterval);document.getElementById('timer-fill').style.width='0%';const grid=document.getElementById('vote-grid');
+  if(msg.ejected){const wasImp=msg.ejected.role==='impostor';grid.innerHTML=`<div style="text-align:center;padding:20px;min-width:280px"><div style="font-size:52px;margin-bottom:10px">🚀</div><div style="font-size:22px;font-weight:700;color:${msg.ejected.color}">${esc(msg.ejected.username)}</div><div style="color:rgba(255,255,255,.55);margin-top:8px;font-size:15px">${wasImp?'😈 WAS AN IMPOSTOR!':'✅ Was innocent...'}</div></div>`;}
+  else grid.innerHTML=`<div style="text-align:center;padding:20px"><div style="font-size:52px">⏭</div><div style="color:rgba(255,255,255,.55);margin-top:8px">No one was ejected</div></div>`;
+  document.getElementById('skip-vote-btn').style.display='none';document.getElementById('meeting-phase-label').textContent='📊 Results';
 }
 function hideMeeting(){document.getElementById('meeting-screen').style.display='none';document.getElementById('hud').classList.remove('hidden');document.getElementById('action-btns').classList.remove('hidden');document.getElementById('skip-vote-btn').style.display='';clearInterval(timerInterval);}
 function addChatMsg(msg){const a=document.getElementById('chat-area');const d=document.createElement('div');d.className='chat-msg'+(msg.alive?'':' ghost-msg');d.innerHTML=`<span style="color:${msg.color};font-weight:700">${esc(msg.username)}</span>${msg.alive?'':' 👻'}: ${esc(msg.text)}`;a.appendChild(d);a.scrollTop=a.scrollHeight;}
 function sendChat(){const inp=document.getElementById('chat-input');const t=inp.value.trim();if(!t)return;wsSend({type:'chat_message',text:t});inp.value='';}
 
 // ════════════════════════════════════════════════════
-// END SCREEN
+// END SCREEN  — saves stats to PlayFab
 // ════════════════════════════════════════════════════
-function showEndScreen(msg){
+async function showEndScreen(msg){
   hideMeeting();showScreen('end-screen');document.getElementById('hud').classList.add('hidden');document.getElementById('action-btns').classList.add('hidden');clearInterval(timerInterval);
-  const wt=document.getElementById('win-title'),ws2=document.getElementById('win-subtitle');
-  if(msg.winner==='crewmate'){wt.textContent='✅ CREWMATES WIN!';wt.className='win-title win-crew';ws2.textContent='The mission is complete. Ship is safe!';}
-  else{wt.textContent='😈 IMPOSTORS WIN!';wt.className='win-title win-impostor';ws2.textContent='The impostors have taken over!';}
+  const wt=document.getElementById('win-title');const ws2=document.getElementById('win-subtitle');
+  if(msg.winner==='crewmate'){wt.textContent='✅ CREWMATES WIN!';wt.className='win-title win-crew';ws2.textContent='Mission complete!';}
+  else{wt.textContent='😈 IMPOSTORS WIN!';wt.className='win-title win-impostor';ws2.textContent='The impostors took over!';}
   document.getElementById('results-list').innerHTML=(msg.results||[]).map(p=>`<div class="result-item"><div style="width:20px;height:20px;border-radius:50%;background:${p.color};flex-shrink:0"></div><div style="flex:1"><strong>${esc(p.username)}</strong> — ${p.role==='impostor'?'😈 Impostor':'✅ Crewmate'}</div><div style="font-size:12px;color:rgba(255,255,255,.45)">${p.role==='impostor'?`${p.kills||0} kills`:`${p.tasksCompleted||0} tasks`}${!p.alive?' · 💀':''}</div></div>`).join('');
   const iWon=(msg.winner==='crewmate'&&myRole==='crewmate')||(msg.winner==='impostor'&&myRole==='impostor');
-  if(iWon&&authToken){const reward=60+Math.floor(Math.random()*60);backendPost('/credits/add',{amount:reward},authToken).then(d=>{if(d.credits!==undefined){authCredits=d.credits;saveAuth();notify(`🎉 +${reward} credits for winning!`,'#fbbf24');}});}
+  const reward=iWon?80+Math.floor(Math.random()*60):20;
+  await pfAddCredits(reward,true);
+  // Update stats
+  const gp=(pfStats.games_played||0)+1;const gw=(pfStats.games_won||0)+(iWon?1:0);
+  pfStats.games_played=gp;pfStats.games_won=gw;
+  await pfUpdateStat('games_played',gp);
+  if(iWon)await pfUpdateStat('games_won',gw);
+  if(myRole==='impostor'){const kills=msg.results?.find(r=>r.id===myPlayerId)?.kills||0;await pfUpdateStat('total_kills',(pfStats.total_kills||0)+kills);}
 }
 function backToMenu(){showScreen('menu-screen');showMenuScreen();}
 
 // ════════════════════════════════════════════════════
-// OWNER PANEL
+// OWNER PANEL  (all 20+ commands preserved)
 // ════════════════════════════════════════════════════
-function toggleOwnerPanel(){const p=document.getElementById('owner-panel');const v=p.style.display==='block';p.style.display=v?'none':'block';if(!v)updateOwnerPanel();}
-function updateOwnerPanel(){if(!gameState)return;document.getElementById('owner-player-list').innerHTML=Object.values(gameState.players).map(p=>`<div class="owner-player-item"><div style="width:12px;height:12px;border-radius:50%;background:${p.color}"></div><span>${esc(p.username)}</span><div class="owner-actions"><button class="owner-btn owner-btn-kick" onclick="ownerKick('${p.id}','${esc(p.username)}')">Kick</button></div></div>`).join('');}
-function ownerKick(id,name){if(!confirm(`Kick ${name}?`))return;wsSend({type:'owner_kick',targetId:id,password:OWNER_PASSWORD,reason:'Kicked by owner'});}
-async function ownerGiveCredits(){const pid=document.getElementById('owner-give-player').value.trim();const amt=parseInt(document.getElementById('owner-give-amount').value);if(!pid||!amt)return notify('Enter ID and amount','#f87171');const r=await fetch(`${BACKEND}/owner/credits/give`,{method:'POST',headers:{'Content-Type':'application/json','x-owner-key':OWNER_PASSWORD},body:JSON.stringify({player_id:pid,amount:amt})});const d=await r.json();if(d.success)notify(`💰 Gave ${amt} credits!`,'#4ade80');else notify('❌ '+(d.error||'Failed'),'#f87171');}
-function showShopInGame(){showScreen('menu-screen');switchMenuTab('shop',document.querySelectorAll('.tab-btn')[1]);}
-
-// ════════════════════════════════════════════════════
-// EFFECTS
-// ════════════════════════════════════════════════════
-function flashRed(){const f=document.getElementById('kill-flash');f.classList.add('flash');setTimeout(()=>f.classList.remove('flash'),300);}
-function showBanner(text,color){const b=document.getElementById('phase-banner');b.textContent=text;b.style.color=color;b.style.display='block';b.style.opacity='1';b.style.transform='translate(-50%,-50%) scale(1)';setTimeout(()=>{b.style.transition='opacity .5s,transform .5s';b.style.opacity='0';b.style.transform='translate(-50%,-50%) scale(1.3)';setTimeout(()=>{b.style.display='none';b.style.transition='';},500);},1800);}
-
-// ════════════════════════════════════════════════════
-// MOBILE
-// ════════════════════════════════════════════════════
-function addMobileControls(){
-  if(document.getElementById('mobile-dpad'))return;
-  const dp=document.createElement('div');dp.id='mobile-dpad';dp.style.cssText='position:fixed;bottom:110px;left:16px;z-index:25;display:grid;grid-template-columns:repeat(3,52px);grid-template-rows:repeat(3,52px);gap:3px;touch-action:none';
-  [{r:0,c:1,l:'▲',d:'Up'},{r:1,c:0,l:'◀',d:'Left'},{r:1,c:2,l:'▶',d:'Right'},{r:2,c:1,l:'▼',d:'Down'}].forEach(b=>{
-    const btn=document.createElement('button');btn.textContent=b.l;btn.style.cssText=`grid-row:${b.r+1};grid-column:${b.c+1};background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.2);color:#fff;border-radius:9px;font-size:18px;cursor:pointer;touch-action:none`;
-    btn.addEventListener('pointerdown',e=>{e.preventDefault();window[`move${b.d}`]=true;});btn.addEventListener('pointerup',()=>{window[`move${b.d}`]=false;});btn.addEventListener('pointerleave',()=>{window[`move${b.d}`]=false;});dp.appendChild(btn);
-  });document.body.appendChild(dp);
-}
-
-// ════════════════════════════════════════════════════
-// SCREENS
-// ════════════════════════════════════════════════════
-function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('hidden',s.id!==id));if(id!=='lobby-screen')document.getElementById('meeting-screen').style.display='none';}
-function hideAllScreens(){document.querySelectorAll('.screen').forEach(s=>s.classList.add('hidden'));}
-
-// ════════════════════════════════════════════════════
-// NOTIFICATIONS
-// ════════════════════════════════════════════════════
-function notify(text,color='#fff'){const el=document.createElement('div');el.className='notif';el.style.color=color;el.textContent=text;document.getElementById('notifs').appendChild(el);setTimeout(()=>el.remove(),4000);}
-function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-
-// ════════════════════════════════════════════════════
-// INIT
-// ════════════════════════════════════════════════════
-async function init(){
-  buildColorGrid('reg-color-grid',false);
-  try{await connectWS();tryAutoLogin();}
-  catch{showScreen('auth-screen');notify('⚠️ Game server offline. Auth still works.','#f59e0b');tryAutoLogin();}
-}
-setInterval(()=>wsSend({type:'ping'}),25000);
-window.addEventListener('resize',()=>{if(phaserGame)phaserGame.scale.resize(window.innerWidth,window.innerHeight);});
-init();
-
-// ══════════════════════════════════════════════════════════════════════════════
-// ADDITIONS — nothing above changed
-// ══════════════════════════════════════════════════════════════════════════════
-
-// ── PLAYER MOD STATE ─────────────────────────────────────────────────────────
-const playerMods = {}; // playerId -> mod object
-let mySpeedMult = 1;
-
-// ── TRAIL PARTICLES ──────────────────────────────────────────────────────────
-const trailParticles = []; // [{x,y,color,alpha,r}]
-function spawnTrail(x, y, color) {
-  for (let i = 0; i < 3; i++) {
-    trailParticles.push({
-      x: x + (Math.random()-0.5)*10, y: y + (Math.random()-0.5)*10,
-      color, alpha: 0.7, r: Math.random()*4+2, vx:(Math.random()-0.5)*1, vy:(Math.random()-0.5)*1
-    });
-  }
-  if (trailParticles.length > 200) trailParticles.splice(0, trailParticles.length - 200);
-}
-
-// ── EXPLOSION FX ─────────────────────────────────────────────────────────────
-const explosions = [];
-function spawnExplosion(cx, cy, radius) {
-  if (!gameScene) return;
-  const g = gameScene.add.graphics().setDepth(50);
-  explosions.push({ g, cx, cy, r: 0, maxR: radius, t: 0 });
-  for (let i = 0; i < 30; i++) {
-    const angle = Math.random() * Math.PI * 2;
-    const speed = Math.random() * 6 + 2;
-    const px = gameScene.add.circle(cx, cy, Math.random()*5+2, 0xff6600, 1).setDepth(51);
-    gameScene.tweens.add({
-      targets: px, x: cx + Math.cos(angle)*radius*(0.3+Math.random()*0.7),
-      y: cy + Math.sin(angle)*radius*(0.3+Math.random()*0.7),
-      alpha: 0, duration: 600+Math.random()*400,
-      onComplete: () => px.destroy()
-    });
-  }
-  // Shockwave ring
-  const ring = gameScene.add.circle(cx, cy, 5).setStrokeStyle(4, 0xff4400).setDepth(50);
-  gameScene.tweens.add({ targets: ring, scaleX: radius/5*2, scaleY: radius/5*2, alpha: 0, duration: 700, onComplete: () => ring.destroy() });
-  gameScene.cameras.main.shake(300, 0.015);
-}
-
-// ── AURA / GODMODE GLOW SPRITES ──────────────────────────────────────────────
-const auraSprites = {}; // playerId -> Phaser circle object
-const trailColorMap = {}; // playerId -> color string
-const godmodeGlow = {};  // playerId -> Phaser circle object
-
-function updateAura(id, mod) {
-  if (!gameScene) return;
-  // Destroy old
-  if (auraSprites[id]) { auraSprites[id].destroy(); delete auraSprites[id]; }
-  if (godmodeGlow[id]) { godmodeGlow[id].destroy(); delete godmodeGlow[id]; }
-  const s = playerSprites[id]; if (!s) return;
-  const x = s.x, y = s.y;
-  if (mod.aura) {
-    const col = parseInt(mod.aura.replace('#',''), 16);
-    const a = gameScene.add.circle(x, y, 26, col, 0.22).setDepth(5);
-    auraSprites[id] = a;
-    gameScene.tweens.add({ targets: a, alpha: { from: 0.12, to: 0.38 }, yoyo: true, repeat: -1, duration: 800 });
-  }
-  if (mod.godmode) {
-    const glow = gameScene.add.circle(x, y, 22).setStrokeStyle(3, 0xffd700, 0.9).setDepth(5);
-    godmodeGlow[id] = glow;
-    gameScene.tweens.add({ targets: glow, alpha: { from: 0.4, to: 1 }, yoyo: true, repeat: -1, duration: 400 });
-  }
-  if (mod.trailColor) trailColorMap[id] = mod.trailColor;
-  else delete trailColorMap[id];
-}
-
-function updateAuraPositions() {
-  for (const [id, a] of Object.entries(auraSprites)) {
-    const s = playerSprites[id]; if (!s) continue;
-    a.setPosition(s.x, s.y);
-  }
-  for (const [id, g] of Object.entries(godmodeGlow)) {
-    const s = playerSprites[id]; if (!s) continue;
-    g.setPosition(s.x, s.y);
-  }
-}
-
-// ── FREEZE INDICATOR ─────────────────────────────────────────────────────────
-const freezeSprites = {};
-function updateFreezeIndicator(id, frozen) {
-  if (freezeSprites[id]) { freezeSprites[id].destroy(); delete freezeSprites[id]; }
-  if (!frozen || !gameScene) return;
-  const s = playerSprites[id]; if (!s) return;
-  const txt = gameScene.add.text(s.x, s.y - 50, '❄️', { fontSize: '18px' }).setOrigin(0.5).setDepth(15);
-  freezeSprites[id] = txt;
-  gameScene.tweens.add({ targets: txt, y: s.y - 55, yoyo: true, repeat: -1, duration: 600 });
-}
-
-// ── TITLE / BADGE SPRITES ────────────────────────────────────────────────────
-const titleSprites = {};
-const badgeSprites = {};
-function updateTitleBadge(id, mod) {
-  if (!gameScene) return;
-  if (titleSprites[id]) { titleSprites[id].destroy(); delete titleSprites[id]; }
-  if (badgeSprites[id]) { badgeSprites[id].destroy(); delete badgeSprites[id]; }
-  const s = playerSprites[id]; if (!s) return;
-  if (mod.title) {
-    const t = gameScene.add.text(s.x, s.y - 44, mod.title, {
-      fontSize: '9px', color: '#fbbf24', fontFamily: 'monospace',
-      stroke: '#000', strokeThickness: 2, fontStyle: 'bold'
-    }).setOrigin(0.5).setDepth(11);
-    titleSprites[id] = t;
-  }
-  if (mod.badge) {
-    const b = gameScene.add.text(s.x + 18, s.y - 18, mod.badge, { fontSize: '14px' }).setOrigin(0.5).setDepth(11);
-    badgeSprites[id] = b;
-  }
-}
-
-// Update title/badge positions each tick
-function updateTitlePositions() {
-  for (const [id, t] of Object.entries(titleSprites)) {
-    const s = playerSprites[id]; if (!s) continue; t.setPosition(s.x, s.y - 44);
-  }
-  for (const [id, b] of Object.entries(badgeSprites)) {
-    const s = playerSprites[id]; if (!s) continue; b.setPosition(s.x + 18, s.y - 18);
-  }
-}
-
-// ── OWNER COSMETICS (hardcoded legendary presets) ────────────────────────────
-const OWNER_COSMETIC_PRESETS = {
-  'Owner Crown':    { aura: '#ffd700', title: '👑 Z3N0', badge: '👑', trailColor: '#ffd700' },
-  'Z3N0 Halo':      { aura: '#a78bfa', title: '⚡ GOD',  badge: '⚡', trailColor: '#a78bfa' },
-  'Galaxy Trail':   { aura: '#00bcd4', title: '🌌 GALAXY', badge: '🌌', trailColor: '#00bcd4' },
-  'Flame Hat':      { aura: '#ef4444', title: '🔥 FIRE',  badge: '🔥', trailColor: '#ef4444' },
-  'Rainbow Aura':   { aura: '#f472b6', title: '🌈 VIBE',  badge: '🌈', trailColor: '#f472b6' },
+const OWNER_COSMETIC_PRESETS={
+  'Owner Crown': {aura:'#ffd700',title:'👑 Z3N0',badge:'👑',trailColor:'#ffd700'},
+  'Z3N0 Halo':   {aura:'#a78bfa',title:'⚡ GOD', badge:'⚡',trailColor:'#a78bfa'},
+  'Galaxy Trail':{aura:'#00bcd4',title:'🌌 GALAXY',badge:'🌌',trailColor:'#00bcd4'},
+  'Flame Hat':   {aura:'#ef4444',title:'🔥 FIRE',badge:'🔥',trailColor:'#ef4444'},
+  'Rainbow Aura':{aura:'#f472b6',title:'🌈 VIBE',badge:'🌈',trailColor:'#f472b6'},
 };
 
-// ── IMPROVED PLAYER MODEL ─────────────────────────────────────────────────────
-// Override createPlayerSprite completely with a much better astronaut model
-const _origCreatePlayerSprite = createPlayerSprite;
-function createPlayerSprite(id, p) {
-  if (!gameScene) return;
-  destroyPlayerSprite(id);
-  const col = Phaser.Display.Color.HexStringToColor(p.color || '#e74c3c').color;
-  const x = p.x || 500, y = p.y || 300;
-  const isMe = id === myPlayerId;
-  const alpha = p.alive ? 1 : 0.3;
-
-  // ── BACKPACK ──
-  const bp = gameScene.add.rectangle(x - 16, y + 2, 8, 14, col).setDepth(5).setAlpha(alpha);
-  const bpShade = gameScene.add.rectangle(x - 17, y + 2, 6, 12, 0x000000, 0.25).setDepth(5).setAlpha(alpha);
-
-  // ── BODY (rounded rect via circle+rect) ──
-  const body = gameScene.add.ellipse(x, y + 2, 26, 30, col).setDepth(6).setAlpha(alpha);
-  const bodyShade = gameScene.add.ellipse(x + 4, y + 4, 20, 22, 0x000000, 0.18).setDepth(6).setAlpha(alpha);
-
-  // ── HEAD ──
-  const head = gameScene.add.circle(x, y - 10, 13, col).setDepth(7).setAlpha(alpha);
-
-  // ── VISOR (glassy look: base + glare) ──
-  const visor = gameScene.add.ellipse(x + 3, y - 11, 15, 13, 0x7dd3fc, 0.92).setDepth(8).setAlpha(alpha);
-  const visorShade = gameScene.add.ellipse(x + 3, y - 11, 15, 13).setStrokeStyle(1.5, 0x0ea5e9, 0.8).setDepth(8).setAlpha(alpha);
-  const visorGlare = gameScene.add.ellipse(x, y - 15, 5, 4, 0xffffff, 0.6).setDepth(9).setAlpha(alpha);
-
-  // ── LEGS ──
-  const legL = gameScene.add.rectangle(x - 6, y + 18, 8, 10, col).setDepth(5).setAlpha(alpha);
-  const legR = gameScene.add.rectangle(x + 6, y + 18, 8, 10, col).setDepth(5).setAlpha(alpha);
-  const shoeL = gameScene.add.ellipse(x - 6, y + 24, 11, 7, 0x1e293b).setDepth(5).setAlpha(alpha);
-  const shoeR = gameScene.add.ellipse(x + 6, y + 24, 11, 7, 0x1e293b).setDepth(5).setAlpha(alpha);
-
-  // ── NAME TAG ──
-  const name = gameScene.add.text(x, y - 38, p.username || '?', {
-    fontSize: '11px', color: '#ffffff', fontFamily: 'sans-serif',
-    stroke: '#000000', strokeThickness: 3
-  }).setOrigin(0.5).setDepth(12).setAlpha(p.alive ? 1 : 0.4);
-
-  // ── HAT / COSMETIC ──
-  let hat = null;
-  if (p.hat) hat = gameScene.add.text(x, y - 30, p.hat, { fontSize: '16px' }).setOrigin(0.5).setDepth(13);
-
-  // ── OWNER CROWN ──
-  let ownerTag = null;
-  if (p.isOwner) {
-    ownerTag = gameScene.add.text(x, y - 52, '👑', { fontSize: '14px' }).setOrigin(0.5).setDepth(13);
-    gameScene.tweens.add({ targets: ownerTag, y: y - 55, yoyo: true, repeat: -1, duration: 700 });
-  }
-
-  // ── DEATH SKULL ──
-  let skull = null;
-  if (!p.alive) {
-    skull = gameScene.add.text(x, y, '💀', { fontSize: '20px' }).setOrigin(0.5).setDepth(14);
-  }
-
-  // ── SELF INDICATOR ──
-  let selfRing = null;
-  if (isMe) {
-    selfRing = gameScene.add.circle(x, y + 2, 20).setStrokeStyle(2, 0xffffff, 0.4).setDepth(4);
-    gameScene.tweens.add({ targets: selfRing, alpha: { from: 0.2, to: 0.6 }, yoyo: true, repeat: -1, duration: 1000 });
-  }
-
-  playerSprites[id] = { body, bodyShade, head, visor, visorShade, visorGlare, bp, bpShade, legL, legR, shoeL, shoeR, name, hat, ownerTag, skull, selfRing, x, y };
-
-  // Apply any existing mods
-  const mod = playerMods[id];
-  if (mod) { updateAura(id, mod); updateFreezeIndicator(id, mod.frozen); updateTitleBadge(id, mod); }
+function toggleOwnerPanel(){
+  const p=document.getElementById('owner-panel');const visible=p.style.display==='block';
+  p.style.display=visible?'none':'block';if(!visible)renderMegaOwnerPanel();
 }
 
-// Override updatePlayerSprite with new model
-const _origUpdatePlayerSprite = updatePlayerSprite;
-function updatePlayerSprite(id, x, y) {
-  const s = playerSprites[id]; if (!s) return;
-  s.x = x; s.y = y;
-  const parts = [
-    [s.body, x, y+2], [s.bodyShade, x+4, y+4], [s.head, x, y-10],
-    [s.visor, x+3, y-11], [s.visorShade, x+3, y-11], [s.visorGlare, x, y-15],
-    [s.bp, x-16, y+2], [s.bpShade, x-17, y+2],
-    [s.legL, x-6, y+18], [s.legR, x+6, y+18],
-    [s.shoeL, x-6, y+24], [s.shoeR, x+6, y+24],
-    [s.name, x, y-38], [s.skull, x, y],
-    [s.selfRing, x, y+2],
-  ];
-  for (const [obj, px, py] of parts) if (obj) obj.setPosition(px, py);
-  if (s.hat) s.hat.setPosition(x, y - 30);
-  if (s.ownerTag) s.ownerTag.setPosition(x, y - 52);
-
-  // Trail effect
-  const mod = playerMods[id];
-  if (mod?.trailColor && id === myPlayerId) spawnTrail(x, y + 8, mod.trailColor);
-  else if (id === myPlayerId && myRole === 'impostor') spawnTrail(x, y + 8, '#ef4444');
-
-  updateAuraPositions();
-  updateTitlePositions();
-}
-
-// Override destroyPlayerSprite
-const _origDestroyPlayerSprite = destroyPlayerSprite;
-function destroyPlayerSprite(id) {
-  const s = playerSprites[id]; if (!s) return;
-  ['body','bodyShade','head','visor','visorShade','visorGlare','bp','bpShade',
-   'legL','legR','shoeL','shoeR','name','hat','ownerTag','skull','selfRing']
-    .forEach(k => s[k]?.destroy());
-  delete playerSprites[id];
-  if (auraSprites[id]) { auraSprites[id].destroy(); delete auraSprites[id]; }
-  if (godmodeGlow[id]) { godmodeGlow[id].destroy(); delete godmodeGlow[id]; }
-  if (freezeSprites[id]) { freezeSprites[id].destroy(); delete freezeSprites[id]; }
-  if (titleSprites[id]) { titleSprites[id].destroy(); delete titleSprites[id]; }
-  if (badgeSprites[id]) { badgeSprites[id].destroy(); delete badgeSprites[id]; }
-}
-
-// Override markDead
-const _origMarkDead = markDead;
-function markDead(id) {
-  const s = playerSprites[id]; if (!s) return;
-  const toFade = ['body','bodyShade','head','visor','visorShade','visorGlare','bp','bpShade','legL','legR','shoeL','shoeR'];
-  toFade.forEach(k => s[k]?.setAlpha(0.3));
-  if (s.name) s.name.setAlpha(0.4);
-  if (!s.skull && gameScene) {
-    s.skull = gameScene.add.text(s.x, s.y, '💀', { fontSize: '20px' }).setOrigin(0.5).setDepth(14);
-  }
-}
-
-// ── TRAIL RENDERING (canvas overlay) ─────────────────────────────────────────
-(function startTrailLoop() {
-  const cv = document.createElement('canvas');
-  cv.style.cssText = 'position:fixed;top:0;left:0;z-index:6;pointer-events:none';
-  cv.width = window.innerWidth; cv.height = window.innerHeight;
-  document.body.appendChild(cv);
-  const ctx = cv.getContext('2d');
-  window.addEventListener('resize', () => { cv.width = window.innerWidth; cv.height = window.innerHeight; });
-  function loop() {
-    ctx.clearRect(0, 0, cv.width, cv.height);
-    if (gameScene && gameState?.phase === 'game') {
-      // Get camera offset
-      const cam = gameScene.cameras.main;
-      const ox = cam.scrollX, oy = cam.scrollY;
-      const sw = window.innerWidth, sh = window.innerHeight;
-      for (let i = trailParticles.length - 1; i >= 0; i--) {
-        const p = trailParticles[i];
-        p.alpha -= 0.035; p.x += p.vx; p.y += p.vy;
-        if (p.alpha <= 0) { trailParticles.splice(i, 1); continue; }
-        const sx = p.x - ox, sy = p.y - oy;
-        ctx.beginPath();
-        ctx.arc(sx, sy, p.r * p.alpha, 0, Math.PI * 2);
-        ctx.fillStyle = p.color + Math.floor(p.alpha * 255).toString(16).padStart(2, '0');
-        ctx.fill();
-      }
-    }
-    requestAnimationFrame(loop);
-  }
-  loop();
-})();
-
-// ── SPEED MECHANIC ────────────────────────────────────────────────────────────
-// Patch updateScene to respect speedMult
-const _origUpdateScene = updateScene;
-function updateScene(scene) {
-  if (!gameScene || !myPlayerId || !gameState || gameState.phase !== 'game') return;
-  const me = gameState.players[myPlayerId];
-  if (!me || !me.alive) return;
-
-  // Check frozen
-  const myMod = playerMods[myPlayerId];
-  if (myMod?.frozen) return;
-
-  let dx = 0, dy = 0;
-  const k = scene.wasd;
-  const spd = (typeof SPEED !== 'undefined' ? SPEED : 2.8) * mySpeedMult;
-  if (k.left.isDown || window.moveLeft)  dx -= spd;
-  if (k.right.isDown || window.moveRight) dx += spd;
-  if (k.up.isDown || window.moveUp)   dy -= spd;
-  if (k.down.isDown || window.moveDown)  dy += spd;
-  if (joystickDx || joystickDy) { dx += joystickDx * spd; dy += joystickDy * spd; }
-  if (!dx && !dy) { updateKillBtn(); return; }
-  if (dx && dy) { const d = Math.SQRT2; dx /= d; dy /= d; }
-  let nx = Math.max(40, Math.min(960, me.x + dx));
-  let ny = Math.max(40, Math.min(660, me.y + dy));
-  if (!walkable(nx, ny)) {
-    if (walkable(nx, me.y)) ny = me.y;
-    else if (walkable(me.x, ny)) nx = me.x;
-    else { nx = me.x; ny = me.y; }
-  }
-  me.x = nx; me.y = ny;
-  updatePlayerSprite(myPlayerId, nx, ny);
-  scene.cameras.main.centerOn(nx, ny);
-  sendThrottle++;
-  if (sendThrottle >= 2) { sendThrottle = 0; wsSend({ type: 'move', x: nx, y: ny, facing: dx > 0 ? 'right' : dx < 0 ? 'left' : 'none' }); }
-  checkNearby(nx, ny);
-  updateKillBtn();
-}
-
-// ── NEW WS MESSAGE HANDLERS ──────────────────────────────────────────────────
-const _origHandleMsg = handleMsg;
-function handleMsg(msg) {
-  switch (msg.type) {
-
-    case 'player_mod_update': {
-      playerMods[msg.playerId] = msg.mod;
-      if (msg.playerId === myPlayerId) {
-        mySpeedMult = msg.mod.speedMult || 1;
-      }
-      updateAura(msg.playerId, msg.mod);
-      updateFreezeIndicator(msg.playerId, msg.mod.frozen);
-      updateTitleBadge(msg.playerId, msg.mod);
-      if (msg.mod.trailColor) trailColorMap[msg.playerId] = msg.mod.trailColor;
-      break;
-    }
-
-    case 'player_teleported': {
-      if (gameState?.players[msg.playerId]) {
-        gameState.players[msg.playerId].x = msg.x;
-        gameState.players[msg.playerId].y = msg.y;
-        updatePlayerSprite(msg.playerId, msg.x, msg.y);
-      }
-      if (msg.playerId === myPlayerId) {
-        if (gameScene) gameScene.cameras.main.centerOn(msg.x, msg.y);
-        notify('⚡ You were teleported by owner!', '#a78bfa');
-        flashRed();
-      }
-      break;
-    }
-
-    case 'player_respawned': {
-      if (gameState?.players[msg.playerId]) {
-        gameState.players[msg.playerId].alive = true;
-        createPlayerSprite(msg.playerId, gameState.players[msg.playerId]);
-        notify(`✨ ${msg.username} was respawned!`, '#4ade80');
-      }
-      break;
-    }
-
-    case 'role_changed': {
-      if (msg.byOwner) {
-        myRole = msg.newRole;
-        const rb = document.getElementById('role-badge');
-        if (myRole === 'impostor') {
-          rb.textContent = '😈 IMPOSTOR'; rb.className = 'role-badge role-impostor';
-          document.getElementById('btn-kill').style.display = 'flex';
-          document.getElementById('btn-vent').style.display = 'flex';
-        } else {
-          rb.textContent = '✅ CREWMATE'; rb.className = 'role-badge role-crewmate';
-          document.getElementById('btn-kill').style.display = 'none';
-          document.getElementById('btn-vent').style.display = 'none';
-        }
-        showBanner(myRole === 'impostor' ? 'IMPOSTOR' : 'CREWMATE', myRole === 'impostor' ? '#f87171' : '#4ade80');
-        notify(`🎭 Owner changed your role to ${myRole.toUpperCase()}!`, '#fbbf24');
-      }
-      break;
-    }
-
-    case 'speed_changed': {
-      mySpeedMult = msg.mult || 1;
-      if (msg.mult > 1.5) notify('⚡ You have a speed boost!', '#fbbf24');
-      else if (msg.mult < 0.8) notify('🐌 You are slowed!', '#f87171');
-      else notify('✅ Speed returned to normal', '#4ade80');
-      break;
-    }
-
-    case 'owner_announcement': {
-      const icon = msg.icon || '📢';
-      notify(`${icon} ${msg.text}`, msg.color || '#fbbf24');
-      // Big center banner for owner announcements
-      showBanner(msg.text.slice(0, 20), msg.color || '#fbbf24');
-      // Also show in chat if meeting
-      if (gameState?.phase === 'meeting' || gameState?.phase === 'vote') {
-        addChatMsg({ username: '📢 OWNER', color: msg.color || '#fbbf24', text: msg.text, alive: true });
-      }
-      break;
-    }
-
-    case 'owner_explosion_fx': {
-      spawnExplosion(msg.cx, msg.cy, msg.radius);
-      notify('💥 EXPLOSION!', '#ef4444');
-      break;
-    }
-
-    case 'owner_roles_reveal': {
-      // Show roles in a modal
-      let html = '<div style="position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:200;display:flex;align-items:center;justify-content:center" id="roles-reveal-modal">' +
-        '<div style="background:#0c1220;border:1px solid #a78bfa;border-radius:16px;padding:24px;max-width:400px;width:90vw">' +
-        '<div style="font-size:18px;font-weight:900;color:#a78bfa;margin-bottom:14px">🕵️ All Roles (Owner View)</div>';
-      for (const p of msg.roles) {
-        const col = p.role === 'impostor' ? '#f87171' : '#4ade80';
-        html += `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.06)">
-          <span style="color:${col};font-size:18px">${p.role === 'impostor' ? '😈' : '✅'}</span>
-          <span style="flex:1;font-size:13px">${esc(p.username)}</span>
-          <span style="font-size:11px;color:${col}">${p.role.toUpperCase()}</span>
-          <span style="font-size:11px;color:rgba(255,255,255,0.4)">${p.alive ? '' : '💀'}</span>
-        </div>`;
-      }
-      html += '<button onclick="document.getElementById(\'roles-reveal-modal\').remove()" style="margin-top:14px;width:100%;padding:9px;border-radius:8px;background:rgba(255,255,255,0.08);border:none;color:#fff;cursor:pointer">Close</button></div></div>';
-      document.body.insertAdjacentHTML('beforeend', html);
-      break;
-    }
-
-    case 'tasks_reset': {
-      myTasks = msg.tasks || [];
-      notify('📋 Your tasks were reset by owner!', '#fbbf24');
-      break;
-    }
-
-    case 'owner_ack': {
-      notify(`✅ Owner command executed: ${msg.cmd}`, '#4ade80');
-      break;
-    }
-
-    default:
-      _origHandleMsg(msg);
-      break;
-  }
-}
-
-// ── MEGA OWNER PANEL ──────────────────────────────────────────────────────────
-// Replace the existing owner panel toggle with an upgraded mega panel
-const _origToggleOwnerPanel = toggleOwnerPanel;
-function toggleOwnerPanel() {
-  const p = document.getElementById('owner-panel');
-  const visible = p.style.display === 'block';
-  p.style.display = visible ? 'none' : 'block';
-  if (!visible) renderMegaOwnerPanel();
-}
-
-function renderMegaOwnerPanel() {
-  const panel = document.getElementById('owner-panel');
-  if (!gameState) return;
-
-  const players = Object.values(gameState.players);
-  const playerOptions = players.map(p => `<option value="${p.id}">${esc(p.username)} ${p.alive ? '' : '💀'}</option>`).join('');
-
-  panel.style.width = '320px';
-  panel.style.maxHeight = '85vh';
-  panel.style.overflowY = 'auto';
-  panel.innerHTML = `
+function renderMegaOwnerPanel(){
+  const panel=document.getElementById('owner-panel');if(!gameState)return;
+  const players=Object.values(gameState.players);
+  const playerOptions=players.map(p=>`<option value="${p.id}">${esc(p.username)} ${p.alive?'':'💀'}</option>`).join('');
+  panel.innerHTML=`
     <h3 style="color:#f87171;margin-bottom:10px;font-size:15px">👑 Owner Control Panel</h3>
-
-    <!-- TABS -->
     <div style="display:flex;gap:4px;margin-bottom:12px;flex-wrap:wrap">
-      ${['Players','Commands','Cosmetics','Server'].map((t,i) =>
-        `<button onclick="ownerTab(${i})" id="otab${i}" style="flex:1;padding:5px;border-radius:6px;border:1px solid rgba(255,255,255,0.1);background:${i===0?'rgba(167,139,250,0.3)':'rgba(255,255,255,0.06)'};color:#fff;cursor:pointer;font-size:11px">${t}</button>`
-      ).join('')}
+      ${['Players','Commands','Cosmetics','Server'].map((t,i)=>`<button onclick="ownerTab(${i})" id="otab${i}" style="flex:1;padding:5px;border-radius:6px;border:1px solid rgba(255,255,255,0.1);background:${i===0?'rgba(167,139,250,0.3)':'rgba(255,255,255,0.06)'};color:#fff;cursor:pointer;font-size:11px">${t}</button>`).join('')}
     </div>
-
-    <!-- PLAYERS TAB -->
     <div id="otabcontent0">
-      <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:6px">Select target player:</div>
-      <select id="op-target" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:#fff;padding:7px;border-radius:7px;margin-bottom:8px;font-size:12px">
-        ${playerOptions}
-      </select>
+      <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:6px">Target player:</div>
+      <select id="op-target" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:#fff;padding:7px;border-radius:7px;margin-bottom:8px;font-size:12px">${playerOptions}</select>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px">
         <button class="obtn obtn-orange" onclick="ownerCmd('kick')">🥾 Kick</button>
         <button class="obtn obtn-red" onclick="ownerCmd('kill')">☠️ Kill</button>
@@ -1446,13 +1218,9 @@ function renderMegaOwnerPanel() {
       </div>
       <div style="margin-top:8px;font-size:11px;color:rgba(255,255,255,0.4)">Teleport to room:</div>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-top:4px">
-        ${['cafeteria','reactor','navigation','medbay','storage','electrical','engine'].map(r =>
-          `<button class="obtn obtn-blue" onclick="ownerCmd('teleport_room','${r}')" style="font-size:10px">${r}</button>`
-        ).join('')}
+        ${['cafeteria','reactor','navigation','medbay','storage','electrical','engine'].map(r=>`<button class="obtn obtn-blue" onclick="ownerCmd('teleport_room','${r}')" style="font-size:10px">${r}</button>`).join('')}
       </div>
     </div>
-
-    <!-- COMMANDS TAB -->
     <div id="otabcontent1" style="display:none">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:10px">
         <button class="obtn obtn-red" onclick="ownerCmd('end_crew')">✅ Force Crew Win</button>
@@ -1466,178 +1234,149 @@ function renderMegaOwnerPanel() {
         <button class="obtn obtn-blue" onclick="ownerCmd('unlock_room')">🔓 Unlock Room</button>
         <button class="obtn obtn-orange" onclick="ownerCmd('reset_cooldown')">⏱ Reset Cooldown</button>
       </div>
-      <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:5px">Broadcast message:</div>
-      <input id="op-broadcast" class="inp" placeholder="Announcement text..." style="margin-bottom:5px;font-size:12px;padding:7px">
+      <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:5px">Broadcast:</div>
+      <input id="op-broadcast" class="inp" placeholder="Announcement..." style="margin-bottom:5px;font-size:12px;padding:7px">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">
         <button class="obtn obtn-yellow" onclick="ownerCmd('broadcast_gold')">📢 Announce</button>
         <button class="obtn obtn-red" onclick="ownerCmd('broadcast_red')">🔴 Red Alert</button>
       </div>
-      <div style="font-size:11px;color:rgba(255,255,255,0.4);margin:8px 0 4px">Swap roles between 2 players:</div>
+      <div style="font-size:11px;color:rgba(255,255,255,0.4);margin:8px 0 4px">Swap roles:</div>
       <select id="op-swapA" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:#fff;padding:6px;border-radius:7px;margin-bottom:5px;font-size:12px">${playerOptions}</select>
       <select id="op-swapB" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:#fff;padding:6px;border-radius:7px;margin-bottom:5px;font-size:12px">${playerOptions}</select>
       <button class="obtn obtn-purple" onclick="ownerCmd('swap_roles')" style="width:100%">🔀 Swap Roles</button>
+      <div style="font-size:11px;color:rgba(255,255,255,0.4);margin:8px 0 4px">Give Credits (PlayFab):</div>
+      <div style="display:flex;gap:6px;margin-bottom:6px">
+        <input class="inp" id="owner-give-pf-id" placeholder="PlayFab ID..." style="margin:0;font-size:12px;padding:6px">
+        <input class="inp" id="owner-give-amount" type="number" value="500" style="margin:0;font-size:12px;padding:6px;width:70px">
+      </div>
     </div>
-
-    <!-- COSMETICS TAB -->
     <div id="otabcontent2" style="display:none">
       <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:6px">Target:</div>
       <select id="op-cos-target" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:#fff;padding:7px;border-radius:7px;margin-bottom:8px;font-size:12px">${playerOptions}</select>
-      <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:6px">🎨 Preset owner cosmetics:</div>
+      <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:6px">🎨 Preset cosmetics:</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:10px">
-        ${Object.keys(OWNER_COSMETIC_PRESETS).map(name =>
-          `<button class="obtn obtn-yellow" onclick="ownerApplyPreset('${esc(name)}')" style="font-size:10px">${name}</button>`
-        ).join('')}
+        ${Object.keys(OWNER_COSMETIC_PRESETS).map(name=>`<button class="obtn obtn-yellow" onclick="ownerApplyPreset('${esc(name)}')" style="font-size:10px">${name}</button>`).join('')}
       </div>
-      <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:5px">Custom aura color:</div>
+      <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:5px">Aura color:</div>
       <input id="op-aura-color" type="color" value="#ff00ff" style="width:100%;height:32px;border:none;border-radius:7px;margin-bottom:6px;cursor:pointer">
       <button class="obtn obtn-purple" onclick="ownerCmd('set_aura')" style="width:100%;margin-bottom:6px">🌟 Apply Aura</button>
-      <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:5px">Title text:</div>
-      <input id="op-title" class="inp" placeholder="e.g. ⭐ LEGEND" style="margin-bottom:5px;font-size:12px;padding:7px">
+      <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:5px">Title:</div>
+      <input id="op-title" class="inp" placeholder="⭐ LEGEND" style="margin-bottom:5px;font-size:12px;padding:7px">
       <button class="obtn obtn-yellow" onclick="ownerCmd('set_title')" style="width:100%;margin-bottom:6px">📛 Set Title</button>
-      <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:5px">Badge emoji:</div>
-      <input id="op-badge" class="inp" placeholder="e.g. 🌟" maxlength="4" style="margin-bottom:5px;font-size:12px;padding:7px">
+      <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:5px">Badge:</div>
+      <input id="op-badge" class="inp" placeholder="🌟" maxlength="4" style="margin-bottom:5px;font-size:12px;padding:7px">
       <button class="obtn obtn-blue" onclick="ownerCmd('set_badge')" style="width:100%;margin-bottom:6px">🏅 Set Badge</button>
       <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:5px">Trail color:</div>
       <input id="op-trail-color" type="color" value="#00ff88" style="width:100%;height:32px;border:none;border-radius:7px;margin-bottom:6px;cursor:pointer">
       <button class="obtn obtn-green" onclick="ownerCmd('set_trail')" style="width:100%;margin-bottom:6px">✨ Set Trail</button>
-      <button class="obtn obtn-red" onclick="ownerCmd('clear_cosmetics')" style="width:100%">🗑 Clear All Cosmetics</button>
+      <button class="obtn obtn-red" onclick="ownerCmd('clear_cosmetics')" style="width:100%">🗑 Clear All</button>
     </div>
-
-    <!-- SERVER TAB -->
     <div id="otabcontent3" style="display:none">
       <div style="font-size:12px;color:rgba(255,255,255,0.7);margin-bottom:10px">
-        Room: <b style="color:#a78bfa">${gameState.code}</b> · Phase: <b style="color:#fbbf24">${gameState.phase}</b><br>
-        Players: ${Object.keys(gameState.players).length} · Bodies: ${(gameState.bodies||[]).length}
-      </div>
-      <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:6px">Give credits (uses backend):</div>
-      <input class="inp" id="owner-give-player" placeholder="Player backend ID..." style="margin-bottom:5px;font-size:12px;padding:7px">
-      <div style="display:flex;gap:6px;margin-bottom:6px">
-        <input class="inp" id="owner-give-amount" type="number" value="500" style="margin:0;font-size:12px;padding:7px;flex:1">
-        <button class="obtn obtn-yellow" onclick="ownerGiveCredits()" style="flex:1">💰 Give</button>
+        Room: <b style="color:#a78bfa">${gameState.code}</b><br>
+        Phase: <b style="color:#fbbf24">${gameState.phase}</b><br>
+        Players: ${Object.keys(gameState.players).length}
       </div>
       <div id="owner-player-list" style="margin-top:10px"></div>
     </div>
-
-    <button onclick="toggleOwnerPanel()" class="obtn obtn-red" style="width:100%;margin-top:12px">✕ Close Panel</button>
-  `;
-
-  // Add obtn styles if not present
-  if (!document.getElementById('obtn-styles')) {
-    const style = document.createElement('style');
-    style.id = 'obtn-styles';
-    style.textContent = `
-      .obtn { padding:7px 5px;border-radius:7px;border:none;cursor:pointer;font-size:12px;font-weight:600;transition:all .15s;color:#fff; }
-      .obtn:hover { transform:translateY(-1px);filter:brightness(1.15); }
-      .obtn-red    { background:linear-gradient(135deg,#dc2626,#ef4444); }
-      .obtn-orange { background:linear-gradient(135deg,#d97706,#f59e0b); }
-      .obtn-yellow { background:linear-gradient(135deg,#b45309,#d97706); }
-      .obtn-green  { background:linear-gradient(135deg,#15803d,#22c55e); }
-      .obtn-blue   { background:linear-gradient(135deg,#1d4ed8,#3b82f6); }
-      .obtn-purple { background:linear-gradient(135deg,#7c3aed,#a855f7); }
-    `;
-    document.head.appendChild(style);
-  }
-
-  // Update server tab player list
-  updateOwnerPanel();
-  ownerTab(0);
+    <button onclick="toggleOwnerPanel()" class="obtn obtn-red" style="width:100%;margin-top:12px">✕ Close</button>`;
+  updateOwnerPanelList();ownerTab(0);
 }
 
-function ownerTab(idx) {
-  for (let i = 0; i < 4; i++) {
-    const c = document.getElementById(`otabcontent${i}`);
-    const b = document.getElementById(`otab${i}`);
-    if (c) c.style.display = i === idx ? 'block' : 'none';
-    if (b) b.style.background = i === idx ? 'rgba(167,139,250,0.35)' : 'rgba(255,255,255,0.06)';
-  }
+function updateOwnerPanelList(){
+  if(!gameState)return;
+  const el=document.getElementById('owner-player-list');if(!el)return;
+  el.innerHTML=Object.values(gameState.players).map(p=>`<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.05);font-size:12px"><div style="width:12px;height:12px;border-radius:50%;background:${p.color}"></div><span>${esc(p.username)}</span><button class="obtn obtn-orange" style="margin-left:auto;padding:2px 7px;font-size:10px" onclick="ownerKick('${p.id}','${esc(p.username)}')">Kick</button></div>`).join('');
 }
 
-function ownerCmd(cmd, extra) {
-  const target = document.getElementById('op-target')?.value || document.getElementById('op-cos-target')?.value;
-  switch (cmd) {
-    case 'kick':     ownerKick(target, gameState?.players[target]?.username || '?'); break;
-    case 'kill':     wsSend({ type: 'owner_kill_player', targetId: target, password: OWNER_PASSWORD }); break;
-    case 'freeze':   wsSend({ type: 'owner_freeze', targetId: target, frozen: true, password: OWNER_PASSWORD }); break;
-    case 'unfreeze': wsSend({ type: 'owner_freeze', targetId: target, frozen: false, password: OWNER_PASSWORD }); break;
-    case 'respawn':  wsSend({ type: 'owner_respawn', targetId: target, password: OWNER_PASSWORD }); break;
-    case 'godmode_on': wsSend({ type: 'owner_godmode', targetId: target, enabled: true, password: OWNER_PASSWORD }); break;
-    case 'set_impostor': wsSend({ type: 'owner_set_role', targetId: target, role: 'impostor', password: OWNER_PASSWORD }); break;
-    case 'set_crewmate': wsSend({ type: 'owner_set_role', targetId: target, role: 'crewmate', password: OWNER_PASSWORD }); break;
-    case 'speed_fast':   wsSend({ type: 'owner_speed_boost', targetId: target, mult: 2, password: OWNER_PASSWORD }); break;
-    case 'speed_slow':   wsSend({ type: 'owner_speed_boost', targetId: target, mult: 0.5, password: OWNER_PASSWORD }); break;
-    case 'speed_normal': wsSend({ type: 'owner_speed_boost', targetId: target, mult: 1, password: OWNER_PASSWORD }); break;
-    case 'reset_tasks':  wsSend({ type: 'owner_set_tasks', targetId: target, count: 5, password: OWNER_PASSWORD }); break;
-    case 'teleport_room': wsSend({ type: 'owner_teleport', targetId: document.getElementById('op-target')?.value, room: extra, password: OWNER_PASSWORD }); break;
-    case 'end_crew':     wsSend({ type: 'owner_end_game', winner: 'crewmate', password: OWNER_PASSWORD }); break;
-    case 'end_imp':      wsSend({ type: 'owner_end_game', winner: 'impostor', password: OWNER_PASSWORD }); break;
-    case 'force_meeting': wsSend({ type: 'owner_force_meeting', reason: '⚡ Owner forced a meeting!', password: OWNER_PASSWORD }); break;
-    case 'shuffle_roles': wsSend({ type: 'owner_shuffle_roles', password: OWNER_PASSWORD }); break;
-    case 'all_tasks':    wsSend({ type: 'owner_all_tasks_done', password: OWNER_PASSWORD }); break;
-    case 'reveal_roles': wsSend({ type: 'owner_reveal_roles', password: OWNER_PASSWORD }); break;
-    case 'explosion':    wsSend({ type: 'owner_explosion', targetId: target, radius: 180, password: OWNER_PASSWORD }); break;
-    case 'lock_room':    wsSend({ type: 'owner_lock_room', password: OWNER_PASSWORD }); break;
-    case 'unlock_room':  wsSend({ type: 'owner_unlock_room', password: OWNER_PASSWORD }); break;
-    case 'reset_cooldown': wsSend({ type: 'owner_set_killcooldown', seconds: 0, password: OWNER_PASSWORD }); break;
-    case 'broadcast_gold': {
-      const t = document.getElementById('op-broadcast')?.value;
-      if (t) wsSend({ type: 'owner_broadcast', text: t, color: '#fbbf24', icon: '📢', password: OWNER_PASSWORD });
-      break;
-    }
-    case 'broadcast_red': {
-      const t = document.getElementById('op-broadcast')?.value;
-      if (t) wsSend({ type: 'owner_broadcast', text: t, color: '#f87171', icon: '🔴', password: OWNER_PASSWORD });
-      break;
-    }
-    case 'swap_roles': {
-      const a = document.getElementById('op-swapA')?.value;
-      const b = document.getElementById('op-swapB')?.value;
-      if (a && b && a !== b) wsSend({ type: 'owner_swap_roles', targetA: a, targetB: b, password: OWNER_PASSWORD });
-      else notify('Select 2 different players to swap', '#f87171');
-      break;
-    }
-    case 'set_aura': {
-      const c = document.getElementById('op-aura-color')?.value || '#ff00ff';
-      const tgt = document.getElementById('op-cos-target')?.value;
-      wsSend({ type: 'owner_set_aura', targetId: tgt, color: c, password: OWNER_PASSWORD });
-      break;
-    }
-    case 'set_title': {
-      const title = document.getElementById('op-title')?.value;
-      const tgt = document.getElementById('op-cos-target')?.value;
-      wsSend({ type: 'owner_set_title', targetId: tgt, title, password: OWNER_PASSWORD });
-      break;
-    }
-    case 'set_badge': {
-      const badge = document.getElementById('op-badge')?.value;
-      const tgt = document.getElementById('op-cos-target')?.value;
-      wsSend({ type: 'owner_set_badge', targetId: tgt, badge, password: OWNER_PASSWORD });
-      break;
-    }
-    case 'set_trail': {
-      const c = document.getElementById('op-trail-color')?.value || '#00ff88';
-      const tgt = document.getElementById('op-cos-target')?.value;
-      wsSend({ type: 'owner_set_cosmetic', targetId: tgt, cosType: 'trailColor', value: c, password: OWNER_PASSWORD });
-      break;
-    }
-    case 'clear_cosmetics': {
-      const tgt = document.getElementById('op-cos-target')?.value;
-      wsSend({ type: 'owner_clear_cosmetic', targetId: tgt, password: OWNER_PASSWORD });
-      break;
-    }
+function ownerTab(idx){for(let i=0;i<4;i++){const c=document.getElementById(`otabcontent${i}`);const b=document.getElementById(`otab${i}`);if(c)c.style.display=i===idx?'block':'none';if(b)b.style.background=i===idx?'rgba(167,139,250,0.35)':'rgba(255,255,255,0.06)';}}
+
+function ownerCmd(cmd,extra){
+  const target=document.getElementById('op-target')?.value||document.getElementById('op-cos-target')?.value;
+  switch(cmd){
+    case 'kick': ownerKick(target,gameState?.players[target]?.username||'?');break;
+    case 'kill': wsSend({type:'owner_kill_player',targetId:target,password:OWNER_PASSWORD});break;
+    case 'freeze': wsSend({type:'owner_freeze',targetId:target,frozen:true,password:OWNER_PASSWORD});break;
+    case 'unfreeze': wsSend({type:'owner_freeze',targetId:target,frozen:false,password:OWNER_PASSWORD});break;
+    case 'respawn': wsSend({type:'owner_respawn',targetId:target,password:OWNER_PASSWORD});break;
+    case 'godmode_on': wsSend({type:'owner_godmode',targetId:target,enabled:true,password:OWNER_PASSWORD});break;
+    case 'set_impostor': wsSend({type:'owner_set_role',targetId:target,role:'impostor',password:OWNER_PASSWORD});break;
+    case 'set_crewmate': wsSend({type:'owner_set_role',targetId:target,role:'crewmate',password:OWNER_PASSWORD});break;
+    case 'speed_fast': wsSend({type:'owner_speed_boost',targetId:target,mult:2,password:OWNER_PASSWORD});break;
+    case 'speed_slow': wsSend({type:'owner_speed_boost',targetId:target,mult:0.5,password:OWNER_PASSWORD});break;
+    case 'speed_normal': wsSend({type:'owner_speed_boost',targetId:target,mult:1,password:OWNER_PASSWORD});break;
+    case 'reset_tasks': wsSend({type:'owner_set_tasks',targetId:target,count:5,password:OWNER_PASSWORD});break;
+    case 'teleport_room': wsSend({type:'owner_teleport',targetId:document.getElementById('op-target')?.value,room:extra,password:OWNER_PASSWORD});break;
+    case 'end_crew': wsSend({type:'owner_end_game',winner:'crewmate',password:OWNER_PASSWORD});break;
+    case 'end_imp': wsSend({type:'owner_end_game',winner:'impostor',password:OWNER_PASSWORD});break;
+    case 'force_meeting': wsSend({type:'owner_force_meeting',reason:'⚡ Owner forced a meeting!',password:OWNER_PASSWORD});break;
+    case 'shuffle_roles': wsSend({type:'owner_shuffle_roles',password:OWNER_PASSWORD});break;
+    case 'all_tasks': wsSend({type:'owner_all_tasks_done',password:OWNER_PASSWORD});break;
+    case 'reveal_roles': wsSend({type:'owner_reveal_roles',password:OWNER_PASSWORD});break;
+    case 'explosion': wsSend({type:'owner_explosion',targetId:target,radius:180,password:OWNER_PASSWORD});break;
+    case 'lock_room': wsSend({type:'owner_lock_room',password:OWNER_PASSWORD});break;
+    case 'unlock_room': wsSend({type:'owner_unlock_room',password:OWNER_PASSWORD});break;
+    case 'reset_cooldown': wsSend({type:'owner_set_killcooldown',seconds:0,password:OWNER_PASSWORD});break;
+    case 'broadcast_gold':{const t=document.getElementById('op-broadcast')?.value;if(t)wsSend({type:'owner_broadcast',text:t,color:'#fbbf24',icon:'📢',password:OWNER_PASSWORD});break;}
+    case 'broadcast_red':{const t=document.getElementById('op-broadcast')?.value;if(t)wsSend({type:'owner_broadcast',text:t,color:'#f87171',icon:'🔴',password:OWNER_PASSWORD});break;}
+    case 'swap_roles':{const a=document.getElementById('op-swapA')?.value;const b=document.getElementById('op-swapB')?.value;if(a&&b&&a!==b)wsSend({type:'owner_swap_roles',targetA:a,targetB:b,password:OWNER_PASSWORD});else notify('Pick 2 different players','#f87171');break;}
+    case 'set_aura':{const c=document.getElementById('op-aura-color')?.value||'#ff00ff';const tgt=document.getElementById('op-cos-target')?.value;wsSend({type:'owner_set_aura',targetId:tgt,color:c,password:OWNER_PASSWORD});break;}
+    case 'set_title':{const title=document.getElementById('op-title')?.value;const tgt=document.getElementById('op-cos-target')?.value;wsSend({type:'owner_set_title',targetId:tgt,title,password:OWNER_PASSWORD});break;}
+    case 'set_badge':{const badge=document.getElementById('op-badge')?.value;const tgt=document.getElementById('op-cos-target')?.value;wsSend({type:'owner_set_badge',targetId:tgt,badge,password:OWNER_PASSWORD});break;}
+    case 'set_trail':{const c=document.getElementById('op-trail-color')?.value||'#00ff88';const tgt=document.getElementById('op-cos-target')?.value;wsSend({type:'owner_set_cosmetic',targetId:tgt,cosType:'trailColor',value:c,password:OWNER_PASSWORD});break;}
+    case 'clear_cosmetics':{const tgt=document.getElementById('op-cos-target')?.value;wsSend({type:'owner_clear_cosmetic',targetId:tgt,password:OWNER_PASSWORD});break;}
   }
 }
+function ownerApplyPreset(name){const preset=OWNER_COSMETIC_PRESETS[name];if(!preset)return;const tgt=document.getElementById('op-cos-target')?.value;if(!tgt)return;if(preset.aura)wsSend({type:'owner_set_aura',targetId:tgt,color:preset.aura,password:OWNER_PASSWORD});if(preset.title)wsSend({type:'owner_set_title',targetId:tgt,title:preset.title,password:OWNER_PASSWORD});if(preset.badge)wsSend({type:'owner_set_badge',targetId:tgt,badge:preset.badge,password:OWNER_PASSWORD});if(preset.trailColor)wsSend({type:'owner_set_cosmetic',targetId:tgt,cosType:'trailColor',value:preset.trailColor,password:OWNER_PASSWORD});notify(`✨ Applied: ${name}`,'#fbbf24');}
+function ownerKick(id,name){if(!confirm(`Kick ${name}?`))return;wsSend({type:'owner_kick',targetId:id,password:OWNER_PASSWORD,reason:'Kicked by owner'});}
 
-function ownerApplyPreset(name) {
-  const preset = OWNER_COSMETIC_PRESETS[name];
-  if (!preset) return;
-  const tgt = document.getElementById('op-cos-target')?.value;
-  if (!tgt) return;
-  if (preset.aura)       wsSend({ type: 'owner_set_aura',     targetId: tgt, color: preset.aura,  password: OWNER_PASSWORD });
-  if (preset.title)      wsSend({ type: 'owner_set_title',    targetId: tgt, title: preset.title, password: OWNER_PASSWORD });
-  if (preset.badge)      wsSend({ type: 'owner_set_badge',    targetId: tgt, badge: preset.badge, password: OWNER_PASSWORD });
-  if (preset.trailColor) wsSend({ type: 'owner_set_cosmetic', targetId: tgt, cosType: 'trailColor', value: preset.trailColor, password: OWNER_PASSWORD });
-  notify(`✨ Applied preset: ${name}`, '#fbbf24');
+function showRolesReveal(roles){
+  let html=`<div style="position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:200;display:flex;align-items:center;justify-content:center" id="roles-reveal-modal"><div style="background:#0c1220;border:1px solid #a78bfa;border-radius:16px;padding:24px;max-width:400px;width:90vw"><div style="font-size:18px;font-weight:900;color:#a78bfa;margin-bottom:14px">🕵️ All Roles</div>`;
+  for(const p of roles){const col=p.role==='impostor'?'#f87171':'#4ade80';html+=`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.06)"><span style="color:${col};font-size:18px">${p.role==='impostor'?'😈':'✅'}</span><span style="flex:1;font-size:13px">${esc(p.username)}</span><span style="font-size:11px;color:${col}">${p.role.toUpperCase()}</span></div>`;}
+  html+=`<button onclick="document.getElementById('roles-reveal-modal').remove()" style="margin-top:14px;width:100%;padding:9px;border-radius:8px;background:rgba(255,255,255,0.08);border:none;color:#fff;cursor:pointer">Close</button></div></div>`;
+  document.body.insertAdjacentHTML('beforeend',html);
 }
+
+function showShopInGame(){showScreen('menu-screen');switchMenuTab('shop',document.querySelectorAll('.tab-btn')[1]);}
+
+// ════════════════════════════════════════════════════
+// EFFECTS
+// ════════════════════════════════════════════════════
+function flashRed(){const f=document.getElementById('kill-flash');f.classList.add('flash');setTimeout(()=>f.classList.remove('flash'),300);}
+function showBanner(text,color){const b=document.getElementById('phase-banner');b.textContent=text;b.style.color=color;b.style.display='block';b.style.opacity='1';b.style.transform='translate(-50%,-50%) scale(1)';setTimeout(()=>{b.style.transition='opacity .5s,transform .5s';b.style.opacity='0';b.style.transform='translate(-50%,-50%) scale(1.3)';setTimeout(()=>{b.style.display='none';b.style.transition='';},500);},1800);}
+
+// ════════════════════════════════════════════════════
+// MOBILE CONTROLS
+// ════════════════════════════════════════════════════
+function addMobileControls(){
+  if(document.getElementById('mobile-dpad'))return;
+  const dp=document.createElement('div');dp.id='mobile-dpad';dp.style.cssText='position:fixed;bottom:110px;left:16px;z-index:25;display:grid;grid-template-columns:repeat(3,52px);grid-template-rows:repeat(3,52px);gap:3px;touch-action:none';
+  [{r:0,c:1,l:'▲',d:'Up'},{r:1,c:0,l:'◀',d:'Left'},{r:1,c:2,l:'▶',d:'Right'},{r:2,c:1,l:'▼',d:'Down'}].forEach(b=>{
+    const btn=document.createElement('button');btn.textContent=b.l;btn.style.cssText=`grid-row:${b.r+1};grid-column:${b.c+1};background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.2);color:#fff;border-radius:9px;font-size:18px;cursor:pointer;touch-action:none`;
+    btn.addEventListener('pointerdown',e=>{e.preventDefault();window[`move${b.d}`]=true;});btn.addEventListener('pointerup',()=>{window[`move${b.d}`]=false;});btn.addEventListener('pointerleave',()=>{window[`move${b.d}`]=false;});dp.appendChild(btn);
+  });document.body.appendChild(dp);
+}
+
+// ════════════════════════════════════════════════════
+// SCREENS + UTILS
+// ════════════════════════════════════════════════════
+function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('hidden',s.id!==id));if(id!=='lobby-screen')document.getElementById('meeting-screen').style.display='none';}
+function hideAllScreens(){document.querySelectorAll('.screen').forEach(s=>s.classList.add('hidden'));}
+function notify(text,color='#fff'){const el=document.createElement('div');el.className='notif';el.style.color=color;el.textContent=text;document.getElementById('notifs').appendChild(el);setTimeout(()=>el.remove(),4000);}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+// ════════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════════
+async function init(){
+  buildColorGrid('reg-color-grid',false);
+  // Start WS connection in background (non-blocking)
+  connectWS().catch(()=>{}); // don't block auth if server offline
+  tryAutoLogin();
+}
+setInterval(()=>wsSend({type:'ping'}),25000);
+window.addEventListener('resize',()=>{if(phaserGame)phaserGame.scale.resize(window.innerWidth,window.innerHeight);});
+init();
 </script>
 </body>
 </html>

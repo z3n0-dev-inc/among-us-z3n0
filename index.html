@@ -4,175 +4,163 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Among Us REMAKE by Z3N0</title>
-
-<!-- ══════════════════════════════════════════
-     PlayFab SDK  — replaces Railway backend
-     Works 100% from a <script> tag, no Node needed
-     ══════════════════════════════════════════ -->
 <script src="https://download.playfab.com/PlayFabClientApi.js"></script>
-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/phaser/3.60.0/phaser.min.js"></script>
-
 <style>
-* { margin:0; padding:0; box-sizing:border-box; }
-body { background:#000; overflow:hidden; font-family:'Segoe UI',sans-serif; user-select:none; }
-.screen {
-  position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
-  background:linear-gradient(135deg,#030712 0%,#0f0a1e 50%,#030712 100%); z-index:100;
-}
-.screen.hidden { display:none; }
-.glass {
-  background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1);
-  backdrop-filter:blur(20px); border-radius:18px; padding:34px;
-  width:440px; max-width:96vw; max-height:92vh; overflow-y:auto;
-}
-.game-title {
-  font-size:36px; font-weight:900; text-align:center;
-  background:linear-gradient(135deg,#a78bfa,#f472b6,#fb923c);
-  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
-  margin-bottom:6px; letter-spacing:-1px;
-}
-.game-subtitle { text-align:center; color:rgba(255,255,255,0.35); font-size:13px; margin-bottom:22px; }
-.inp {
-  width:100%; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12);
-  color:#fff; padding:11px 14px; border-radius:9px; font-size:14px;
-  margin-bottom:10px; outline:none; transition:border-color .2s;
-}
-.inp:focus { border-color:#a78bfa; }
-.btn {
-  width:100%; padding:12px; border-radius:9px; border:none; font-size:15px;
-  font-weight:600; cursor:pointer; transition:all .2s; margin-bottom:8px;
-}
-.btn-primary { background:linear-gradient(135deg,#7c3aed,#a855f7); color:#fff; }
-.btn-primary:hover { transform:translateY(-1px); box-shadow:0 8px 25px rgba(124,58,237,.45); }
-.btn-secondary { background:rgba(255,255,255,0.07); color:#fff; border:1px solid rgba(255,255,255,0.13); }
-.btn-secondary:hover { background:rgba(255,255,255,0.11); }
-.btn-danger { background:linear-gradient(135deg,#dc2626,#ef4444); color:#fff; }
-.btn:disabled { opacity:.4; cursor:not-allowed; transform:none!important; }
-.err { color:#f87171; font-size:13px; text-align:center; margin-bottom:8px; display:none; }
-.link { color:#a78bfa; cursor:pointer; text-align:center; font-size:13px; }
-.link:hover { text-decoration:underline; }
-.divider { border:none; border-top:1px solid rgba(255,255,255,0.08); margin:14px 0; }
-.color-grid { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px; }
-.color-swatch { width:34px; height:34px; border-radius:50%; cursor:pointer; border:3px solid transparent; transition:all .15s; }
-.color-swatch.selected { border-color:#fff; transform:scale(1.2); }
-#lobby-screen .glass { width:560px; }
-.room-code-display {
-  font-size:32px; font-weight:900; letter-spacing:10px; text-align:center; color:#a78bfa;
-  background:rgba(124,58,237,0.12); border:1px solid rgba(124,58,237,0.28);
-  border-radius:12px; padding:12px; margin-bottom:14px; cursor:pointer;
-}
-.player-list { display:flex; flex-direction:column; gap:7px; margin-bottom:14px; max-height:240px; overflow-y:auto; }
-.player-item { display:flex; align-items:center; gap:10px; background:rgba(255,255,255,0.04); border-radius:9px; padding:9px 13px; }
-.player-dot { width:20px; height:20px; border-radius:50%; flex-shrink:0; border:2px solid rgba(255,255,255,0.2); }
-.player-name { flex:1; font-size:14px; }
-.host-badge { font-size:11px; background:rgba(251,191,36,0.18); color:#fbbf24; padding:2px 8px; border-radius:10px; }
-.owner-badge { font-size:11px; background:rgba(239,68,68,0.18); color:#f87171; padding:2px 8px; border-radius:10px; }
-.tab-btns { display:flex; gap:5px; margin-bottom:16px; }
-.tab-btn { flex:1; padding:8px; border-radius:7px; border:1px solid rgba(255,255,255,0.09); background:rgba(255,255,255,0.04); color:rgba(255,255,255,0.5); cursor:pointer; font-size:13px; transition:all .15s; }
-.tab-btn.active { background:rgba(124,58,237,0.28); border-color:#a78bfa; color:#fff; }
-.tab-content { display:none; }
-.tab-content.active { display:block; }
-.shop-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:9px; margin-bottom:12px; }
-.shop-item { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.09); border-radius:10px; padding:13px; text-align:center; cursor:pointer; transition:all .18s; }
-.shop-item:hover { border-color:#a78bfa; background:rgba(124,58,237,0.1); }
-.shop-item.owned { border-color:#22c55e; background:rgba(34,197,94,0.07); cursor:default; }
-.shop-item.equipped-item { border-color:#fbbf24; background:rgba(251,191,36,0.08); }
-.shop-item-icon { font-size:28px; margin-bottom:5px; }
-.shop-item-name { font-size:11px; font-weight:600; margin-bottom:3px; }
-.shop-item-price { font-size:11px; color:#fbbf24; }
-.rarity-common{color:#9ca3af} .rarity-uncommon{color:#4ade80} .rarity-rare{color:#60a5fa} .rarity-epic{color:#c084fc} .rarity-legendary{color:#fbbf24}
-#hud { position:fixed; top:0; left:0; right:0; display:flex; align-items:center; justify-content:space-between; padding:10px 16px; background:linear-gradient(to bottom,rgba(0,0,0,.75),transparent); pointer-events:none; z-index:25; }
-#hud.hidden { display:none; }
-.hud-left { display:flex; align-items:center; gap:12px; }
-.role-badge { padding:5px 14px; border-radius:20px; font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:1px; }
-.role-crewmate { background:rgba(34,197,94,0.18); color:#4ade80; border:1px solid rgba(34,197,94,0.3); }
-.role-impostor { background:rgba(239,68,68,0.18); color:#f87171; border:1px solid rgba(239,68,68,0.3); }
-.task-bar-wrap { width:170px; background:rgba(255,255,255,0.09); border-radius:10px; height:8px; overflow:hidden; }
-.task-bar { height:100%; background:linear-gradient(90deg,#4ade80,#22c55e); border-radius:10px; transition:width .5s; }
-#hud-right { display:flex; gap:7px; pointer-events:all; }
-#action-btns { position:fixed; bottom:20px; right:20px; display:flex; flex-direction:column; gap:8px; z-index:25; }
-#action-btns.hidden { display:none; }
-.action-btn { padding:11px 20px; border-radius:11px; border:none; font-size:14px; font-weight:700; cursor:pointer; transition:all .18s; text-transform:uppercase; letter-spacing:.5px; display:flex; align-items:center; gap:7px; box-shadow:0 4px 16px rgba(0,0,0,.4); }
-.action-btn:disabled { opacity:.3; cursor:not-allowed; }
-#btn-kill { background:linear-gradient(135deg,#dc2626,#ef4444); color:#fff; display:none; }
-#btn-kill:not(:disabled):hover { transform:scale(1.05); box-shadow:0 4px 20px rgba(239,68,68,.5); }
-#btn-report { background:linear-gradient(135deg,#d97706,#f59e0b); color:#fff; display:none; }
-#btn-task { background:linear-gradient(135deg,#1d4ed8,#3b82f6); color:#fff; display:none; }
-#btn-emergency { background:linear-gradient(135deg,#7c3aed,#a855f7); color:#fff; }
-#btn-vent { background:linear-gradient(135deg,#065f46,#059669); color:#fff; display:none; }
-.cooldown-txt { font-size:10px; opacity:.7; }
-#meeting-screen {
-  position:fixed; inset:0; background:rgba(0,0,0,.93); z-index:55;
-  display:none; flex-direction:column; align-items:center; justify-content:flex-start;
-  padding:20px 16px 16px; gap:11px; overflow-y:auto;
-}
-.meeting-title { font-size:24px; font-weight:900; color:#f87171; text-transform:uppercase; letter-spacing:3px; text-align:center; }
-.meeting-reason { color:rgba(255,255,255,.6); font-size:14px; text-align:center; }
-.meeting-grid { display:flex; flex-wrap:wrap; gap:9px; justify-content:center; max-width:640px; }
-.vote-card { width:108px; background:rgba(255,255,255,0.04); border:2px solid rgba(255,255,255,0.1); border-radius:13px; padding:11px; text-align:center; cursor:pointer; transition:all .18s; }
-.vote-card:hover:not(.dead):not(.my-vote) { border-color:#a78bfa; background:rgba(124,58,237,0.14); }
-.vote-card.dead { opacity:.3; cursor:not-allowed; pointer-events:none; }
-.vote-card.my-vote { border-color:#a78bfa; background:rgba(124,58,237,0.2); }
-.vote-card.self-card { border-color:rgba(255,255,255,0.25); }
-.vote-avatar { width:46px; height:46px; border-radius:50%; margin:0 auto 7px; display:flex; align-items:center; justify-content:center; font-size:18px; }
-.vote-name { font-size:11px; font-weight:600; word-break:break-word; }
-.vote-count { font-size:16px; font-weight:900; color:#f87171; margin-top:3px; min-height:20px; }
-.timer-bar { width:min(340px,90vw); height:7px; background:rgba(255,255,255,0.1); border-radius:4px; overflow:hidden; }
-.timer-fill { height:100%; background:linear-gradient(90deg,#4ade80,#f59e0b,#ef4444); border-radius:4px; transition:width 1s linear; }
-.skip-btn { padding:9px 24px; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.18); color:#fff; border-radius:9px; cursor:pointer; font-size:13px; transition:all .15s; }
-.skip-btn:hover:not(:disabled) { background:rgba(255,255,255,0.13); }
-.skip-btn:disabled { opacity:.35; cursor:not-allowed; }
-.chat-area { width:min(500px,96vw); background:rgba(0,0,0,0.45); border:1px solid rgba(255,255,255,0.09); border-radius:11px; padding:10px; height:160px; overflow-y:auto; font-size:13px; }
-.chat-msg { margin-bottom:4px; line-height:1.4; }
-.chat-msg.ghost-msg { opacity:.5; }
-.chat-input-row { display:flex; gap:8px; width:min(500px,96vw); }
-.chat-input-row input { flex:1; }
-#task-modal { position:fixed; inset:0; background:rgba(0,0,0,.87); z-index:65; display:none; align-items:center; justify-content:center; }
-.task-box { background:#0c1220; border:1px solid rgba(167,139,250,0.25); border-radius:18px; padding:28px; width:400px; max-width:96vw; text-align:center; }
-.task-title { font-size:20px; font-weight:700; margin-bottom:5px; color:#a78bfa; }
-.task-subtitle { color:rgba(255,255,255,0.45); font-size:13px; margin-bottom:18px; }
-.wire-grid { display:flex; justify-content:space-between; align-items:center; gap:16px; margin:14px 0; }
-.wire-col { display:flex; flex-direction:column; gap:14px; }
-.wire-node { width:42px; height:42px; border-radius:50%; border:3px solid; cursor:pointer; transition:all .18s; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14px; background:rgba(0,0,0,.3); }
-.wire-node:hover { transform:scale(1.12); }
-.wire-node.wconn { opacity:.5; pointer-events:none; }
-svg.wires { flex:1; min-width:80px; }
-.mash-btn { width:120px; height:120px; border-radius:50%; background:linear-gradient(135deg,#dc2626,#ef4444); border:4px solid #f87171; cursor:pointer; font-size:16px; font-weight:700; color:#fff; transition:all .1s; margin:10px auto; display:block; box-shadow:0 0 30px rgba(239,68,68,.4); }
-.mash-btn:active { transform:scale(.91); }
-.mash-bar { height:13px; background:rgba(255,255,255,0.09); border-radius:7px; overflow:hidden; margin:10px 0; }
-.mash-fill { height:100%; background:linear-gradient(90deg,#4ade80,#22c55e); border-radius:7px; transition:width .1s; width:0; }
-.pattern-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; max-width:220px; margin:0 auto 14px; }
-.pattern-cell { height:62px; border-radius:9px; cursor:pointer; transition:all .14s; border:2px solid rgba(255,255,255,0.09); background:rgba(255,255,255,0.04); }
-.pattern-cell.lit { background:rgba(251,191,36,0.6); border-color:#fbbf24; }
-.pattern-cell.correct { background:rgba(34,197,94,0.5); border-color:#4ade80; }
-.pattern-cell.wrong { background:rgba(239,68,68,0.5); border-color:#f87171; }
-#end-screen { display:none; }
-.win-title { font-size:44px; font-weight:900; text-align:center; margin-bottom:6px; }
-.win-crew{color:#4ade80} .win-impostor{color:#f87171}
-.results-list { display:flex; flex-direction:column; gap:7px; margin:14px 0; max-height:280px; overflow-y:auto; }
-.result-item { display:flex; align-items:center; gap:10px; background:rgba(255,255,255,0.04); border-radius:9px; padding:10px 13px; }
-#owner-panel { position:fixed; top:58px; right:16px; background:rgba(5,5,15,0.95); border:1px solid rgba(239,68,68,0.28); border-radius:13px; padding:16px; width:320px; max-height:85vh; overflow-y:auto; z-index:35; display:none; backdrop-filter:blur(10px); }
-#notifs { position:fixed; top:62px; left:50%; transform:translateX(-50%); display:flex; flex-direction:column; gap:7px; z-index:80; pointer-events:none; width:min(380px,94vw); }
-.notif { background:rgba(0,0,0,.88); border:1px solid rgba(255,255,255,0.13); border-radius:9px; padding:10px 16px; font-size:14px; text-align:center; animation:slideIn .28s ease; }
-@keyframes slideIn { from{opacity:0;transform:translateY(-10px)} to{opacity:1;transform:translateY(0)} }
-#kill-flash { position:fixed; inset:0; background:rgba(239,68,68,0); pointer-events:none; z-index:90; transition:background .15s; }
-#kill-flash.flash { background:rgba(239,68,68,.35); }
-#phase-banner { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); font-size:60px; font-weight:900; text-transform:uppercase; letter-spacing:4px; pointer-events:none; z-index:88; text-shadow:0 0 30px currentColor; display:none; }
-#stars { position:fixed; inset:0; pointer-events:none; z-index:0; }
-#loading-screen { background:#000; z-index:200; }
-.loading-bar-wrap { width:200px; height:4px; background:rgba(255,255,255,0.08); border-radius:2px; margin:16px auto 0; }
-.loading-bar { height:100%; background:#a78bfa; border-radius:2px; animation:loadA 1.5s ease-in-out infinite; }
-@keyframes loadA { 0%{width:0%}50%{width:100%}100%{width:0%} }
-.obtn { padding:7px 5px;border-radius:7px;border:none;cursor:pointer;font-size:12px;font-weight:600;transition:all .15s;color:#fff; }
-.obtn:hover { transform:translateY(-1px);filter:brightness(1.15); }
-.obtn-red    { background:linear-gradient(135deg,#dc2626,#ef4444); }
-.obtn-orange { background:linear-gradient(135deg,#d97706,#f59e0b); }
-.obtn-yellow { background:linear-gradient(135deg,#b45309,#d97706); }
-.obtn-green  { background:linear-gradient(135deg,#15803d,#22c55e); }
-.obtn-blue   { background:linear-gradient(135deg,#1d4ed8,#3b82f6); }
-.obtn-purple { background:linear-gradient(135deg,#7c3aed,#a855f7); }
-::-webkit-scrollbar{width:4px} ::-webkit-scrollbar-track{background:transparent} ::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.18);border-radius:2px}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#000;overflow:hidden;font-family:'Segoe UI',sans-serif;user-select:none;}
+.screen{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#030712 0%,#0f0a1e 50%,#030712 100%);z-index:100;}
+.screen.hidden{display:none;}
+.glass{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);backdrop-filter:blur(20px);border-radius:18px;padding:34px;width:440px;max-width:96vw;max-height:92vh;overflow-y:auto;}
+.game-title{font-size:36px;font-weight:900;text-align:center;background:linear-gradient(135deg,#a78bfa,#f472b6,#fb923c);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:6px;letter-spacing:-1px;}
+.game-subtitle{text-align:center;color:rgba(255,255,255,0.35);font-size:13px;margin-bottom:22px;}
+.inp{width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:#fff;padding:11px 14px;border-radius:9px;font-size:14px;margin-bottom:10px;outline:none;transition:border-color .2s;}
+.inp:focus{border-color:#a78bfa;}
+.btn{width:100%;padding:12px;border-radius:9px;border:none;font-size:15px;font-weight:600;cursor:pointer;transition:all .2s;margin-bottom:8px;}
+.btn-primary{background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 8px 25px rgba(124,58,237,.45);}
+.btn-secondary{background:rgba(255,255,255,0.07);color:#fff;border:1px solid rgba(255,255,255,0.13);}
+.btn-secondary:hover{background:rgba(255,255,255,0.11);}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none!important;}
+.err{color:#f87171;font-size:13px;text-align:center;margin-bottom:8px;display:none;}
+.link{color:#a78bfa;cursor:pointer;text-align:center;font-size:13px;}
+.link:hover{text-decoration:underline;}
+.divider{border:none;border-top:1px solid rgba(255,255,255,0.08);margin:14px 0;}
+.color-grid{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;}
+.color-swatch{width:34px;height:34px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:all .15s;}
+.color-swatch.selected{border-color:#fff;transform:scale(1.2);}
+#lobby-screen .glass{width:560px;}
+.room-code-display{font-size:32px;font-weight:900;letter-spacing:10px;text-align:center;color:#a78bfa;background:rgba(124,58,237,0.12);border:1px solid rgba(124,58,237,0.28);border-radius:12px;padding:12px;margin-bottom:14px;cursor:pointer;}
+.player-list{display:flex;flex-direction:column;gap:7px;margin-bottom:14px;max-height:240px;overflow-y:auto;}
+.player-item{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.04);border-radius:9px;padding:9px 13px;}
+.player-dot{width:20px;height:20px;border-radius:50%;flex-shrink:0;border:2px solid rgba(255,255,255,0.2);}
+.player-name{flex:1;font-size:14px;}
+.host-badge{font-size:11px;background:rgba(251,191,36,0.18);color:#fbbf24;padding:2px 8px;border-radius:10px;}
+.owner-badge{font-size:11px;background:rgba(239,68,68,0.18);color:#f87171;padding:2px 8px;border-radius:10px;}
+.tab-btns{display:flex;gap:5px;margin-bottom:16px;}
+.tab-btn{flex:1;padding:8px;border-radius:7px;border:1px solid rgba(255,255,255,0.09);background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.5);cursor:pointer;font-size:13px;transition:all .15s;}
+.tab-btn.active{background:rgba(124,58,237,0.28);border-color:#a78bfa;color:#fff;}
+.tab-content{display:none;}
+.tab-content.active{display:block;}
+
+/* ── SHOP ── */
+.shop-filter-row{display:flex;gap:5px;margin-bottom:10px;flex-wrap:wrap;}
+.shop-filter-btn{padding:4px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.5);cursor:pointer;font-size:11px;transition:all .15s;}
+.shop-filter-btn.active{background:rgba(124,58,237,0.28);border-color:#a78bfa;color:#fff;}
+.shop-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(115px,1fr));gap:8px;margin-bottom:12px;max-height:360px;overflow-y:auto;}
+.shop-item{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.09);border-radius:10px;padding:11px;text-align:center;cursor:pointer;transition:all .18s;position:relative;}
+.shop-item:hover{border-color:#a78bfa;background:rgba(124,58,237,0.1);}
+.shop-item.owned{border-color:#22c55e;background:rgba(34,197,94,0.07);}
+.shop-item.equipped-item{border-color:#fbbf24;background:rgba(251,191,36,0.08);}
+.shop-item.owner-only{border-color:#f87171;background:rgba(239,68,68,0.06);cursor:not-allowed;}
+.shop-item-icon{font-size:26px;margin-bottom:4px;}
+.shop-item-name{font-size:10px;font-weight:600;margin-bottom:2px;}
+.shop-item-price{font-size:10px;color:#fbbf24;}
+.owner-lock{position:absolute;top:4px;right:4px;font-size:10px;}
+.rarity-common{color:#9ca3af}.rarity-uncommon{color:#4ade80}.rarity-rare{color:#60a5fa}.rarity-epic{color:#c084fc}.rarity-legendary{color:#fbbf24}.rarity-mythic{color:#f472b6}.rarity-owner{color:#ef4444}
+
+/* ── HUD ── */
+#hud{position:fixed;top:0;left:0;right:0;display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:linear-gradient(to bottom,rgba(0,0,0,.75),transparent);pointer-events:none;z-index:25;}
+#hud.hidden{display:none;}
+.hud-left{display:flex;align-items:center;gap:12px;}
+.role-badge{padding:5px 14px;border-radius:20px;font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:1px;}
+.role-crewmate{background:rgba(34,197,94,0.18);color:#4ade80;border:1px solid rgba(34,197,94,0.3);}
+.role-impostor{background:rgba(239,68,68,0.18);color:#f87171;border:1px solid rgba(239,68,68,0.3);}
+.task-bar-wrap{width:170px;background:rgba(255,255,255,0.09);border-radius:10px;height:8px;overflow:hidden;}
+.task-bar{height:100%;background:linear-gradient(90deg,#4ade80,#22c55e);border-radius:10px;transition:width .5s;}
+#hud-right{display:flex;gap:7px;pointer-events:all;}
+#action-btns{position:fixed;bottom:20px;right:20px;display:flex;flex-direction:column;gap:8px;z-index:25;}
+#action-btns.hidden{display:none;}
+.action-btn{padding:11px 20px;border-radius:11px;border:none;font-size:14px;font-weight:700;cursor:pointer;transition:all .18s;text-transform:uppercase;letter-spacing:.5px;display:flex;align-items:center;gap:7px;box-shadow:0 4px 16px rgba(0,0,0,.4);}
+.action-btn:disabled{opacity:.3;cursor:not-allowed;}
+#btn-kill{background:linear-gradient(135deg,#dc2626,#ef4444);color:#fff;display:none;}
+#btn-kill:not(:disabled):hover{transform:scale(1.05);box-shadow:0 4px 20px rgba(239,68,68,.5);}
+#btn-report{background:linear-gradient(135deg,#d97706,#f59e0b);color:#fff;display:none;}
+#btn-task{background:linear-gradient(135deg,#1d4ed8,#3b82f6);color:#fff;display:none;}
+#btn-emergency{background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;}
+#btn-vent{background:linear-gradient(135deg,#065f46,#059669);color:#fff;display:none;}
+.cooldown-txt{font-size:10px;opacity:.7;}
+
+/* ── MEETING ── */
+#meeting-screen{position:fixed;inset:0;background:rgba(0,0,0,.93);z-index:55;display:none;flex-direction:column;align-items:center;justify-content:flex-start;padding:20px 16px 16px;gap:11px;overflow-y:auto;}
+.meeting-title{font-size:24px;font-weight:900;color:#f87171;text-transform:uppercase;letter-spacing:3px;text-align:center;}
+.meeting-reason{color:rgba(255,255,255,.6);font-size:14px;text-align:center;}
+.meeting-grid{display:flex;flex-wrap:wrap;gap:9px;justify-content:center;max-width:640px;}
+.vote-card{width:108px;background:rgba(255,255,255,0.04);border:2px solid rgba(255,255,255,0.1);border-radius:13px;padding:11px;text-align:center;cursor:pointer;transition:all .18s;}
+.vote-card:hover:not(.dead):not(.my-vote){border-color:#a78bfa;background:rgba(124,58,237,0.14);}
+.vote-card.dead{opacity:.3;cursor:not-allowed;pointer-events:none;}
+.vote-card.my-vote{border-color:#a78bfa;background:rgba(124,58,237,0.2);}
+.vote-card.self-card{border-color:rgba(255,255,255,0.25);}
+.vote-avatar{width:46px;height:46px;border-radius:50%;margin:0 auto 7px;display:flex;align-items:center;justify-content:center;font-size:18px;}
+.vote-name{font-size:11px;font-weight:600;word-break:break-word;}
+.vote-count{font-size:16px;font-weight:900;color:#f87171;margin-top:3px;min-height:20px;}
+.timer-bar{width:min(340px,90vw);height:7px;background:rgba(255,255,255,0.1);border-radius:4px;overflow:hidden;}
+.timer-fill{height:100%;background:linear-gradient(90deg,#4ade80,#f59e0b,#ef4444);border-radius:4px;transition:width 1s linear;}
+.skip-btn{padding:9px 24px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.18);color:#fff;border-radius:9px;cursor:pointer;font-size:13px;transition:all .15s;}
+.skip-btn:hover:not(:disabled){background:rgba(255,255,255,0.13);}
+.skip-btn:disabled{opacity:.35;cursor:not-allowed;}
+.chat-area{width:min(500px,96vw);background:rgba(0,0,0,0.45);border:1px solid rgba(255,255,255,0.09);border-radius:11px;padding:10px;height:160px;overflow-y:auto;font-size:13px;}
+.chat-msg{margin-bottom:4px;line-height:1.4;}
+.chat-msg.ghost-msg{opacity:.5;}
+.chat-input-row{display:flex;gap:8px;width:min(500px,96vw);}
+.chat-input-row input{flex:1;}
+
+/* ── TASK MODAL ── */
+#task-modal{position:fixed;inset:0;background:rgba(0,0,0,.87);z-index:65;display:none;align-items:center;justify-content:center;}
+.task-box{background:#0c1220;border:1px solid rgba(167,139,250,0.25);border-radius:18px;padding:28px;width:400px;max-width:96vw;text-align:center;}
+.task-title{font-size:20px;font-weight:700;margin-bottom:5px;color:#a78bfa;}
+.task-subtitle{color:rgba(255,255,255,0.45);font-size:13px;margin-bottom:18px;}
+.wire-grid{display:flex;justify-content:space-between;align-items:center;gap:16px;margin:14px 0;}
+.wire-col{display:flex;flex-direction:column;gap:14px;}
+.wire-node{width:42px;height:42px;border-radius:50%;border:3px solid;cursor:pointer;transition:all .18s;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;background:rgba(0,0,0,.3);}
+.wire-node:hover{transform:scale(1.12);}
+.wire-node.wconn{opacity:.5;pointer-events:none;}
+svg.wires{flex:1;min-width:80px;}
+.mash-btn{width:120px;height:120px;border-radius:50%;background:linear-gradient(135deg,#dc2626,#ef4444);border:4px solid #f87171;cursor:pointer;font-size:16px;font-weight:700;color:#fff;transition:all .1s;margin:10px auto;display:block;box-shadow:0 0 30px rgba(239,68,68,.4);}
+.mash-btn:active{transform:scale(.91);}
+.mash-bar{height:13px;background:rgba(255,255,255,0.09);border-radius:7px;overflow:hidden;margin:10px 0;}
+.mash-fill{height:100%;background:linear-gradient(90deg,#4ade80,#22c55e);border-radius:7px;transition:width .1s;width:0;}
+.pattern-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:220px;margin:0 auto 14px;}
+.pattern-cell{height:62px;border-radius:9px;cursor:pointer;transition:all .14s;border:2px solid rgba(255,255,255,0.09);background:rgba(255,255,255,0.04);}
+.pattern-cell.lit{background:rgba(251,191,36,0.6);border-color:#fbbf24;}
+.pattern-cell.correct{background:rgba(34,197,94,0.5);border-color:#4ade80;}
+.pattern-cell.wrong{background:rgba(239,68,68,0.5);border-color:#f87171;}
+
+/* ── END SCREEN ── */
+#end-screen{display:none;}
+.win-title{font-size:44px;font-weight:900;text-align:center;margin-bottom:6px;}
+.win-crew{color:#4ade80}.win-impostor{color:#f87171}
+.results-list{display:flex;flex-direction:column;gap:7px;margin:14px 0;max-height:280px;overflow-y:auto;}
+.result-item{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.04);border-radius:9px;padding:10px 13px;}
+
+/* ── OWNER PANEL ── */
+#owner-panel{position:fixed;top:58px;right:16px;background:rgba(5,5,15,0.97);border:1px solid rgba(239,68,68,0.28);border-radius:13px;padding:16px;width:340px;max-height:88vh;overflow-y:auto;z-index:35;display:none;backdrop-filter:blur(10px);}
+
+/* ── NOTIFS ── */
+#notifs{position:fixed;top:62px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;gap:7px;z-index:80;pointer-events:none;width:min(380px,94vw);}
+.notif{background:rgba(0,0,0,.88);border:1px solid rgba(255,255,255,0.13);border-radius:9px;padding:10px 16px;font-size:14px;text-align:center;animation:slideIn .28s ease;}
+@keyframes slideIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── MISC ── */
+#kill-flash{position:fixed;inset:0;background:rgba(239,68,68,0);pointer-events:none;z-index:90;transition:background .15s;}
+#kill-flash.flash{background:rgba(239,68,68,.35);}
+#phase-banner{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);font-size:60px;font-weight:900;text-transform:uppercase;letter-spacing:4px;pointer-events:none;z-index:88;text-shadow:0 0 30px currentColor;display:none;}
+#stars{position:fixed;inset:0;pointer-events:none;z-index:0;}
+#loading-screen{background:#000;z-index:200;}
+.loading-bar-wrap{width:200px;height:4px;background:rgba(255,255,255,0.08);border-radius:2px;margin:16px auto 0;}
+.loading-bar{height:100%;background:#a78bfa;border-radius:2px;animation:loadA 1.5s ease-in-out infinite;}
+@keyframes loadA{0%{width:0%}50%{width:100%}100%{width:0%}}
+.obtn{padding:7px 5px;border-radius:7px;border:none;cursor:pointer;font-size:12px;font-weight:600;transition:all .15s;color:#fff;}
+.obtn:hover{transform:translateY(-1px);filter:brightness(1.15);}
+.obtn-red{background:linear-gradient(135deg,#dc2626,#ef4444);}
+.obtn-orange{background:linear-gradient(135deg,#d97706,#f59e0b);}
+.obtn-yellow{background:linear-gradient(135deg,#b45309,#d97706);}
+.obtn-green{background:linear-gradient(135deg,#15803d,#22c55e);}
+.obtn-blue{background:linear-gradient(135deg,#1d4ed8,#3b82f6);}
+.obtn-purple{background:linear-gradient(135deg,#7c3aed,#a855f7);}
+.obtn-pink{background:linear-gradient(135deg,#be185d,#ec4899);}
+.player-tag{display:inline-block;font-size:10px;font-weight:700;padding:1px 7px;border-radius:8px;margin-left:4px;vertical-align:middle;}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.18);border-radius:2px}
 </style>
 </head>
 <body>
@@ -218,7 +206,8 @@ svg.wires { flex:1; min-width:80px; }
 <div class="screen hidden" id="menu-screen">
   <div class="glass">
     <div class="game-title">Space Traitors</div>
-    <div id="menu-welcome" style="text-align:center;color:rgba(255,255,255,.5);font-size:14px;margin-bottom:5px"></div>
+    <div id="menu-welcome" style="text-align:center;color:rgba(255,255,255,.5);font-size:14px;margin-bottom:3px"></div>
+    <div id="menu-player-tags" style="text-align:center;margin-bottom:5px;min-height:18px"></div>
     <div id="menu-credits" style="text-align:center;color:#fbbf24;font-size:15px;font-weight:700;margin-bottom:18px">💰 0 Credits</div>
     <div class="tab-btns">
       <button class="tab-btn active" onclick="switchMenuTab('play',this)">🎮 Play</button>
@@ -226,14 +215,12 @@ svg.wires { flex:1; min-width:80px; }
       <button class="tab-btn" onclick="switchMenuTab('profile',this)">👤 Profile</button>
     </div>
     <div class="tab-content active" id="menu-tab-play">
-      <input class="inp" id="room-code-input" placeholder="Room code (blank = create new)" maxlength="8"
-        style="text-transform:uppercase;letter-spacing:4px;text-align:center"
-        oninput="this.value=this.value.toUpperCase()">
-      <!-- FIX: button calls joinOrCreate directly — no longer relies on inline onclick firing before WS ready -->
+      <input class="inp" id="room-code-input" placeholder="Room code (blank = create new)" maxlength="8" style="text-transform:uppercase;letter-spacing:4px;text-align:center" oninput="this.value=this.value.toUpperCase()">
       <button class="btn btn-primary" id="join-create-btn" onclick="joinOrCreate()">🚀 Join / Create Room</button>
     </div>
     <div class="tab-content" id="menu-tab-shop">
-      <div id="shop-credits" style="text-align:center;color:#fbbf24;margin-bottom:11px;font-weight:700"></div>
+      <div id="shop-credits" style="text-align:center;color:#fbbf24;margin-bottom:8px;font-weight:700"></div>
+      <div class="shop-filter-row" id="shop-filters"></div>
       <div class="shop-grid" id="shop-items-grid">
         <div style="color:rgba(255,255,255,.4);font-size:13px;grid-column:1/-1;text-align:center;padding:20px">Loading shop...</div>
       </div>
@@ -243,8 +230,8 @@ svg.wires { flex:1; min-width:80px; }
       <hr class="divider">
       <div style="font-size:12px;color:rgba(255,255,255,.4);margin-bottom:8px">Your color:</div>
       <div class="color-grid" id="profile-color-grid"></div>
-      <div style="font-size:12px;color:rgba(255,255,255,.4);margin:8px 0 4px">Equipped hat:</div>
-      <div id="equipped-hat-display" style="font-size:22px;text-align:center;margin-bottom:8px">None</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.4);margin:8px 0 4px">Equipped cosmetics:</div>
+      <div id="equipped-display" style="font-size:13px;margin-bottom:8px;color:rgba(255,255,255,.7)">None</div>
       <button class="btn btn-secondary" style="margin-top:8px" onclick="logout()">🚪 Logout</button>
     </div>
   </div>
@@ -334,45 +321,144 @@ svg.wires { flex:1; min-width:80px; }
 
 <script>
 // ════════════════════════════════════════════════════
-// PLAYFAB CONFIG  ← replace XXXXX with your Title ID
-// Get it free at developer.playfab.com → Create Title
+// PLAYFAB CONFIG
 // ════════════════════════════════════════════════════
-const PLAYFAB_TITLE_ID = '1E7E83'; // ← YOUR TITLE ID HERE
+const PLAYFAB_TITLE_ID = '1E7E83';
 PlayFab.settings.titleId = PLAYFAB_TITLE_ID;
 
-// ════════════════════════════════════════════════════
-// GAME SERVER CONFIG (your Node server stays)
-// ════════════════════════════════════════════════════
-// For GitHub Pages deployment, change these to your server URL:
 const GAME_SERVER_HTTP = window.location.origin;
 const GAME_SERVER_WS   = GAME_SERVER_HTTP.replace('https://','wss://').replace('http://','ws://');
 
 const OWNER_PASSWORD = 'Zeno2026';
-const DISC_TIME = 20000;
-const VOTE_TIME = 60000;
-const MASH_GOAL = 20;
+const DISC_TIME  = 20000;
+const VOTE_TIME  = 60000;
+const MASH_GOAL  = 20;
 const COLORS = ['#e74c3c','#3498db','#2ecc71','#f39c12','#9b59b6','#1abc9c','#e67e22','#e91e63','#00bcd4','#cddc39'];
 
-// PlayFab cosmetic IDs that exist in your catalog (add more as you create them)
-const PF_HAT_IDS  = ['hat_crown','hat_santa','hat_tophat','hat_cap','hat_halo','hat_horns','hat_flower','hat_ninja'];
-const PF_SKIN_IDS = ['skin_robot','skin_ghost','skin_zombie','skin_alien','skin_wizard','skin_knight'];
-
-// Cosmetic display data (emoji + rarity for each catalog item)
+// ════════════════════════════════════════════════════
+// ██████████  COSMETIC CATALOGUE  ██████████
+// type: hat | skin | trail | aura | tag | namecolor
+// ownerOnly: true = ONLY giveable by owner via PlayFab
+// ════════════════════════════════════════════════════
 const COSMETIC_META = {
-  hat_crown:  { icon:'👑', name:'Crown',       rarity:'legendary', type:'hat',  price:500 },
-  hat_santa:  { icon:'🎅', name:'Santa Hat',   rarity:'uncommon',  type:'hat',  price:100 },
-  hat_tophat: { icon:'🎩', name:'Top Hat',     rarity:'rare',      type:'hat',  price:200 },
-  hat_cap:    { icon:'🧢', name:'Cap',         rarity:'common',    type:'hat',  price:50  },
-  hat_halo:   { icon:'😇', name:'Halo',        rarity:'epic',      type:'hat',  price:350 },
-  hat_horns:  { icon:'😈', name:'Devil Horns', rarity:'epic',      type:'hat',  price:350 },
-  hat_flower: { icon:'🌸', name:'Flower',      rarity:'uncommon',  type:'hat',  price:100 },
-  hat_ninja:  { icon:'🥷', name:'Ninja Mask',  rarity:'rare',      type:'hat',  price:200 },
-  skin_robot:  { icon:'🤖', name:'Robot',      rarity:'rare',      type:'skin', price:300 },
-  skin_ghost:  { icon:'👻', name:'Ghost',      rarity:'uncommon',  type:'skin', price:150 },
-  skin_zombie: { icon:'🧟', name:'Zombie',     rarity:'rare',      type:'skin', price:300 },
-  skin_alien:  { icon:'👽', name:'Alien',      rarity:'epic',      type:'skin', price:400 },
-  skin_wizard: { icon:'🧙', name:'Wizard',     rarity:'legendary', type:'skin', price:600 },
-  skin_knight: { icon:'🤺', name:'Knight',     rarity:'rare',      type:'skin', price:300 },
+
+  // ── HATS (purchasable) ──────────────────────────
+  hat_cap:       {icon:'🧢', name:'Cap',          rarity:'common',    type:'hat',  price:50},
+  hat_bandana:   {icon:'🤠', name:'Cowboy Hat',    rarity:'common',    type:'hat',  price:60},
+  hat_santa:     {icon:'🎅', name:'Santa Hat',     rarity:'uncommon',  type:'hat',  price:100},
+  hat_flower:    {icon:'🌸', name:'Flower',        rarity:'uncommon',  type:'hat',  price:100},
+  hat_glasses:   {icon:'🕶️', name:'Cool Glasses',  rarity:'uncommon',  type:'hat',  price:120},
+  hat_party:     {icon:'🎉', name:'Party Hat',     rarity:'uncommon',  type:'hat',  price:130},
+  hat_tophat:    {icon:'🎩', name:'Top Hat',       rarity:'rare',      type:'hat',  price:200},
+  hat_ninja:     {icon:'🥷', name:'Ninja Mask',    rarity:'rare',      type:'hat',  price:200},
+  hat_pirate:    {icon:'🏴‍☠️', name:'Pirate Hat',  rarity:'rare',      type:'hat',  price:220},
+  hat_chef:      {icon:'👨‍🍳', name:'Chef Hat',    rarity:'rare',      type:'hat',  price:220},
+  hat_viking:    {icon:'⛵', name:'Viking Helm',   rarity:'rare',      type:'hat',  price:250},
+  hat_wizard_h:  {icon:'🧙', name:'Wizard Hat',    rarity:'epic',      type:'hat',  price:320},
+  hat_halo:      {icon:'😇', name:'Halo',          rarity:'epic',      type:'hat',  price:350},
+  hat_horns:     {icon:'😈', name:'Devil Horns',   rarity:'epic',      type:'hat',  price:350},
+  hat_astronaut: {icon:'👨‍🚀', name:'Astronaut',  rarity:'epic',      type:'hat',  price:380},
+  hat_crown:     {icon:'👑', name:'Crown',         rarity:'legendary', type:'hat',  price:600},
+  hat_rainbow:   {icon:'🌈', name:'Rainbow Arch',  rarity:'legendary', type:'hat',  price:650},
+  hat_fire:      {icon:'🔥', name:'Fire Crown',    rarity:'legendary', type:'hat',  price:700},
+  hat_galaxy:    {icon:'🌌', name:'Galaxy Crown',  rarity:'mythic',    type:'hat',  price:1200},
+  hat_diamond:   {icon:'💎', name:'Diamond Crown', rarity:'mythic',    type:'hat',  price:1500},
+
+  // ── SKINS (purchasable) ─────────────────────────
+  skin_ghost:    {icon:'👻', name:'Ghost',         rarity:'uncommon',  type:'skin', price:150},
+  skin_zombie:   {icon:'🧟', name:'Zombie',        rarity:'rare',      type:'skin', price:280},
+  skin_robot:    {icon:'🤖', name:'Robot',         rarity:'rare',      type:'skin', price:300},
+  skin_alien:    {icon:'👽', name:'Alien',         rarity:'epic',      type:'skin', price:400},
+  skin_knight:   {icon:'🤺', name:'Knight',        rarity:'rare',      type:'skin', price:300},
+  skin_wizard:   {icon:'🧙‍♂️', name:'Wizard',     rarity:'legendary', type:'skin', price:600},
+  skin_demon:    {icon:'👹', name:'Demon',         rarity:'epic',      type:'skin', price:420},
+  skin_angel:    {icon:'👼', name:'Angel',         rarity:'epic',      type:'skin', price:420},
+  skin_cyber:    {icon:'🦾', name:'Cyborg',        rarity:'legendary', type:'skin', price:700},
+  skin_vampire:  {icon:'🧛', name:'Vampire',       rarity:'legendary', type:'skin', price:650},
+  skin_mummy:    {icon:'🧟‍♂️', name:'Mummy',      rarity:'rare',      type:'skin', price:320},
+  skin_clown:    {icon:'🤡', name:'Clown',         rarity:'uncommon',  type:'skin', price:180},
+  skin_santa:    {icon:'🎅', name:'Santa',         rarity:'rare',      type:'skin', price:350},
+  skin_space:    {icon:'🚀', name:'Space Suit',    rarity:'mythic',    type:'skin', price:1000},
+  skin_golden:   {icon:'✨', name:'Golden',        rarity:'mythic',    type:'skin', price:2000},
+
+  // ── TRAILS (purchasable) ────────────────────────
+  trail_fire:    {icon:'🔥', name:'Fire Trail',    rarity:'rare',      type:'trail', price:250,  trailColor:'#ef4444'},
+  trail_ice:     {icon:'❄️', name:'Ice Trail',     rarity:'rare',      type:'trail', price:250,  trailColor:'#7dd3fc'},
+  trail_rainbow: {icon:'🌈', name:'Rainbow Trail', rarity:'epic',      type:'trail', price:450,  trailColor:'#f472b6'},
+  trail_gold:    {icon:'💛', name:'Gold Trail',    rarity:'epic',      type:'trail', price:400,  trailColor:'#fbbf24'},
+  trail_purple:  {icon:'💜', name:'Purple Trail',  rarity:'rare',      type:'trail', price:280,  trailColor:'#a78bfa'},
+  trail_green:   {icon:'💚', name:'Lime Trail',    rarity:'uncommon',  type:'trail', price:150,  trailColor:'#4ade80'},
+  trail_galaxy:  {icon:'🌌', name:'Galaxy Trail',  rarity:'legendary', type:'trail', price:800,  trailColor:'#818cf8'},
+  trail_blood:   {icon:'🩸', name:'Blood Trail',   rarity:'legendary', type:'trail', price:900,  trailColor:'#dc2626'},
+  trail_electric:{icon:'⚡', name:'Electric Trail',rarity:'mythic',    type:'trail', price:1200, trailColor:'#facc15'},
+
+  // ── AURAS (purchasable) ─────────────────────────
+  aura_blue:     {icon:'💙', name:'Blue Aura',     rarity:'rare',      type:'aura', price:300,  auraColor:'#3b82f6'},
+  aura_red:      {icon:'❤️', name:'Red Aura',      rarity:'rare',      type:'aura', price:300,  auraColor:'#ef4444'},
+  aura_purple:   {icon:'💜', name:'Purple Aura',   rarity:'epic',      type:'aura', price:500,  auraColor:'#a78bfa'},
+  aura_gold:     {icon:'💛', name:'Gold Aura',     rarity:'legendary', type:'aura', price:800,  auraColor:'#fbbf24'},
+  aura_green:    {icon:'💚', name:'Nature Aura',   rarity:'rare',      type:'aura', price:320,  auraColor:'#22c55e'},
+  aura_pink:     {icon:'🩷', name:'Pink Aura',     rarity:'epic',      type:'aura', price:480,  auraColor:'#ec4899'},
+  aura_white:    {icon:'🤍', name:'Holy Aura',     rarity:'legendary', type:'aura', price:700,  auraColor:'#f1f5f9'},
+  aura_galaxy:   {icon:'🌌', name:'Galaxy Aura',   rarity:'mythic',    type:'aura', price:1500, auraColor:'#6366f1'},
+
+  // ── NAME COLORS (purchasable) ───────────────────
+  nc_gold:       {icon:'🟡', name:'Gold Name',     rarity:'epic',      type:'namecolor', price:400,  nameColor:'#fbbf24'},
+  nc_red:        {icon:'🔴', name:'Red Name',      rarity:'rare',      type:'namecolor', price:250,  nameColor:'#ef4444'},
+  nc_cyan:       {icon:'🔵', name:'Cyan Name',     rarity:'rare',      type:'namecolor', price:250,  nameColor:'#22d3ee'},
+  nc_pink:       {icon:'🩷', name:'Pink Name',     rarity:'epic',      type:'namecolor', price:380,  nameColor:'#ec4899'},
+  nc_green:      {icon:'🟢', name:'Green Name',    rarity:'uncommon',  type:'namecolor', price:180,  nameColor:'#4ade80'},
+  nc_rainbow:    {icon:'🌈', name:'Rainbow Name',  rarity:'mythic',    type:'namecolor', price:1800, nameColor:'rainbow'},
+
+  // ══ OWNER-ONLY TAGS (not in shop — given via PlayFab user data) ══
+  tag_owner:     {icon:'👑', name:'[OWNER]',       rarity:'owner', type:'tag', ownerOnly:true, tagStyle:'background:#dc2626;color:#fff'},
+  tag_z3n0:      {icon:'⚡', name:'[Z3N0]',        rarity:'owner', type:'tag', ownerOnly:true, tagStyle:'background:linear-gradient(90deg,#7c3aed,#ec4899);color:#fff'},
+  tag_mod:       {icon:'🛡', name:'[MOD]',         rarity:'owner', type:'tag', ownerOnly:true, tagStyle:'background:#1d4ed8;color:#fff'},
+  tag_admin:     {icon:'🔑', name:'[ADMIN]',       rarity:'owner', type:'tag', ownerOnly:true, tagStyle:'background:#b45309;color:#fff'},
+  tag_dev:       {icon:'💻', name:'[DEV]',         rarity:'owner', type:'tag', ownerOnly:true, tagStyle:'background:#065f46;color:#4ade80'},
+  tag_vip:       {icon:'💎', name:'[VIP]',         rarity:'owner', type:'tag', ownerOnly:true, tagStyle:'background:linear-gradient(90deg,#0ea5e9,#8b5cf6);color:#fff'},
+  tag_pro:       {icon:'🏆', name:'[PRO]',         rarity:'owner', type:'tag', ownerOnly:true, tagStyle:'background:#92400e;color:#fbbf24'},
+  tag_legend:    {icon:'🌟', name:'[LEGEND]',      rarity:'owner', type:'tag', ownerOnly:true, tagStyle:'background:linear-gradient(90deg,#fbbf24,#f97316);color:#000'},
+  tag_god:       {icon:'✨', name:'[GOD]',         rarity:'owner', type:'tag', ownerOnly:true, tagStyle:'background:linear-gradient(90deg,#fbbf24,#a78bfa,#ec4899);color:#fff'},
+  tag_tester:    {icon:'🧪', name:'[TESTER]',      rarity:'owner', type:'tag', ownerOnly:true, tagStyle:'background:#134e4a;color:#2dd4bf'},
+  tag_og:        {icon:'🅾️', name:'[OG]',          rarity:'owner', type:'tag', ownerOnly:true, tagStyle:'background:#1e1e2e;color:#cba6f7'},
+  tag_staff:     {icon:'🔰', name:'[STAFF]',       rarity:'owner', type:'tag', ownerOnly:true, tagStyle:'background:#1e3a5f;color:#93c5fd'},
+  tag_streamer:  {icon:'📺', name:'[STREAMER]',    rarity:'owner', type:'tag', ownerOnly:true, tagStyle:'background:#6d28d9;color:#ddd6fe'},
+  tag_content:   {icon:'🎬', name:'[CONTENT]',     rarity:'owner', type:'tag', ownerOnly:true, tagStyle:'background:#831843;color:#fbcfe8'},
+  tag_donor:     {icon:'💸', name:'[DONOR]',       rarity:'owner', type:'tag', ownerOnly:true, tagStyle:'background:#064e3b;color:#6ee7b7'},
+  tag_booster:   {icon:'🚀', name:'[BOOSTER]',     rarity:'owner', type:'tag', ownerOnly:true, tagStyle:'background:linear-gradient(90deg,#7c3aed,#06b6d4);color:#fff'},
+  tag_partner:   {icon:'🤝', name:'[PARTNER]',     rarity:'owner', type:'tag', ownerOnly:true, tagStyle:'background:#164e63;color:#7dd3fc'},
+  tag_winner:    {icon:'🥇', name:'[WINNER]',      rarity:'owner', type:'tag', ownerOnly:true, tagStyle:'background:#78350f;color:#fde68a'},
+  tag_famous:    {icon:'⭐', name:'[FAMOUS]',      rarity:'owner', type:'tag', ownerOnly:true, tagStyle:'background:#1c1917;color:#fcd34d'},
+  tag_trusted:   {icon:'✅', name:'[TRUSTED]',     rarity:'owner', type:'tag', ownerOnly:true, tagStyle:'background:#14532d;color:#86efac'},
+  tag_banned:    {icon:'🚫', name:'[BANNED]',      rarity:'owner', type:'tag', ownerOnly:true, tagStyle:'background:#3f3f46;color:#a1a1aa'},
+
+  // ── OWNER-ONLY HATS ────────────────────────────
+  hat_owner_crown:{icon:'👑', name:'Owner Crown',  rarity:'owner', type:'hat', ownerOnly:true},
+  hat_z3n0_halo:  {icon:'💫', name:'Z3N0 Halo',    rarity:'owner', type:'hat', ownerOnly:true},
+  hat_god_halo:   {icon:'✨', name:'God Halo',     rarity:'owner', type:'hat', ownerOnly:true},
+  hat_mod_helm:   {icon:'🛡️', name:'Mod Helmet',   rarity:'owner', type:'hat', ownerOnly:true},
+  hat_dev_cap:    {icon:'💻', name:'Dev Cap',      rarity:'owner', type:'hat', ownerOnly:true},
+  hat_vip_diamond:{icon:'💎', name:'VIP Diamond',  rarity:'owner', type:'hat', ownerOnly:true},
+  hat_legend_star:{icon:'🌟', name:'Legend Star',  rarity:'owner', type:'hat', ownerOnly:true},
+
+  // ── OWNER-ONLY AURAS ───────────────────────────
+  aura_owner:    {icon:'🔴', name:'Owner Aura',    rarity:'owner', type:'aura', ownerOnly:true, auraColor:'#dc2626'},
+  aura_z3n0:     {icon:'💜', name:'Z3N0 Aura',     rarity:'owner', type:'aura', ownerOnly:true, auraColor:'#7c3aed'},
+  aura_god:      {icon:'✨', name:'God Aura',      rarity:'owner', type:'aura', ownerOnly:true, auraColor:'#ffd700'},
+  aura_mod:      {icon:'🔵', name:'Mod Aura',      rarity:'owner', type:'aura', ownerOnly:true, auraColor:'#1d4ed8'},
+  aura_rainbow_ow:{icon:'🌈', name:'Rainbow Aura', rarity:'owner', type:'aura', ownerOnly:true, auraColor:'#f472b6'},
+
+  // ── OWNER-ONLY TRAILS ──────────────────────────
+  trail_owner:   {icon:'👑', name:'Owner Trail',   rarity:'owner', type:'trail', ownerOnly:true, trailColor:'#dc2626'},
+  trail_z3n0:    {icon:'⚡', name:'Z3N0 Trail',    rarity:'owner', type:'trail', ownerOnly:true, trailColor:'#a78bfa'},
+  trail_god:     {icon:'✨', name:'God Trail',     rarity:'owner', type:'trail', ownerOnly:true, trailColor:'#ffd700'},
+  trail_rainbow_ow:{icon:'🌈', name:'Rainbow Trail (O)',rarity:'owner', type:'trail', ownerOnly:true, trailColor:'#ec4899'},
+
+  // ── OWNER-ONLY NAME COLORS ─────────────────────
+  nc_owner:      {icon:'🔴', name:'Owner Red Name', rarity:'owner', type:'namecolor', ownerOnly:true, nameColor:'#ef4444'},
+  nc_z3n0:       {icon:'💜', name:'Z3N0 Purple',    rarity:'owner', type:'namecolor', ownerOnly:true, nameColor:'#a78bfa'},
+  nc_god:        {icon:'✨', name:'God Gold',       rarity:'owner', type:'namecolor', ownerOnly:true, nameColor:'#ffd700'},
 };
 
 // ════════════════════════════════════════════════════
@@ -382,29 +468,25 @@ let ws=null, myPlayerId=null, myRole=null, myTasks=[], gameState=null;
 let currentRoomCode=null, selectedColor='#e74c3c';
 let activeTaskId=null, mashCount=0, patternSequence=[], patternInput=[], patternPhase='watch';
 let wireConnections={}, wireTarget=null, killCooldownUntil=0;
+let currentShopFilter = 'all';
 
-// PlayFab auth state
-let pfPlayFabId = null;    // PlayFab's internal player ID
-let pfSessionTicket = null; // session token
-let pfUsername = null;
-let pfCredits = 0;
-let pfOwnedItems = [];     // array of item instance IDs
-let pfOwnedItemIds = [];   // array of catalog item IDs (e.g. 'hat_crown')
-let equippedHat = null;
-let equippedSkin = null;
-let pfStats = {};          // player stats dict
+let pfPlayFabId=null, pfSessionTicket=null, pfUsername=null;
+let pfCredits=0, pfOwnedItems=[], pfOwnedItemIds=[];
+// Equipped slots
+let equippedHat=null, equippedSkin=null, equippedTrail=null, equippedAura=null, equippedNameColor=null;
+// Owner-granted tags (stored in PlayFab user data as JSON array)
+let myTags=[];
+let pfStats={};
 
-// Extra mod state
-const playerMods = {};
-let mySpeedMult = 1;
-const trailParticles = [];
-const explosions = [];
-const auraSprites = {};
-const trailColorMap = {};
-const godmodeGlow = {};
-const freezeSprites = {};
-const titleSprites = {};
-const badgeSprites = {};
+const playerMods={};
+let mySpeedMult=1;
+const trailParticles=[];
+const auraSprites={};
+const trailColorMap={};
+const godmodeGlow={};
+const freezeSprites={};
+const titleSprites={};
+const badgeSprites={};
 
 // ════════════════════════════════════════════════════
 // STARS
@@ -419,12 +501,12 @@ const badgeSprites = {};
 // ════════════════════════════════════════════════════
 // PHASER
 // ════════════════════════════════════════════════════
-let phaserGame=null, gameScene=null, playerSprites={}, bodySprites=[];
-const MAP_W=1000, MAP_H=700;
+let phaserGame=null,gameScene=null,playerSprites={},bodySprites=[];
+const MAP_W=1000,MAP_H=700;
 
 const PhaserConfig={
-  type:Phaser.AUTO, width:window.innerWidth, height:window.innerHeight,
-  transparent:true, parent:document.body,
+  type:Phaser.AUTO,width:window.innerWidth,height:window.innerHeight,
+  transparent:true,parent:document.body,
   canvas:(()=>{const c=document.createElement('canvas');c.id='game-canvas';c.style.cssText='position:fixed;top:0;left:0;z-index:5';return c;})(),
   scene:{preload(){},create(){createScene(this);},update(){updateScene(this);}}
 };
@@ -498,7 +580,7 @@ function updateScene(scene){
   const me=gameState.players[myPlayerId];
   if(!me||!me.alive)return;
   const myMod=playerMods[myPlayerId];
-  if(myMod?.frozen)return;
+  if(myMod&&myMod.frozen)return;
   let dx=0,dy=0;
   const k=scene.wasd;
   const spd=SPEED*(mySpeedMult||1);
@@ -522,7 +604,7 @@ function updateScene(scene){
 }
 
 // ────────────────────────────────────────────────────
-// SPRITES  (detailed astronaut model)
+// SPRITES
 // ────────────────────────────────────────────────────
 function createPlayerSprite(id,p){
   if(!gameScene)return;
@@ -543,7 +625,9 @@ function createPlayerSprite(id,p){
   const legR=gameScene.add.rectangle(x+6,y+18,8,10,col).setDepth(5).setAlpha(alpha);
   const shoeL=gameScene.add.ellipse(x-6,y+24,11,7,0x1e293b).setDepth(5).setAlpha(alpha);
   const shoeR=gameScene.add.ellipse(x+6,y+24,11,7,0x1e293b).setDepth(5).setAlpha(alpha);
-  const name=gameScene.add.text(x,y-38,p.username||'?',{fontSize:'11px',color:'#fff',fontFamily:'sans-serif',stroke:'#000',strokeThickness:3}).setOrigin(.5).setDepth(12).setAlpha(p.alive?1:0.4);
+  // Name color support
+  const nc=(p.nameColor&&p.nameColor!=='rainbow')?p.nameColor:'#ffffff';
+  const name=gameScene.add.text(x,y-38,p.username||'?',{fontSize:'11px',color:nc,fontFamily:'sans-serif',stroke:'#000',strokeThickness:3}).setOrigin(.5).setDepth(12).setAlpha(p.alive?1:0.4);
   let hat=null;if(p.hat)hat=gameScene.add.text(x,y-30,p.hat,{fontSize:'16px'}).setOrigin(.5).setDepth(13);
   let ownerTag=null;
   if(p.isOwner){ownerTag=gameScene.add.text(x,y-52,'👑',{fontSize:'14px'}).setOrigin(.5).setDepth(13);gameScene.tweens.add({targets:ownerTag,y:y-55,yoyo:true,repeat:-1,duration:700});}
@@ -562,21 +646,21 @@ function updatePlayerSprite(id,x,y){
   for(const[obj,px,py]of parts)if(obj)obj.setPosition(px,py);
   if(s.hat)s.hat.setPosition(x,y-30);if(s.ownerTag)s.ownerTag.setPosition(x,y-52);
   const mod=playerMods[id];
-  if(mod?.trailColor&&id===myPlayerId)spawnTrail(x,y+8,mod.trailColor);
-  else if(id===myPlayerId&&myRole==='impostor')spawnTrail(x,y+8,'#ef4444');
+  const trailCol=mod&&mod.trailColor?mod.trailColor:(id===myPlayerId&&myRole==='impostor'?'#ef4444':null);
+  if(trailCol)spawnTrail(x,y+8,trailCol);
   updateAuraPositions();updateTitlePositions();
 }
 
 function markDead(id){
   const s=playerSprites[id];if(!s)return;
-  ['body','bodyShade','head','visor','visorShade','visorGlare','bp','bpShade','legL','legR','shoeL','shoeR'].forEach(k=>s[k]?.setAlpha(0.3));
+  ['body','bodyShade','head','visor','visorShade','visorGlare','bp','bpShade','legL','legR','shoeL','shoeR'].forEach(k=>s[k]&&s[k].setAlpha(0.3));
   if(s.name)s.name.setAlpha(0.4);
   if(!s.skull&&gameScene)s.skull=gameScene.add.text(s.x,s.y,'💀',{fontSize:'20px'}).setOrigin(.5).setDepth(14);
 }
 
 function destroyPlayerSprite(id){
   const s=playerSprites[id];if(!s)return;
-  ['body','bodyShade','head','visor','visorShade','visorGlare','bp','bpShade','legL','legR','shoeL','shoeR','name','hat','ownerTag','skull','selfRing'].forEach(k=>s[k]?.destroy());
+  ['body','bodyShade','head','visor','visorShade','visorGlare','bp','bpShade','legL','legR','shoeL','shoeR','name','hat','ownerTag','skull','selfRing'].forEach(k=>s[k]&&s[k].destroy());
   delete playerSprites[id];
   if(auraSprites[id]){auraSprites[id].destroy();delete auraSprites[id];}
   if(godmodeGlow[id]){godmodeGlow[id].destroy();delete godmodeGlow[id];}
@@ -590,7 +674,7 @@ function spawnBody(b){if(!gameScene)return;const col=Phaser.Display.Color.HexStr
 function clearBodies(){bodySprites.forEach(b=>{b.skull.destroy();b.glow.destroy();});bodySprites=[];}
 
 // ────────────────────────────────────────────────────
-// AURA / GLOW / TRAIL / TITLE / BADGE FX
+// VFX
 // ────────────────────────────────────────────────────
 function spawnTrail(x,y,color){
   for(let i=0;i<3;i++)trailParticles.push({x:x+(Math.random()-.5)*10,y:y+(Math.random()-.5)*10,color,alpha:.7,r:Math.random()*4+2,vx:(Math.random()-.5)*1,vy:(Math.random()-.5)*1});
@@ -606,11 +690,29 @@ function updateAura(id,mod){
   if(mod.godmode){const glow=gameScene.add.circle(s.x,s.y,22).setStrokeStyle(3,0xffd700,.9).setDepth(5);godmodeGlow[id]=glow;gameScene.tweens.add({targets:glow,alpha:{from:.4,to:1},yoyo:true,repeat:-1,duration:400});}
   if(mod.trailColor)trailColorMap[id]=mod.trailColor;else delete trailColorMap[id];
 }
-function updateAuraPositions(){for(const[id,a]of Object.entries(auraSprites)){const s=playerSprites[id];if(!s)continue;a.setPosition(s.x,s.y);}for(const[id,g]of Object.entries(godmodeGlow)){const s=playerSprites[id];if(!s)continue;g.setPosition(s.x,s.y);}}
-function updateFreezeIndicator(id,frozen){if(freezeSprites[id]){freezeSprites[id].destroy();delete freezeSprites[id];}if(!frozen||!gameScene)return;const s=playerSprites[id];if(!s)return;const txt=gameScene.add.text(s.x,s.y-50,'❄️',{fontSize:'18px'}).setOrigin(.5).setDepth(15);freezeSprites[id]=txt;gameScene.tweens.add({targets:txt,y:s.y-55,yoyo:true,repeat:-1,duration:600});}
-function updateTitleBadge(id,mod){if(!gameScene)return;if(titleSprites[id]){titleSprites[id].destroy();delete titleSprites[id];}if(badgeSprites[id]){badgeSprites[id].destroy();delete badgeSprites[id];}const s=playerSprites[id];if(!s)return;if(mod.title){titleSprites[id]=gameScene.add.text(s.x,s.y-44,mod.title,{fontSize:'9px',color:'#fbbf24',fontFamily:'monospace',stroke:'#000',strokeThickness:2,fontStyle:'bold'}).setOrigin(.5).setDepth(11);}if(mod.badge){badgeSprites[id]=gameScene.add.text(s.x+18,s.y-18,mod.badge,{fontSize:'14px'}).setOrigin(.5).setDepth(11);}}
-function updateTitlePositions(){for(const[id,t]of Object.entries(titleSprites)){const s=playerSprites[id];if(!s)continue;t.setPosition(s.x,s.y-44);}for(const[id,b]of Object.entries(badgeSprites)){const s=playerSprites[id];if(!s)continue;b.setPosition(s.x+18,s.y-18);}}
-
+function updateAuraPositions(){
+  for(const[id,a]of Object.entries(auraSprites)){const s=playerSprites[id];if(!s)continue;a.setPosition(s.x,s.y);}
+  for(const[id,g]of Object.entries(godmodeGlow)){const s=playerSprites[id];if(!s)continue;g.setPosition(s.x,s.y);}
+}
+function updateFreezeIndicator(id,frozen){
+  if(freezeSprites[id]){freezeSprites[id].destroy();delete freezeSprites[id];}
+  if(!frozen||!gameScene)return;
+  const s=playerSprites[id];if(!s)return;
+  const txt=gameScene.add.text(s.x,s.y-50,'❄️',{fontSize:'18px'}).setOrigin(.5).setDepth(15);
+  freezeSprites[id]=txt;gameScene.tweens.add({targets:txt,y:s.y-55,yoyo:true,repeat:-1,duration:600});
+}
+function updateTitleBadge(id,mod){
+  if(!gameScene)return;
+  if(titleSprites[id]){titleSprites[id].destroy();delete titleSprites[id];}
+  if(badgeSprites[id]){badgeSprites[id].destroy();delete badgeSprites[id];}
+  const s=playerSprites[id];if(!s)return;
+  if(mod.title){titleSprites[id]=gameScene.add.text(s.x,s.y-44,mod.title,{fontSize:'9px',color:'#fbbf24',fontFamily:'monospace',stroke:'#000',strokeThickness:2,fontStyle:'bold'}).setOrigin(.5).setDepth(11);}
+  if(mod.badge){badgeSprites[id]=gameScene.add.text(s.x+18,s.y-18,mod.badge,{fontSize:'14px'}).setOrigin(.5).setDepth(11);}
+}
+function updateTitlePositions(){
+  for(const[id,t]of Object.entries(titleSprites)){const s=playerSprites[id];if(!s)continue;t.setPosition(s.x,s.y-44);}
+  for(const[id,b]of Object.entries(badgeSprites)){const s=playerSprites[id];if(!s)continue;b.setPosition(s.x+18,s.y-18);}
+}
 function spawnExplosion(cx,cy,radius){
   if(!gameScene)return;
   for(let i=0;i<30;i++){const angle=Math.random()*Math.PI*2;const px=gameScene.add.circle(cx,cy,Math.random()*5+2,0xff6600,1).setDepth(51);gameScene.tweens.add({targets:px,x:cx+Math.cos(angle)*radius*(.3+Math.random()*.7),y:cy+Math.sin(angle)*radius*(.3+Math.random()*.7),alpha:0,duration:600+Math.random()*400,onComplete:()=>px.destroy()});}
@@ -619,36 +721,40 @@ function spawnExplosion(cx,cy,radius){
   gameScene.cameras.main.shake(300,0.015);
 }
 
-// Trail canvas overlay
+// Trail canvas
 (function(){
   const cv=document.createElement('canvas');cv.style.cssText='position:fixed;top:0;left:0;z-index:6;pointer-events:none';cv.width=window.innerWidth;cv.height=window.innerHeight;document.body.appendChild(cv);
   const ctx=cv.getContext('2d');
   window.addEventListener('resize',()=>{cv.width=window.innerWidth;cv.height=window.innerHeight;});
-  function loop(){ctx.clearRect(0,0,cv.width,cv.height);if(gameScene&&gameState?.phase==='game'){const cam=gameScene.cameras.main;const ox=cam.scrollX,oy=cam.scrollY;for(let i=trailParticles.length-1;i>=0;i--){const p=trailParticles[i];p.alpha-=.035;p.x+=p.vx;p.y+=p.vy;if(p.alpha<=0){trailParticles.splice(i,1);continue;}const sx=p.x-ox,sy=p.y-oy;ctx.beginPath();ctx.arc(sx,sy,p.r*p.alpha,0,Math.PI*2);ctx.fillStyle=p.color+Math.floor(p.alpha*255).toString(16).padStart(2,'0');ctx.fill();}}requestAnimationFrame(loop);}
+  function loop(){ctx.clearRect(0,0,cv.width,cv.height);if(gameScene&&gameState&&gameState.phase==='game'){const cam=gameScene.cameras.main;const ox=cam.scrollX,oy=cam.scrollY;for(let i=trailParticles.length-1;i>=0;i--){const p=trailParticles[i];p.alpha-=.035;p.x+=p.vx;p.y+=p.vy;if(p.alpha<=0){trailParticles.splice(i,1);continue;}const sx=p.x-ox,sy=p.y-oy;ctx.beginPath();ctx.arc(sx,sy,p.r*p.alpha,0,Math.PI*2);ctx.fillStyle=p.color+Math.floor(p.alpha*255).toString(16).padStart(2,'0');ctx.fill();}}requestAnimationFrame(loop);}
   loop();
 })();
 
 // ════════════════════════════════════════════════════
-// WEBSOCKET  (game server only — NOT auth)
+// WEBSOCKET
 // ════════════════════════════════════════════════════
-let wsReady = false;
-let wsQueue = []; // queued messages while WS is connecting
+let wsReady=false,wsQueue=[];
 
 function connectWS(){
   return new Promise((res,rej)=>{
     ws=new WebSocket(GAME_SERVER_WS);
     ws.onopen=()=>{wsReady=true;wsQueue.forEach(m=>ws.send(JSON.stringify(m)));wsQueue=[];res();};
     ws.onerror=()=>rej(new Error('WS'));
-    ws.onmessage=e=>{try{handleMsg(JSON.parse(e.data));}catch{}};
+    ws.onmessage=e=>{try{handleMsg(JSON.parse(e.data));}catch(err){console.warn('WS parse error',err);}};
     ws.onclose=()=>{wsReady=false;notify('⚠️ Disconnected. Reconnecting...','#f87171');setTimeout(reconnectWS,2500);};
   });
 }
-function reconnectWS(){if(ws&&ws.readyState!==WebSocket.CLOSED)return;ws=new WebSocket(GAME_SERVER_WS);ws.onopen=()=>{wsReady=true;wsQueue.forEach(m=>ws.send(JSON.stringify(m)));wsQueue=[];};ws.onerror=()=>setTimeout(reconnectWS,3500);ws.onmessage=e=>{try{handleMsg(JSON.parse(e.data));}catch{}};ws.onclose=()=>{wsReady=false;setTimeout(reconnectWS,2500);};}
-
-// ══ FIX: wsSend checks readyState and queues if not open ══
+function reconnectWS(){
+  if(ws&&ws.readyState!==WebSocket.CLOSED)return;
+  ws=new WebSocket(GAME_SERVER_WS);
+  ws.onopen=()=>{wsReady=true;wsQueue.forEach(m=>ws.send(JSON.stringify(m)));wsQueue=[];};
+  ws.onerror=()=>setTimeout(reconnectWS,3500);
+  ws.onmessage=e=>{try{handleMsg(JSON.parse(e.data));}catch(err){}};
+  ws.onclose=()=>{wsReady=false;setTimeout(reconnectWS,2500);};
+}
 function wsSend(msg){
-  if(ws&&ws.readyState===WebSocket.OPEN){ws.send(JSON.stringify(msg));}
-  else{wsQueue.push(msg);}
+  if(ws&&ws.readyState===WebSocket.OPEN)ws.send(JSON.stringify(msg));
+  else wsQueue.push(msg);
 }
 
 function handleMsg(msg){
@@ -659,16 +765,16 @@ function handleMsg(msg){
     case 'player_joined':
       if(gameState)gameState.players[msg.player.id]=msg.player;updateLobbyUI();notify(`👋 ${msg.player.username} joined`,'#4ade80');break;
     case 'player_left':
-      if(gameState)delete gameState.players[msg.playerId];updateLobbyUI();if(gameState?.phase==='game')destroyPlayerSprite(msg.playerId);notify(`${msg.username||'Player'} left`,'#f87171');break;
+      if(gameState)delete gameState.players[msg.playerId];updateLobbyUI();if(gameState&&gameState.phase==='game')destroyPlayerSprite(msg.playerId);notify(`${msg.username||'Player'} left`,'#f87171');break;
     case 'room_update':
       gameState=msg.state;updateLobbyUI();break;
     case 'game_started':
       gameState=msg.state;myRole=msg.myRole;myTasks=msg.myTasks||[];killCooldownUntil=0;showGameScreen();break;
     case 'player_moved':
-      if(gameState?.players[msg.playerId]){gameState.players[msg.playerId].x=msg.x;gameState.players[msg.playerId].y=msg.y;updatePlayerSprite(msg.playerId,msg.x,msg.y);}break;
+      if(gameState&&gameState.players[msg.playerId]){gameState.players[msg.playerId].x=msg.x;gameState.players[msg.playerId].y=msg.y;updatePlayerSprite(msg.playerId,msg.x,msg.y);}break;
     case 'player_killed':
       if(gameState){if(gameState.players[msg.victimId])gameState.players[msg.victimId].alive=false;gameState.bodies=gameState.bodies||[];gameState.bodies.push(msg.body);spawnBody(msg.body);markDead(msg.victimId);}
-      if(msg.victimId===myPlayerId){showBanner('YOU DIED','#f87171');notify('💀 You were killed! Complete tasks as a ghost.','#f87171');flashRed();}
+      if(msg.victimId===myPlayerId){showBanner('YOU DIED','#f87171');notify('💀 You were killed!','#f87171');flashRed();}
       updateAliveCount();break;
     case 'task_completed':
       if(gameState)gameState.taskProgress=msg.progress;updateTaskBar();
@@ -679,7 +785,7 @@ function handleMsg(msg){
     case 'voting_started':
       switchToVoting(VOTE_TIME);break;
     case 'vote_cast':
-      notify(`🗳 ${msg.voterName||'Someone'} voted (${msg.voteCount||'?'}/${msg.totalAlive||'?'})`,'rgba(255,255,255,0.5)');
+      notify(`🗳 ${msg.voterName||'Someone'} voted`,'rgba(255,255,255,0.5)');
       if(gameState){if(!gameState.votes)gameState.votes={};if(msg.targetId)gameState.votes[msg.voterId]=msg.targetId;}
       updateVoteGrid();break;
     case 'vote_result':
@@ -693,29 +799,28 @@ function handleMsg(msg){
     case 'back_to_lobby':
       gameState=msg.state;showScreen('lobby-screen');document.getElementById('hud').classList.add('hidden');document.getElementById('action-btns').classList.add('hidden');updateLobbyUI();clearBodies();for(const id of Object.keys(playerSprites))destroyPlayerSprite(id);notify('🎮 Back to lobby!','#a78bfa');break;
     case 'kicked':
-      notify('🚫 Kicked: '+(msg.reason||''),'#f87171');setTimeout(()=>{ws?.close();showScreen('menu-screen');},2000);break;
+      notify('🚫 Kicked: '+(msg.reason||''),'#f87171');setTimeout(()=>{if(ws)ws.close();showScreen('menu-screen');},2000);break;
     case 'error':
       notify('❌ '+msg.message,'#f87171');break;
     case 'system_message':
       notify('📢 '+msg.text,'#fbbf24');break;
-    // Owner mod messages
     case 'player_mod_update':
       playerMods[msg.playerId]=msg.mod;
       if(msg.playerId===myPlayerId)mySpeedMult=msg.mod.speedMult||1;
       updateAura(msg.playerId,msg.mod);updateFreezeIndicator(msg.playerId,msg.mod.frozen);updateTitleBadge(msg.playerId,msg.mod);
       if(msg.mod.trailColor)trailColorMap[msg.playerId]=msg.mod.trailColor;break;
     case 'player_teleported':
-      if(gameState?.players[msg.playerId]){gameState.players[msg.playerId].x=msg.x;gameState.players[msg.playerId].y=msg.y;updatePlayerSprite(msg.playerId,msg.x,msg.y);}
+      if(gameState&&gameState.players[msg.playerId]){gameState.players[msg.playerId].x=msg.x;gameState.players[msg.playerId].y=msg.y;updatePlayerSprite(msg.playerId,msg.x,msg.y);}
       if(msg.playerId===myPlayerId){if(gameScene)gameScene.cameras.main.centerOn(msg.x,msg.y);notify('⚡ You were teleported!','#a78bfa');flashRed();}break;
     case 'player_respawned':
-      if(gameState?.players[msg.playerId]){gameState.players[msg.playerId].alive=true;createPlayerSprite(msg.playerId,gameState.players[msg.playerId]);notify(`✨ ${msg.username} was respawned!`,'#4ade80');}break;
+      if(gameState&&gameState.players[msg.playerId]){gameState.players[msg.playerId].alive=true;createPlayerSprite(msg.playerId,gameState.players[msg.playerId]);notify(`✨ ${msg.username} was respawned!`,'#4ade80');}break;
     case 'role_changed':
-      if(msg.byOwner){myRole=msg.newRole;const rb=document.getElementById('role-badge');if(myRole==='impostor'){rb.textContent='😈 IMPOSTOR';rb.className='role-badge role-impostor';document.getElementById('btn-kill').style.display='flex';document.getElementById('btn-vent').style.display='flex';}else{rb.textContent='✅ CREWMATE';rb.className='role-badge role-crewmate';document.getElementById('btn-kill').style.display='none';document.getElementById('btn-vent').style.display='none';}showBanner(myRole==='impostor'?'IMPOSTOR':'CREWMATE',myRole==='impostor'?'#f87171':'#4ade80');notify(`🎭 Owner changed your role!`,'#fbbf24');}break;
+      if(msg.byOwner){myRole=msg.newRole;const rb=document.getElementById('role-badge');if(myRole==='impostor'){rb.textContent='😈 IMPOSTOR';rb.className='role-badge role-impostor';document.getElementById('btn-kill').style.display='flex';document.getElementById('btn-vent').style.display='flex';}else{rb.textContent='✅ CREWMATE';rb.className='role-badge role-crewmate';document.getElementById('btn-kill').style.display='none';document.getElementById('btn-vent').style.display='none';}showBanner(myRole==='impostor'?'IMPOSTOR':'CREWMATE',myRole==='impostor'?'#f87171':'#4ade80');notify('🎭 Owner changed your role!','#fbbf24');}break;
     case 'speed_changed':
       mySpeedMult=msg.mult||1;if(msg.mult>1.5)notify('⚡ Speed boost!','#fbbf24');else if(msg.mult<.8)notify('🐌 You are slowed!','#f87171');else notify('✅ Speed normal','#4ade80');break;
     case 'owner_announcement':
       notify(`${msg.icon||'📢'} ${msg.text}`,msg.color||'#fbbf24');showBanner(msg.text.slice(0,20),msg.color||'#fbbf24');
-      if(gameState?.phase==='meeting'||gameState?.phase==='vote')addChatMsg({username:'📢 OWNER',color:msg.color||'#fbbf24',text:msg.text,alive:true});break;
+      if(gameState&&(gameState.phase==='meeting'||gameState.phase==='vote'))addChatMsg({username:'📢 OWNER',color:msg.color||'#fbbf24',text:msg.text,alive:true});break;
     case 'owner_explosion_fx':
       spawnExplosion(msg.cx,msg.cy,msg.radius);notify('💥 EXPLOSION!','#ef4444');break;
     case 'owner_roles_reveal':
@@ -728,14 +833,21 @@ function handleMsg(msg){
 }
 
 // ════════════════════════════════════════════════════
-// PLAYFAB AUTH
+// AUTH
 // ════════════════════════════════════════════════════
+function showRegister(){
+  document.getElementById('login-form').style.display='none';
+  document.getElementById('register-form').style.display='block';
+  buildColorGrid('reg-color-grid',false);
+}
+function showLogin(){
+  document.getElementById('register-form').style.display='none';
+  document.getElementById('login-form').style.display='block';
+}
 
-function pfCall(fn, params){
+function pfCall(fn,params){
   return new Promise((res,rej)=>{
-    PlayFabClientSDK[fn](params,(result,error)=>{
-      if(error){rej(error);}else{res(result);}
-    });
+    PlayFabClientSDK[fn](params,(result,error)=>{if(error)rej(error);else res(result);});
   });
 }
 
@@ -745,18 +857,19 @@ async function doLogin(){
   const err=document.getElementById('login-err');
   err.style.display='none';
   if(!u||!p){err.textContent='Fill in all fields';err.style.display='block';return;}
+  const loginBtn=document.querySelector('#login-form .btn-primary');
+  if(loginBtn)loginBtn.disabled=true;
   try{
     const result=await pfCall('LoginWithCustomID',{
-      CustomId: u+'_'+btoa(p).slice(0,16),
+      CustomId:u+'_'+btoa(p).slice(0,16),
       CreateAccount:false,
       InfoRequestParameters:{GetPlayerStatistics:true,GetUserData:true,GetUserInventory:true,GetPlayerProfile:true}
     });
     await onPfLogin(result,u);
   }catch(e){
-    // If account doesn't exist or wrong password, show error
-    err.textContent=e.errorMessage||'Login failed. Check your username/password.';
+    err.textContent=(e&&e.errorMessage)||'Login failed. Check your credentials.';
     err.style.display='block';
-  }
+  }finally{if(loginBtn)loginBtn.disabled=false;}
 }
 
 async function doRegister(){
@@ -767,26 +880,22 @@ async function doRegister(){
   if(!u||!p){err.textContent='Fill in all fields';err.style.display='block';return;}
   if(u.length<3){err.textContent='Username must be at least 3 characters';err.style.display='block';return;}
   if(p.length<4){err.textContent='Password must be at least 4 characters';err.style.display='block';return;}
+  const regBtn=document.querySelector('#register-form .btn-primary');
+  if(regBtn)regBtn.disabled=true;
   try{
-    // Register = create account with CustomID (username+hashed password as unique key)
     const result=await pfCall('LoginWithCustomID',{
       CustomId:u+'_'+btoa(p).slice(0,16),
       CreateAccount:true,
       InfoRequestParameters:{GetPlayerStatistics:true,GetUserData:true,GetUserInventory:true}
     });
-    // Set display name
-    try{await pfCall('UpdateUserTitleDisplayName',{DisplayName:u});}catch{}
-    // Save username and color in user data
-    await pfCall('UpdateUserData',{Data:{username:u,color:selectedColor,hat:''}});
-    // Give starter credits
-    await pfCall('ExecuteCloudScript',{FunctionName:'giveStarterCredits',GeneratePlayStreamEvent:false}).catch(()=>{});
-    // Manually add starter credits via AddUserVirtualCurrency if cloud script not set up
-    try{await pfCall('AddUserVirtualCurrency',{VirtualCurrency:'GD',Amount:200});}catch{}
+    try{await pfCall('UpdateUserTitleDisplayName',{DisplayName:u});}catch(e){}
+    await pfCall('UpdateUserData',{Data:{username:u,color:selectedColor,hat:'',skin:'',trail:'',aura:'',namecolor:'',tags:'[]',owned_items:'[]'}});
+    try{await pfCall('AddUserVirtualCurrency',{VirtualCurrency:'GD',Amount:200});}catch(e){}
     await onPfLogin(result,u);
   }catch(e){
-    err.textContent=e.errorMessage||'Registration failed. Username may be taken.';
+    err.textContent=(e&&e.errorMessage)||'Registration failed.';
     err.style.display='block';
-  }
+  }finally{if(regBtn)regBtn.disabled=false;}
 }
 
 async function onPfLogin(result,usernameHint){
@@ -794,171 +903,229 @@ async function onPfLogin(result,usernameHint){
   pfSessionTicket=result.data.SessionTicket;
   PlayFab._internalSettings.sessionTicket=pfSessionTicket;
 
-  // Load user data
-  const userData=result.data.InfoResultPayload?.UserData||{};
-  pfUsername=userData.username?.Value||usernameHint||result.data.PlayFabId.slice(0,8);
-  selectedColor=userData.color?.Value||'#e74c3c';
-  equippedHat=userData.hat?.Value||null;
-  equippedSkin=userData.skin?.Value||null;
+  const userData=(result.data.InfoResultPayload&&result.data.InfoResultPayload.UserData)||{};
+  pfUsername=(userData.username&&userData.username.Value)||usernameHint||result.data.PlayFabId.slice(0,8);
+  selectedColor=(userData.color&&userData.color.Value)||'#e74c3c';
+  equippedHat=(userData.hat&&userData.hat.Value)||null;
+  equippedSkin=(userData.skin&&userData.skin.Value)||null;
+  equippedTrail=(userData.trail&&userData.trail.Value)||null;
+  equippedAura=(userData.aura&&userData.aura.Value)||null;
+  equippedNameColor=(userData.namecolor&&userData.namecolor.Value)||null;
 
-  // Load credits
+  // Load tags (owner-granted)
+  try{myTags=JSON.parse((userData.tags&&userData.tags.Value)||'[]');}catch(e){myTags=[];}
+
   try{
     const bal=await pfCall('GetUserInventory',{});
-    pfCredits=bal.data.VirtualCurrencyBalance?.GD||0;
+    pfCredits=(bal.data.VirtualCurrencyBalance&&bal.data.VirtualCurrencyBalance.GD)||0;
     pfOwnedItems=bal.data.Inventory||[];
     pfOwnedItemIds=pfOwnedItems.map(i=>i.ItemId);
-  }catch{pfCredits=0;}
+  }catch(e){pfCredits=0;}
 
-  // Load stats
+  // Merge user-data owned_items (our fallback store)
   try{
-    const stats=result.data.InfoResultPayload?.PlayerStatistics||[];
+    const storedOwned=JSON.parse((userData.owned_items&&userData.owned_items.Value)||'[]');
+    for(const id of storedOwned){if(!pfOwnedItemIds.includes(id))pfOwnedItemIds.push(id);}
+  }catch(e){}
+
+  try{
+    const stats=(result.data.InfoResultPayload&&result.data.InfoResultPayload.PlayerStatistics)||[];
     pfStats={};for(const s of stats)pfStats[s.StatisticName]=s.Value;
-  }catch{}
+  }catch(e){}
 
   saveLocalSession();
   showMenuScreen();
 }
 
 function saveLocalSession(){
-  localStorage.setItem('spt_pf',JSON.stringify({
-    pfPlayFabId,pfSessionTicket,pfUsername,selectedColor,equippedHat,equippedSkin,pfCredits
-  }));
+  try{
+    localStorage.setItem('spt_pf',JSON.stringify({
+      pfPlayFabId,pfSessionTicket,pfUsername,selectedColor,
+      equippedHat,equippedSkin,equippedTrail,equippedAura,equippedNameColor,
+      myTags,pfCredits
+    }));
+  }catch(e){}
 }
 
 async function tryAutoLogin(){
-  const saved=localStorage.getItem('spt_pf');
+  let saved=null;
+  try{saved=localStorage.getItem('spt_pf');}catch(e){}
   if(!saved){showScreen('auth-screen');return;}
   try{
     const d=JSON.parse(saved);
     pfPlayFabId=d.pfPlayFabId;pfSessionTicket=d.pfSessionTicket;pfUsername=d.pfUsername;
-    selectedColor=d.selectedColor||'#e74c3c';equippedHat=d.equippedHat||null;
-    equippedSkin=d.equippedSkin||null;pfCredits=d.pfCredits||0;
+    selectedColor=d.selectedColor||'#e74c3c';
+    equippedHat=d.equippedHat||null;equippedSkin=d.equippedSkin||null;
+    equippedTrail=d.equippedTrail||null;equippedAura=d.equippedAura||null;
+    equippedNameColor=d.equippedNameColor||null;
+    myTags=d.myTags||[];pfCredits=d.pfCredits||0;
     PlayFab._internalSettings.sessionTicket=pfSessionTicket;
-    // Refresh balance
-    try{const bal=await pfCall('GetUserInventory',{});pfCredits=bal.data.VirtualCurrencyBalance?.GD||0;pfOwnedItems=bal.data.Inventory||[];pfOwnedItemIds=pfOwnedItems.map(i=>i.ItemId);}catch{}
+    // Refresh from PlayFab
+    try{
+      const bal=await pfCall('GetUserInventory',{});
+      pfCredits=(bal.data.VirtualCurrencyBalance&&bal.data.VirtualCurrencyBalance.GD)||0;
+      pfOwnedItems=bal.data.Inventory||[];
+      pfOwnedItemIds=pfOwnedItems.map(i=>i.ItemId);
+      const ud=await pfCall('GetUserData',{Keys:['owned_items','tags','hat','skin','trail','aura','namecolor']});
+      const dd=ud.data.Data||{};
+      try{const storedOwned=JSON.parse((dd.owned_items&&dd.owned_items.Value)||'[]');for(const id of storedOwned)if(!pfOwnedItemIds.includes(id))pfOwnedItemIds.push(id);}catch(e){}
+      try{myTags=JSON.parse((dd.tags&&dd.tags.Value)||'[]');}catch(e){}
+      if(dd.hat)equippedHat=dd.hat.Value||null;
+      if(dd.skin)equippedSkin=dd.skin.Value||null;
+      if(dd.trail)equippedTrail=dd.trail.Value||null;
+      if(dd.aura)equippedAura=dd.aura.Value||null;
+      if(dd.namecolor)equippedNameColor=dd.namecolor.Value||null;
+    }catch(e){}
     showMenuScreen();
-  }catch{showScreen('auth-screen');}
+  }catch(e){showScreen('auth-screen');}
 }
 
 function logout(){
-  localStorage.removeItem('spt_pf');
-  pfPlayFabId=pfSessionTicket=pfUsername=null;pfCredits=0;pfOwnedItems=[];pfOwnedItemIds=[];
+  try{localStorage.removeItem('spt_pf');}catch(e){}
+  pfPlayFabId=pfSessionTicket=pfUsername=null;pfCredits=0;pfOwnedItems=[];pfOwnedItemIds=[];myTags=[];
   showScreen('auth-screen');
 }
 
 // ════════════════════════════════════════════════════
-// PLAYFAB CREDITS HELPERS
+// CREDITS HELPERS
 // ════════════════════════════════════════════════════
-async function pfAddCredits(amount, showNotif=true){
+async function pfAddCredits(amount,showNotif){
+  if(showNotif===undefined)showNotif=true;
   if(!pfSessionTicket)return;
   try{
     const r=await pfCall('AddUserVirtualCurrency',{VirtualCurrency:'GD',Amount:amount});
-    pfCredits=r.data.Balance;
-    saveLocalSession();
+    pfCredits=r.data.Balance;saveLocalSession();
     if(showNotif)notify(`💰 +${amount} credits!`,'#fbbf24');
-    // Update display
-    document.getElementById('menu-credits').textContent=`💰 ${pfCredits} Credits`;
-    document.getElementById('shop-credits').textContent=`💰 ${pfCredits} Credits`;
-  }catch{}
+    updateCreditsDisplay();
+  }catch(e){}
 }
-
 async function pfSpendCredits(amount){
   if(!pfSessionTicket)return false;
   if(pfCredits<amount){notify(`❌ Need ${amount} credits (you have ${pfCredits})`,'#f87171');return false;}
   try{
     const r=await pfCall('SubtractUserVirtualCurrency',{VirtualCurrency:'GD',Amount:amount});
-    pfCredits=r.data.Balance;
-    saveLocalSession();
-    document.getElementById('menu-credits').textContent=`💰 ${pfCredits} Credits`;
-    document.getElementById('shop-credits').textContent=`💰 ${pfCredits} Credits`;
-    return true;
-  }catch{notify('❌ Transaction failed','#f87171');return false;}
+    pfCredits=r.data.Balance;saveLocalSession();updateCreditsDisplay();return true;
+  }catch(e){notify('❌ Transaction failed','#f87171');return false;}
 }
-
+function updateCreditsDisplay(){
+  const mc=document.getElementById('menu-credits');if(mc)mc.textContent=`💰 ${pfCredits} Credits`;
+  const sc=document.getElementById('shop-credits');if(sc)sc.textContent=`💰 ${pfCredits} Credits`;
+}
 async function pfSaveData(key,value){
   if(!pfSessionTicket)return;
-  try{await pfCall('UpdateUserData',{Data:{[key]:typeof value==='string'?value:JSON.stringify(value)}});}catch{}
+  try{await pfCall('UpdateUserData',{Data:{[key]:typeof value==='string'?value:JSON.stringify(value)}});}catch(e){}
 }
-
 async function pfUpdateStat(name,value){
   if(!pfSessionTicket)return;
-  try{await pfCall('UpdatePlayerStatistics',{Statistics:[{StatisticName:name,Value:value}]});}catch{}
+  try{await pfCall('UpdatePlayerStatistics',{Statistics:[{StatisticName:name,Value:value}]});}catch(e){}
 }
 
 // ════════════════════════════════════════════════════
-// MENU + SHOP
+// ██████████  SHOP SYSTEM  ██████████
 // ════════════════════════════════════════════════════
-async function showMenuScreen(){
-  showScreen('menu-screen');
-  document.getElementById('menu-welcome').textContent=`Welcome, ${pfUsername}! 👋`;
-  document.getElementById('menu-credits').textContent=`💰 ${pfCredits} Credits`;
-  document.getElementById('shop-credits').textContent=`💰 ${pfCredits} Credits`;
-  buildColorGrid('profile-color-grid',true);
-  loadShop();
-  const games=pfStats.games_played||0;
-  const wins=pfStats.games_won||0;
-  document.getElementById('profile-stats').innerHTML=
-    `<b>${esc(pfUsername)}</b><br>
-    💰 ${pfCredits} Credits<br>
-    🎮 Games: ${games} · 🏆 Wins: ${wins}<br>
-    <small style="opacity:.4">ID: ${pfPlayFabId||'—'}</small>`;
-  document.getElementById('equipped-hat-display').textContent=equippedHat?
-    (COSMETIC_META[equippedHat]?.icon||equippedHat):'None';
+function buildShopFilters(){
+  const types=['all','hat','skin','trail','aura','namecolor'];
+  const labels={all:'All',hat:'🧢 Hats',skin:'👔 Skins',trail:'✨ Trails',aura:'🌟 Auras',namecolor:'🎨 Names'};
+  const row=document.getElementById('shop-filters');if(!row)return;
+  row.innerHTML=types.map(t=>`<button class="shop-filter-btn ${t===currentShopFilter?'active':''}" onclick="setShopFilter('${t}')">${labels[t]}</button>`).join('');
 }
-
-function switchMenuTab(tab,btn){
-  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-  document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
-  btn.classList.add('active');document.getElementById(`menu-tab-${tab}`).classList.add('active');
-  if(tab==='shop')loadShop();
-}
+function setShopFilter(f){currentShopFilter=f;buildShopFilters();loadShop();}
 
 function loadShop(){
-  document.getElementById('shop-credits').textContent=`💰 ${pfCredits} Credits`;
-  const grid=document.getElementById('shop-items-grid');
-  const allItems=Object.entries(COSMETIC_META);
-  if(!allItems.length){grid.innerHTML='<div style="color:rgba(255,255,255,.4);text-align:center;padding:20px">No items.</div>';return;}
-  const ri={common:'⚪',uncommon:'🟢',rare:'🔵',epic:'🟣',legendary:'🟡'};
-  grid.innerHTML=allItems.map(([id,c])=>{
+  updateCreditsDisplay();
+  buildShopFilters();
+  const grid=document.getElementById('shop-items-grid');if(!grid)return;
+  const ri={common:'⚪',uncommon:'🟢',rare:'🔵',epic:'🟣',legendary:'🟡',mythic:'🌸',owner:'🔴'};
+
+  const items=Object.entries(COSMETIC_META).filter(([,c])=>{
+    if(c.ownerOnly)return false; // never show owner-only in public shop
+    if(currentShopFilter==='all')return true;
+    return c.type===currentShopFilter;
+  });
+
+  if(!items.length){grid.innerHTML='<div style="color:rgba(255,255,255,.4);text-align:center;padding:20px;grid-column:1/-1">No items in this category.</div>';return;}
+
+  grid.innerHTML=items.map(([id,c])=>{
     const owned=pfOwnedItemIds.includes(id);
-    const isEquipped=(c.type==='hat'&&equippedHat===id)||(c.type==='skin'&&equippedSkin===id);
-    return `<div class="shop-item ${owned?'owned':''} ${isEquipped?'equipped-item':''}" onclick="${owned?`equipCosmetic('${id}','${c.type}')`:` buyCosmetic('${id}',${c.price})`}">
+    const slot=c.type==='hat'?equippedHat:c.type==='skin'?equippedSkin:c.type==='trail'?equippedTrail:c.type==='aura'?equippedAura:c.type==='namecolor'?equippedNameColor:null;
+    const isEquipped=slot===id;
+    const onclick=owned?`equipCosmetic('${id}','${c.type}')`:`buyCosmetic('${id}',${c.price})`;
+    return `<div class="shop-item ${owned?'owned':''} ${isEquipped?'equipped-item':''}" onclick="${onclick}">
       <div class="shop-item-icon">${c.icon}</div>
       <div class="shop-item-name rarity-${c.rarity}">${ri[c.rarity]||''} ${c.name}</div>
-      <div class="shop-item-price">${owned?(isEquipped?'✅ Equipped':'🎮 Equip'):` 💰 ${c.price}`}</div>
+      <div class="shop-item-price">${owned?(isEquipped?'✅ Equipped':'🎮 Equip'):`💰 ${c.price}`}</div>
     </div>`;
   }).join('');
 }
 
 async function buyCosmetic(id,price){
+  if(!COSMETIC_META[id])return;
+  if(COSMETIC_META[id].ownerOnly){notify('🔒 Owner-only cosmetic!','#f87171');return;}
   const ok=await pfSpendCredits(price);
   if(!ok)return;
-  // Grant item in PlayFab inventory
   try{
-    // We use ExecuteCloudScript to grant, but since catalog may not be set up yet
-    // we record it in user data as backup
-    const owned=JSON.parse((await pfCall('GetUserData',{Keys:['owned_items']})).data.Data?.owned_items?.Value||'[]');
+    // Load existing owned_items, push new id, save back
+    let owned=[];
+    try{
+      const ud=await pfCall('GetUserData',{Keys:['owned_items']});
+      owned=JSON.parse((ud.data.Data&&ud.data.Data.owned_items&&ud.data.Data.owned_items.Value)||'[]');
+    }catch(e){}
     if(!owned.includes(id))owned.push(id);
     await pfSaveData('owned_items',JSON.stringify(owned));
-    pfOwnedItemIds.push(id);
+    if(!pfOwnedItemIds.includes(id))pfOwnedItemIds.push(id);
     saveLocalSession();
-    notify(`✨ Got ${COSMETIC_META[id]?.name||id}!`,'#a78bfa');
+    notify(`✨ Got ${COSMETIC_META[id].name}!`,'#a78bfa');
     loadShop();
-  }catch{notify('❌ Failed to save cosmetic','#f87171');}
+  }catch(e){notify('❌ Failed to save cosmetic','#f87171');}
 }
 
 async function equipCosmetic(id,type){
-  if(type==='hat'){equippedHat=equippedHat===id?null:id;await pfSaveData('hat',equippedHat||'');}
-  else if(type==='skin'){equippedSkin=equippedSkin===id?null:id;await pfSaveData('skin',equippedSkin||'');}
+  if(!pfOwnedItemIds.includes(id)&&!myTags.includes(id)){
+    // Check if it's a tag grant
+    if(COSMETIC_META[id]&&COSMETIC_META[id].ownerOnly){notify('🔒 You do not own this!','#f87171');return;}
+  }
+  const slotKey={hat:'hat',skin:'skin',trail:'trail',aura:'aura',namecolor:'namecolor'}[type];
+  if(!slotKey)return;
+  const current={hat:equippedHat,skin:equippedSkin,trail:equippedTrail,aura:equippedAura,namecolor:equippedNameColor};
+  const newVal=current[slotKey]===id?null:id;
+  if(slotKey==='hat')equippedHat=newVal;
+  else if(slotKey==='skin')equippedSkin=newVal;
+  else if(slotKey==='trail')equippedTrail=newVal;
+  else if(slotKey==='aura')equippedAura=newVal;
+  else if(slotKey==='namecolor')equippedNameColor=newVal;
+  await pfSaveData(slotKey,newVal||'');
   saveLocalSession();
-  notify(equippedHat===id||equippedSkin===id?`✅ Equipped ${COSMETIC_META[id]?.name}!`:`Unequipped`,'#4ade80');
+  notify(newVal?`✅ Equipped ${COSMETIC_META[id]&&COSMETIC_META[id].name}!`:'Unequipped','#4ade80');
   loadShop();
-  document.getElementById('equipped-hat-display').textContent=equippedHat?(COSMETIC_META[equippedHat]?.icon||equippedHat):'None';
+  updateEquippedDisplay();
 }
 
-// Color grid
+function updateEquippedDisplay(){
+  const el=document.getElementById('equipped-display');if(!el)return;
+  const parts=[];
+  if(equippedHat)parts.push(`Hat: ${COSMETIC_META[equippedHat]&&COSMETIC_META[equippedHat].icon||equippedHat}`);
+  if(equippedSkin)parts.push(`Skin: ${COSMETIC_META[equippedSkin]&&COSMETIC_META[equippedSkin].icon||equippedSkin}`);
+  if(equippedTrail)parts.push(`Trail: ${COSMETIC_META[equippedTrail]&&COSMETIC_META[equippedTrail].icon||equippedTrail}`);
+  if(equippedAura)parts.push(`Aura: ${COSMETIC_META[equippedAura]&&COSMETIC_META[equippedAura].icon||equippedAura}`);
+  if(equippedNameColor)parts.push(`Name: ${COSMETIC_META[equippedNameColor]&&COSMETIC_META[equippedNameColor].icon||equippedNameColor}`);
+  if(myTags.length)parts.push(`Tags: ${myTags.map(t=>COSMETIC_META[t]&&COSMETIC_META[t].name||t).join(', ')}`);
+  el.textContent=parts.length?parts.join(' · '):'None';
+}
+
+// ════════════════════════════════════════════════════
+// PLAYER TAG RENDERING (in lobby/chat)
+// ════════════════════════════════════════════════════
+function renderTagsHTML(tags){
+  if(!tags||!tags.length)return '';
+  return tags.map(t=>{
+    const meta=COSMETIC_META[t];
+    if(!meta)return '';
+    return `<span class="player-tag" style="${meta.tagStyle||'background:#333;color:#fff'}">${meta.icon} ${meta.name}</span>`;
+  }).join('');
+}
+
 function buildColorGrid(id,save){
-  const el=document.getElementById(id);
+  const el=document.getElementById(id);if(!el)return;
   el.innerHTML=COLORS.map(c=>`<div class="color-swatch ${c===selectedColor?'selected':''}" style="background:${c}" onclick="selectColor('${c}','${id}',${save})"></div>`).join('');
 }
 async function selectColor(c,gid,save){
@@ -968,32 +1135,55 @@ async function selectColor(c,gid,save){
 }
 
 // ════════════════════════════════════════════════════
-// ══ FIX: joinOrCreate — waits for WS if needed ══
+// MENU SCREEN
+// ════════════════════════════════════════════════════
+async function showMenuScreen(){
+  showScreen('menu-screen');
+  document.getElementById('menu-welcome').textContent=`Welcome, ${pfUsername}! 👋`;
+  // Show tags in menu
+  document.getElementById('menu-player-tags').innerHTML=renderTagsHTML(myTags);
+  updateCreditsDisplay();
+  buildColorGrid('profile-color-grid',true);
+  loadShop();
+  updateEquippedDisplay();
+  const games=pfStats.games_played||0;
+  const wins=pfStats.games_won||0;
+  document.getElementById('profile-stats').innerHTML=
+    `<b>${esc(pfUsername)}</b>${renderTagsHTML(myTags)}<br>
+    💰 ${pfCredits} Credits<br>
+    🎮 Games: ${games} · 🏆 Wins: ${wins}<br>
+    <small style="opacity:.4">ID: ${pfPlayFabId||'—'}</small>`;
+}
+
+function switchMenuTab(tab,btn){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+  btn.classList.add('active');document.getElementById(`menu-tab-${tab}`).classList.add('active');
+  if(tab==='shop')loadShop();
+}
+
+// ════════════════════════════════════════════════════
+// JOIN / CREATE
 // ════════════════════════════════════════════════════
 async function joinOrCreate(){
   const btn=document.getElementById('join-create-btn');
   btn.disabled=true;btn.textContent='⏳ Connecting...';
   try{
-    // Ensure WS is connected first
-    if(!ws||ws.readyState===WebSocket.CLOSED||ws.readyState===WebSocket.CLOSING){
-      await connectWS();
-    }
-    // Wait until open (with timeout)
+    if(!ws||ws.readyState===WebSocket.CLOSED||ws.readyState===WebSocket.CLOSING)await connectWS();
     let waited=0;
     while(ws.readyState!==WebSocket.OPEN&&waited<5000){await sleep(100);waited+=100;}
-    if(ws.readyState!==WebSocket.OPEN){notify('⚠️ Could not connect to game server!','#f87171');btn.disabled=false;btn.textContent='🚀 Join / Create Room';return;}
-
+    if(ws.readyState!==WebSocket.OPEN){notify('⚠️ Could not connect to server!','#f87171');btn.disabled=false;btn.textContent='🚀 Join / Create Room';return;}
     let code=document.getElementById('room-code-input').value.trim().toUpperCase();
     if(!code)code=Math.random().toString(36).substring(2,8).toUpperCase();
-    const isOwner=(pfUsername?.toLowerCase()==='zeno'||pfUsername?.toLowerCase()==='owner'||pfCredits>9999);
-    const hatEmoji=equippedHat?COSMETIC_META[equippedHat]?.icon:null;
-    wsSend({type:'join_room',roomCode:code,username:pfUsername,color:selectedColor,hat:hatEmoji,skin:equippedSkin,isOwner,pfId:pfPlayFabId});
-  }catch(e){
-    notify('⚠️ Game server offline — try again.','#f87171');
-  }
+    const isOwner=(pfUsername&&(pfUsername.toLowerCase()==='zeno'||pfUsername.toLowerCase()==='owner'))||pfCredits>9999;
+    const hatEmoji=equippedHat&&COSMETIC_META[equippedHat]?COSMETIC_META[equippedHat].icon:null;
+    const trailColor=equippedTrail&&COSMETIC_META[equippedTrail]?COSMETIC_META[equippedTrail].trailColor:null;
+    const auraColor=equippedAura&&COSMETIC_META[equippedAura]?COSMETIC_META[equippedAura].auraColor:null;
+    const nameColor=equippedNameColor&&COSMETIC_META[equippedNameColor]?COSMETIC_META[equippedNameColor].nameColor:null;
+    wsSend({type:'join_room',roomCode:code,username:pfUsername,color:selectedColor,hat:hatEmoji,skin:equippedSkin,trailColor,auraColor,nameColor,tags:myTags,isOwner,pfId:pfPlayFabId});
+  }catch(e){notify('⚠️ Game server offline.','#f87171');}
   btn.disabled=false;btn.textContent='🚀 Join / Create Room';
 }
-
 function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
 
 // ════════════════════════════════════════════════════
@@ -1004,18 +1194,28 @@ function updateLobbyUI(){
   document.getElementById('lobby-code').textContent=gameState.code||currentRoomCode;
   const players=Object.values(gameState.players);
   document.getElementById('lobby-player-count').textContent=`${players.length}/10 players`;
-  document.getElementById('lobby-player-list').innerHTML=players.map(p=>`<div class="player-item"><div class="player-dot" style="background:${p.color}"></div><div class="player-name">${esc(p.username)}${p.hat?` ${p.hat}`:''}</div>${p.id===gameState.hostId?'<span class="host-badge">👑 HOST</span>':''}${p.isOwner?'<span class="owner-badge">🛡 OWNER</span>':''}</div>`).join('');
+  document.getElementById('lobby-player-list').innerHTML=players.map(p=>`
+    <div class="player-item">
+      <div class="player-dot" style="background:${p.color}"></div>
+      <div class="player-name">${esc(p.username)}${p.hat?` ${p.hat}`:''}${renderTagsHTML(p.tags||[])}</div>
+      ${p.id===gameState.hostId?'<span class="host-badge">👑 HOST</span>':''}
+      ${p.isOwner?'<span class="owner-badge">🛡 OWNER</span>':''}
+    </div>`).join('');
   const iH=gameState.hostId===myPlayerId;
-  const iO=gameState.players[myPlayerId]?.isOwner;
+  const iO=gameState.players[myPlayerId]&&gameState.players[myPlayerId].isOwner;
   document.getElementById('start-btn').style.display=(iH||iO)?'block':'none';
   document.getElementById('lobby-wait-btn').style.display=(iH||iO)?'none':'block';
 }
-function copyCode(){navigator.clipboard?.writeText(document.getElementById('lobby-code').textContent).then(()=>notify('📋 Code copied!','#4ade80'));}
+function copyCode(){
+  const code=document.getElementById('lobby-code').textContent;
+  if(navigator.clipboard)navigator.clipboard.writeText(code).then(()=>notify('📋 Code copied!','#4ade80')).catch(()=>notify('📋 '+code,'#4ade80'));
+  else notify('📋 '+code,'#4ade80');
+}
 function startGame(){wsSend({type:'start_game'});}
-function leaveLobby(){wsReady=false;ws?.close();showScreen('menu-screen');}
+function leaveLobby(){wsReady=false;if(ws)ws.close();showScreen('menu-screen');}
 
 // ════════════════════════════════════════════════════
-// GAME SCREEN
+// GAME
 // ════════════════════════════════════════════════════
 function showGameScreen(){
   hideAllScreens();
@@ -1027,17 +1227,17 @@ function showGameScreen(){
   if(myRole==='impostor'){
     rb.textContent='😈 IMPOSTOR';rb.className='role-badge role-impostor';
     document.getElementById('btn-kill').style.display='flex';document.getElementById('btn-vent').style.display='flex';document.getElementById('btn-task').style.display='none';
-    showBanner('IMPOSTOR','#f87171');notify('🔴 You are the IMPOSTOR! Kill everyone!','#f87171');
+    showBanner('IMPOSTOR','#f87171');notify('🔴 You are the IMPOSTOR!','#f87171');
   }else{
     rb.textContent='✅ CREWMATE';rb.className='role-badge role-crewmate';
     document.getElementById('btn-kill').style.display='none';document.getElementById('btn-vent').style.display='none';document.getElementById('btn-task').style.display='none';
-    showBanner('CREWMATE','#4ade80');notify('🟢 You are a CREWMATE! Do your tasks!','#4ade80');
+    showBanner('CREWMATE','#4ade80');notify('🟢 You are a CREWMATE!','#4ade80');
   }
   updateTaskBar();spawnAllPlayers();
-  if(gameScene&&gameState?.players[myPlayerId]){const p=gameState.players[myPlayerId];gameScene.cameras.main.centerOn(p.x,p.y);}
+  if(gameScene&&gameState&&gameState.players[myPlayerId]){const p=gameState.players[myPlayerId];gameScene.cameras.main.centerOn(p.x,p.y);}
   addMobileControls();updateAliveCount();
 }
-function updateTaskBar(){if(!gameState?.taskProgress)return;const{total,done}=gameState.taskProgress;document.getElementById('task-bar').style.width=(total>0?done/total*100:0)+'%';}
+function updateTaskBar(){if(!gameState||!gameState.taskProgress)return;const{total,done}=gameState.taskProgress;document.getElementById('task-bar').style.width=(total>0?done/total*100:0)+'%';}
 
 // ════════════════════════════════════════════════════
 // INTERACTION
@@ -1045,7 +1245,7 @@ function updateTaskBar(){if(!gameState?.taskProgress)return;const{total,done}=ga
 function dist(x1,y1,x2,y2){return Math.sqrt((x1-x2)**2+(y1-y2)**2);}
 function checkNearby(px,py){
   if(!gameState)return;
-  const nearBody=gameState.bodies?.find(b=>dist(px,py,b.x,b.y)<70);
+  const nearBody=gameState.bodies&&gameState.bodies.find(b=>dist(px,py,b.x,b.y)<70);
   document.getElementById('btn-report').style.display=nearBody?'flex':'none';
   if(myRole==='crewmate'){const tl=[{x:148,y:520},{x:810,y:150},{x:140,y:310},{x:500,y:390},{x:760,y:540},{x:410,y:575},{x:500,y:175}];document.getElementById('btn-task').style.display=tl.some(t=>dist(px,py,t.x,t.y)<58)?'flex':'none';}
   updateAliveCount();
@@ -1054,7 +1254,7 @@ function updateKillBtn(){
   if(myRole!=='impostor')return;const btn=document.getElementById('btn-kill');if(!btn)return;
   const now=Date.now();
   if(now<killCooldownUntil){const r=Math.ceil((killCooldownUntil-now)/1000);btn.innerHTML=`☠ Kill <span class="cooldown-txt">(${r}s)</span>`;btn.disabled=true;}
-  else{btn.textContent='☠ Kill';const me=gameState?.players[myPlayerId];if(me&&gameState){const t=Object.values(gameState.players).find(p=>p.id!==myPlayerId&&p.alive&&p.role!=='impostor'&&dist(me.x,me.y,p.x,p.y)<100);btn.disabled=!t;}}
+  else{btn.textContent='☠ Kill';const me=gameState&&gameState.players[myPlayerId];if(me&&gameState){const t=Object.values(gameState.players).find(p=>p.id!==myPlayerId&&p.alive&&p.role!=='impostor'&&dist(me.x,me.y,p.x,p.y)<100);btn.disabled=!t;}}
 }
 function updateAliveCount(){if(!gameState)return;const a=Object.values(gameState.players).filter(p=>p.alive).length,total=Object.keys(gameState.players).length;const el=document.getElementById('alive-count');if(el)el.textContent=`👥 ${a}/${total}`;}
 
@@ -1063,13 +1263,13 @@ function updateAliveCount(){if(!gameState)return;const a=Object.values(gameState
 // ════════════════════════════════════════════════════
 function tryKill(){
   if(myRole!=='impostor')return;if(Date.now()<killCooldownUntil){notify('⏳ Kill cooldown!','#f87171');return;}
-  const me=gameState?.players[myPlayerId];if(!me)return;
+  const me=gameState&&gameState.players[myPlayerId];if(!me)return;
   const t=Object.values(gameState.players).find(p=>p.id!==myPlayerId&&p.alive&&p.role!=='impostor'&&dist(me.x,me.y,p.x,p.y)<100);
   if(!t){notify('No one nearby!','#f87171');return;}
   wsSend({type:'kill',targetId:t.id});killCooldownUntil=Date.now()+25000;flashRed();
 }
 function tryVent(){
-  if(myRole!=='impostor'||!gameScene)return;const me=gameState?.players[myPlayerId];if(!me)return;
+  if(myRole!=='impostor'||!gameScene)return;const me=gameState&&gameState.players[myPlayerId];if(!me)return;
   const v=gameScene.ventPositions;let near=null,nd=999;
   for(const vp of v){const d=dist(me.x,me.y,vp.x,vp.y);if(d<nd){nd=d;near=vp;}}
   if(!near||nd>100){notify('Not near a vent!','#f87171');return;}
@@ -1078,12 +1278,12 @@ function tryVent(){
   wsSend({type:'move',x:dest.x,y:dest.y});notify('🕳 Whoosh! Vented!','#059669');
 }
 function reportBody(){wsSend({type:'report_body'});}
-function callEmergency(){if(gameState?.phase!=='game')return;wsSend({type:'emergency_meeting'});}
+function callEmergency(){if(!gameState||gameState.phase!=='game')return;wsSend({type:'emergency_meeting'});}
 function openNearbyTask(){
-  if(myRole!=='crewmate')return;const me=gameState?.players[myPlayerId];if(!me)return;
+  if(myRole!=='crewmate')return;const me=gameState&&gameState.players[myPlayerId];if(!me)return;
   const tl=[{x:148,y:520,n:'Electrical'},{x:810,y:150,n:'Navigation'},{x:140,y:310,n:'Reactor'},{x:500,y:390,n:'MedBay'},{x:760,y:540,n:'Storage'},{x:410,y:575,n:'Engine'},{x:500,y:175,n:'Cafeteria'}];
   const loc=tl.find(t=>dist(me.x,me.y,t.x,t.y)<60);if(!loc){notify('Not near a task!','#f87171');return;}
-  const task=myTasks.find(t=>!t.completed&&t.location.name===loc.n);
+  const task=myTasks.find(t=>!t.completed&&t.location&&t.location.name===loc.n);
   if(!task){notify('✅ All tasks done here!','#4ade80');return;}
   openTaskModal(task);
 }
@@ -1094,7 +1294,7 @@ function openNearbyTask(){
 function openTaskModal(task){
   activeTaskId=task.id;document.getElementById('task-modal').style.display='flex';
   document.getElementById('task-modal-title').textContent={wires:'🔌 Fix the Wires',button:'🔴 Calibrate Reactor',pattern:'🔐 Security Code'}[task.type]||'Fix Task';
-  document.getElementById('task-modal-subtitle').textContent=`📍 ${task.location?.name||'Unknown'}`;
+  document.getElementById('task-modal-subtitle').textContent=`📍 ${(task.location&&task.location.name)||'Unknown'}`;
   const content=document.getElementById('task-modal-content');
   if(task.type==='wires')buildWireTask(content);else if(task.type==='button')buildMashTask(content);else buildPatternTask(content);
 }
@@ -1102,17 +1302,62 @@ function closeTask(){document.getElementById('task-modal').style.display='none';
 function completeTask(){if(!activeTaskId)return;wsSend({type:'complete_task',taskId:activeTaskId});const t=myTasks.find(t=>t.id===activeTaskId);if(t)t.completed=true;closeTask();}
 
 // Wire task
-function buildWireTask(con){wireConnections={};wireTarget=null;const cols=[{c:'#ef4444',n:'red'},{c:'#3b82f6',n:'blue'},{c:'#22c55e',n:'green'},{c:'#f59e0b',n:'yellow'}];const shuf=[...cols].sort(()=>Math.random()-.5);con.innerHTML=`<div class="wire-grid"><div class="wire-col" id="wl">${cols.map((c,i)=>`<div class="wire-node" id="wl${i}" style="border-color:${c.c};color:${c.c}" onclick="selWire(${i})">${i+1}</div>`).join('')}</div><svg class="wires" id="wsvg" viewBox="0 0 100 196" style="height:196px"></svg><div class="wire-col" id="wr">${shuf.map((c,i)=>`<div class="wire-node" id="wr${i}" style="border-color:${c.c};color:${c.c}" onclick="conWire(${i},'${c.n}')">${i+1}</div>`).join('')}</div></div><div id="wstat" style="color:rgba(255,255,255,.5);font-size:13px;margin-top:6px">Click a left wire to start</div>`;con._cols=cols;con._shuf=shuf;}
-function selWire(i){wireTarget=i;document.querySelectorAll('[id^=wl]').forEach(e=>e.style.transform='');document.getElementById(`wl${i}`).style.transform='scale(1.18)';document.getElementById('wstat').textContent='Connect to matching color →';}
-function conWire(ri,cn){if(wireTarget===null){document.getElementById('wstat').textContent='Select a left wire first!';return;}const cols=document.getElementById('task-modal-content')._cols;const exp=cols[wireTarget].n;wireConnections[wireTarget]=ri;const svg=document.getElementById('wsvg');const line=document.createElementNS('http://www.w3.org/2000/svg','line');const yl=24+wireTarget*58,yr=24+ri*58;line.setAttribute('x1','0');line.setAttribute('y1',String(yl));line.setAttribute('x2','100');line.setAttribute('y2',String(yr));line.setAttribute('stroke',cn===exp?cols[wireTarget].c:'#ef4444');line.setAttribute('stroke-width','3.5');svg.appendChild(line);document.getElementById(`wl${wireTarget}`).classList.add('wconn');document.getElementById(`wr${ri}`).classList.add('wconn');wireTarget=null;document.querySelectorAll('[id^=wl]').forEach(e=>e.style.transform='');if(Object.keys(wireConnections).length>=4)setTimeout(()=>completeTask(),500);}
+function buildWireTask(con){
+  wireConnections={};wireTarget=null;
+  const cols=[{c:'#ef4444',n:'red'},{c:'#3b82f6',n:'blue'},{c:'#22c55e',n:'green'},{c:'#f59e0b',n:'yellow'}];
+  const shuf=[...cols].sort(()=>Math.random()-.5);
+  con.innerHTML=`<div class="wire-grid"><div class="wire-col" id="wl">${cols.map((c,i)=>`<div class="wire-node" id="wl${i}" style="border-color:${c.c};color:${c.c}" onclick="selWire(${i})">${i+1}</div>`).join('')}</div><svg class="wires" id="wsvg" viewBox="0 0 100 196" style="height:196px"></svg><div class="wire-col" id="wr">${shuf.map((c,i)=>`<div class="wire-node" id="wr${i}" style="border-color:${c.c};color:${c.c}" onclick="conWire(${i},'${c.n}')">${i+1}</div>`).join('')}</div></div><div id="wstat" style="color:rgba(255,255,255,.5);font-size:13px;margin-top:6px">Click a left wire to start</div>`;
+  con._cols=cols;con._shuf=shuf;
+}
+function selWire(i){wireTarget=i;document.querySelectorAll('[id^=wl]').forEach(e=>e.style.transform='');const wli=document.getElementById(`wl${i}`);if(wli)wli.style.transform='scale(1.18)';const ws=document.getElementById('wstat');if(ws)ws.textContent='Connect to matching color →';}
+function conWire(ri,cn){
+  if(wireTarget===null){const ws=document.getElementById('wstat');if(ws)ws.textContent='Select a left wire first!';return;}
+  const content=document.getElementById('task-modal-content');
+  const cols=content&&content._cols;if(!cols)return;
+  const exp=cols[wireTarget].n;
+  wireConnections[wireTarget]=ri;
+  const svg=document.getElementById('wsvg');if(!svg)return;
+  const line=document.createElementNS('http://www.w3.org/2000/svg','line');
+  const yl=24+wireTarget*58,yr=24+ri*58;
+  line.setAttribute('x1','0');line.setAttribute('y1',String(yl));line.setAttribute('x2','100');line.setAttribute('y2',String(yr));
+  line.setAttribute('stroke',cn===exp?cols[wireTarget].c:'#ef4444');line.setAttribute('stroke-width','3.5');
+  svg.appendChild(line);
+  const wln=document.getElementById(`wl${wireTarget}`);const wrn=document.getElementById(`wr${ri}`);
+  if(wln)wln.classList.add('wconn');if(wrn)wrn.classList.add('wconn');
+  wireTarget=null;document.querySelectorAll('[id^=wl]').forEach(e=>e.style.transform='');
+  if(Object.keys(wireConnections).length>=4)setTimeout(()=>completeTask(),500);
+}
 
 // Mash task
 function buildMashTask(con){mashCount=0;con.innerHTML=`<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px"><span>Progress</span><span id="mc">0/${MASH_GOAL}</span></div><div class="mash-bar"><div class="mash-fill" id="mf"></div></div><button class="mash-btn" onclick="mash()" id="mb">PRESS!</button><div style="color:rgba(255,255,255,.45);font-size:13px">Mash ${MASH_GOAL} times!</div>`;}
-function mash(){mashCount++;document.getElementById('mc').textContent=`${mashCount}/${MASH_GOAL}`;document.getElementById('mf').style.width=(mashCount/MASH_GOAL*100)+'%';if(mashCount>=MASH_GOAL){document.getElementById('mb').disabled=true;setTimeout(()=>completeTask(),300);}}
+function mash(){mashCount++;const mc=document.getElementById('mc');const mf=document.getElementById('mf');const mb=document.getElementById('mb');if(mc)mc.textContent=`${mashCount}/${MASH_GOAL}`;if(mf)mf.style.width=(mashCount/MASH_GOAL*100)+'%';if(mashCount>=MASH_GOAL){if(mb)mb.disabled=true;setTimeout(()=>completeTask(),300);}}
 
 // Pattern task
-function buildPatternTask(con){patternSequence=Array.from({length:5},()=>Math.floor(Math.random()*9));patternInput=[];patternPhase='watch';con.innerHTML=`<div id="pstat" style="color:#a78bfa;font-size:14px;margin-bottom:11px">👀 Watch the pattern...</div><div class="pattern-grid" id="pgrid">${Array.from({length:9},(_,i)=>`<div class="pattern-cell" id="pc${i}" onclick="patClick(${i})"></div>`).join('')}</div>`;let i=0;const show=()=>{if(i>=patternSequence.length){patternPhase='input';document.getElementById('pstat').textContent='🎯 Repeat the pattern!';document.getElementById('pstat').style.color='#4ade80';return;}const cell=document.getElementById(`pc${patternSequence[i]}`);if(cell){cell.classList.add('lit');setTimeout(()=>{cell.classList.remove('lit');i++;setTimeout(show,380);},580);}else{i++;setTimeout(show,380);}};setTimeout(show,600);}
-function patClick(idx){if(patternPhase!=='input')return;patternInput.push(idx);const cell=document.getElementById(`pc${idx}`);if(!cell)return;const exp=patternSequence[patternInput.length-1];if(idx===exp){cell.classList.add('correct');setTimeout(()=>cell.classList.remove('correct'),350);if(patternInput.length===patternSequence.length)setTimeout(()=>completeTask(),400);}else{cell.classList.add('wrong');setTimeout(()=>{cell.classList.remove('wrong');patternInput=[];document.getElementById('pstat').textContent='❌ Wrong! Watch again...';setTimeout(()=>buildPatternTask(document.getElementById('task-modal-content')),700);},450);}}
+function buildPatternTask(con){
+  patternSequence=Array.from({length:5},()=>Math.floor(Math.random()*9));
+  patternInput=[];patternPhase='watch';
+  con.innerHTML=`<div id="pstat" style="color:#a78bfa;font-size:14px;margin-bottom:11px">👀 Watch the pattern...</div><div class="pattern-grid" id="pgrid">${Array.from({length:9},(_,i)=>`<div class="pattern-cell" id="pc${i}" onclick="patClick(${i})"></div>`).join('')}</div>`;
+  let i=0;
+  const show=()=>{
+    if(i>=patternSequence.length){patternPhase='input';const pstat=document.getElementById('pstat');if(pstat){pstat.textContent='🎯 Repeat the pattern!';pstat.style.color='#4ade80';}return;}
+    const cell=document.getElementById(`pc${patternSequence[i]}`);
+    if(cell){cell.classList.add('lit');setTimeout(()=>{cell.classList.remove('lit');i++;setTimeout(show,380);},580);}else{i++;setTimeout(show,380);}
+  };
+  setTimeout(show,600);
+}
+function patClick(idx){
+  if(patternPhase!=='input')return;
+  patternInput.push(idx);
+  const cell=document.getElementById(`pc${idx}`);if(!cell)return;
+  const exp=patternSequence[patternInput.length-1];
+  if(idx===exp){
+    cell.classList.add('correct');setTimeout(()=>cell.classList.remove('correct'),350);
+    if(patternInput.length===patternSequence.length)setTimeout(()=>completeTask(),400);
+  }else{
+    cell.classList.add('wrong');
+    setTimeout(()=>{cell.classList.remove('wrong');patternInput=[];const pstat=document.getElementById('pstat');if(pstat)pstat.textContent='❌ Wrong! Watch again...';setTimeout(()=>{const c=document.getElementById('task-modal-content');if(c)buildPatternTask(c);},700);},450);
+  }
+}
 
 // ════════════════════════════════════════════════════
 // MEETING
@@ -1124,7 +1369,8 @@ function showMeeting(reason,discTime){
   document.getElementById('skip-vote-btn').disabled=true;document.getElementById('meeting-phase-label').textContent='💬 Discussion Phase';
   document.getElementById('chat-area').innerHTML='';
   const sysd=document.createElement('div');sysd.className='chat-msg';sysd.style.color='rgba(255,255,255,0.4)';sysd.textContent='💬 Chat is open!';document.getElementById('chat-area').appendChild(sysd);
-  buildVoteGrid();startTimer(discTime/1000,discTime/1000);setTimeout(()=>document.getElementById('chat-input').focus(),200);
+  buildVoteGrid();startTimer(discTime/1000,discTime/1000);
+  setTimeout(()=>{const ci=document.getElementById('chat-input');if(ci)ci.focus();},200);
 }
 function switchToVoting(vTime){document.getElementById('meeting-title-text').textContent='🗳 VOTE NOW!';document.getElementById('meeting-phase-label').textContent='🗳 Voting Phase';document.getElementById('skip-vote-btn').disabled=false;buildVoteGrid();startTimer(vTime/1000,vTime/1000);}
 function startTimer(secs,total){clearInterval(timerInterval);let t=secs;document.getElementById('timer-fill').style.width='100%';timerInterval=setInterval(()=>{t--;document.getElementById('timer-fill').style.width=Math.max(0,t/total*100)+'%';if(t<=0)clearInterval(timerInterval);},1000);}
@@ -1133,14 +1379,14 @@ function buildVoteGrid(){
   grid.innerHTML=Object.values(gameState.players).map(p=>`<div class="vote-card ${!p.alive?'dead':''} ${p.id===myPlayerId?'self-card':''} ${myVote===p.id?'my-vote':''}" id="vc-${p.id}" onclick="castVote('${p.id}')"><div class="vote-avatar" style="background:${p.color}">${!p.alive?'💀':'🧑'}${p.hat?p.hat:''}</div><div class="vote-name">${esc(p.username)}</div><div class="vote-count" id="vot-${p.id}"></div></div>`).join('');
   updateVoteGrid();
 }
-function updateVoteGrid(){if(!gameState?.votes)return;const tally={};for(const[,t]of Object.entries(gameState.votes))if(t!=='skip')tally[t]=(tally[t]||0)+1;for(const[pid,cnt]of Object.entries(tally)){const el=document.getElementById(`vot-${pid}`);if(el)el.textContent=`🔴 ${cnt}`;}}
+function updateVoteGrid(){if(!gameState||!gameState.votes)return;const tally={};for(const[,t]of Object.entries(gameState.votes))if(t!=='skip')tally[t]=(tally[t]||0)+1;for(const[pid,cnt]of Object.entries(tally)){const el=document.getElementById(`vot-${pid}`);if(el)el.textContent=`🔴 ${cnt}`;}}
 function castVote(targetId){
-  if(gameState?.phase!=='vote'){notify('Voting hasn\'t started yet!','#f87171');return;}
-  const me=gameState.players[myPlayerId];if(!me?.alive){notify('Ghosts cannot vote','#f87171');return;}
+  if(gameState&&gameState.phase!=='vote'){notify('Voting hasn\'t started yet!','#f87171');return;}
+  const me=gameState&&gameState.players[myPlayerId];if(!me||!me.alive){notify('Ghosts cannot vote','#f87171');return;}
   if(gameState.votes&&gameState.votes[myPlayerId]){notify('Already voted!','#f87171');return;}
   wsSend({type:'cast_vote',targetId});if(!gameState.votes)gameState.votes={};gameState.votes[myPlayerId]=targetId;
   document.querySelectorAll('.vote-card').forEach(c=>c.classList.remove('my-vote'));
-  if(targetId!=='skip')document.getElementById(`vc-${targetId}`)?.classList.add('my-vote');
+  if(targetId!=='skip'){const vc=document.getElementById(`vc-${targetId}`);if(vc)vc.classList.add('my-vote');}
   document.getElementById('skip-vote-btn').disabled=true;notify('✅ Vote cast!','#4ade80');
 }
 function showVoteResult(msg){
@@ -1150,11 +1396,16 @@ function showVoteResult(msg){
   document.getElementById('skip-vote-btn').style.display='none';document.getElementById('meeting-phase-label').textContent='📊 Results';
 }
 function hideMeeting(){document.getElementById('meeting-screen').style.display='none';document.getElementById('hud').classList.remove('hidden');document.getElementById('action-btns').classList.remove('hidden');document.getElementById('skip-vote-btn').style.display='';clearInterval(timerInterval);}
-function addChatMsg(msg){const a=document.getElementById('chat-area');const d=document.createElement('div');d.className='chat-msg'+(msg.alive?'':' ghost-msg');d.innerHTML=`<span style="color:${msg.color};font-weight:700">${esc(msg.username)}</span>${msg.alive?'':' 👻'}: ${esc(msg.text)}`;a.appendChild(d);a.scrollTop=a.scrollHeight;}
-function sendChat(){const inp=document.getElementById('chat-input');const t=inp.value.trim();if(!t)return;wsSend({type:'chat_message',text:t});inp.value='';}
+function addChatMsg(msg){
+  const a=document.getElementById('chat-area');if(!a)return;
+  const d=document.createElement('div');d.className='chat-msg'+(msg.alive?'':' ghost-msg');
+  d.innerHTML=`<span style="color:${msg.color||'#fff'};font-weight:700">${esc(msg.username)}</span>${renderTagsHTML(msg.tags||[])}${msg.alive?'':' 👻'}: ${esc(msg.text)}`;
+  a.appendChild(d);a.scrollTop=a.scrollHeight;
+}
+function sendChat(){const inp=document.getElementById('chat-input');if(!inp)return;const t=inp.value.trim();if(!t)return;wsSend({type:'chat_message',text:t});inp.value='';}
 
 // ════════════════════════════════════════════════════
-// END SCREEN  — saves stats to PlayFab
+// END SCREEN
 // ════════════════════════════════════════════════════
 async function showEndScreen(msg){
   hideMeeting();showScreen('end-screen');document.getElementById('hud').classList.add('hidden');document.getElementById('action-btns').classList.add('hidden');clearInterval(timerInterval);
@@ -1165,25 +1416,32 @@ async function showEndScreen(msg){
   const iWon=(msg.winner==='crewmate'&&myRole==='crewmate')||(msg.winner==='impostor'&&myRole==='impostor');
   const reward=iWon?80+Math.floor(Math.random()*60):20;
   await pfAddCredits(reward,true);
-  // Update stats
   const gp=(pfStats.games_played||0)+1;const gw=(pfStats.games_won||0)+(iWon?1:0);
   pfStats.games_played=gp;pfStats.games_won=gw;
   await pfUpdateStat('games_played',gp);
   if(iWon)await pfUpdateStat('games_won',gw);
-  if(myRole==='impostor'){const kills=msg.results?.find(r=>r.id===myPlayerId)?.kills||0;await pfUpdateStat('total_kills',(pfStats.total_kills||0)+kills);}
+  if(myRole==='impostor'){const kills=(msg.results&&msg.results.find(r=>r.id===myPlayerId)&&msg.results.find(r=>r.id===myPlayerId).kills)||0;await pfUpdateStat('total_kills',(pfStats.total_kills||0)+kills);}
 }
 function backToMenu(){showScreen('menu-screen');showMenuScreen();}
 
 // ════════════════════════════════════════════════════
-// OWNER PANEL  (all 20+ commands preserved)
+// ██████████  OWNER PANEL  ██████████
 // ════════════════════════════════════════════════════
 const OWNER_COSMETIC_PRESETS={
-  'Owner Crown': {aura:'#ffd700',title:'👑 Z3N0',badge:'👑',trailColor:'#ffd700'},
-  'Z3N0 Halo':   {aura:'#a78bfa',title:'⚡ GOD', badge:'⚡',trailColor:'#a78bfa'},
-  'Galaxy Trail':{aura:'#00bcd4',title:'🌌 GALAXY',badge:'🌌',trailColor:'#00bcd4'},
-  'Flame Hat':   {aura:'#ef4444',title:'🔥 FIRE',badge:'🔥',trailColor:'#ef4444'},
-  'Rainbow Aura':{aura:'#f472b6',title:'🌈 VIBE',badge:'🌈',trailColor:'#f472b6'},
+  'Z3N0 Full Set':    {aura:'#7c3aed',title:'⚡ Z3N0',badge:'⚡',trailColor:'#a78bfa'},
+  'Owner Pack':       {aura:'#dc2626',title:'👑 OWNER',badge:'👑',trailColor:'#ef4444'},
+  'God Mode Aura':    {aura:'#ffd700',title:'✨ GOD',badge:'✨',trailColor:'#ffd700'},
+  'Mod Pack':         {aura:'#1d4ed8',title:'🛡 MOD',badge:'🛡',trailColor:'#3b82f6'},
+  'Galaxy Pack':      {aura:'#6366f1',title:'🌌 GALAXY',badge:'🌌',trailColor:'#818cf8'},
+  'Fire Demon':       {aura:'#ef4444',title:'🔥 DEMON',badge:'🔥',trailColor:'#dc2626'},
+  'Ice God':          {aura:'#7dd3fc',title:'❄ ICE',badge:'❄',trailColor:'#38bdf8'},
+  'Rainbow Legend':   {aura:'#ec4899',title:'🌈 LEGEND',badge:'🌈',trailColor:'#f472b6'},
+  'Developer Pack':   {aura:'#059669',title:'💻 DEV',badge:'💻',trailColor:'#4ade80'},
+  'VIP Diamond':      {aura:'#0ea5e9',title:'💎 VIP',badge:'💎',trailColor:'#7dd3fc'},
 };
+
+// All owner-only tag IDs for quick selection
+const OWNER_TAGS=Object.entries(COSMETIC_META).filter(([,c])=>c.type==='tag'&&c.ownerOnly).map(([id])=>id);
 
 function toggleOwnerPanel(){
   const p=document.getElementById('owner-panel');const visible=p.style.display==='block';
@@ -1195,106 +1453,151 @@ function renderMegaOwnerPanel(){
   const players=Object.values(gameState.players);
   const playerOptions=players.map(p=>`<option value="${p.id}">${esc(p.username)} ${p.alive?'':'💀'}</option>`).join('');
   panel.innerHTML=`
-    <h3 style="color:#f87171;margin-bottom:10px;font-size:15px">👑 Owner Control Panel</h3>
-    <div style="display:flex;gap:4px;margin-bottom:12px;flex-wrap:wrap">
-      ${['Players','Commands','Cosmetics','Server'].map((t,i)=>`<button onclick="ownerTab(${i})" id="otab${i}" style="flex:1;padding:5px;border-radius:6px;border:1px solid rgba(255,255,255,0.1);background:${i===0?'rgba(167,139,250,0.3)':'rgba(255,255,255,0.06)'};color:#fff;cursor:pointer;font-size:11px">${t}</button>`).join('')}
+  <h3 style="color:#f87171;margin-bottom:10px;font-size:15px">👑 Owner Panel</h3>
+  <div style="display:flex;gap:4px;margin-bottom:12px;flex-wrap:wrap">
+    ${['Players','Commands','Cosmetics','Tags','Server'].map((t,i)=>`<button onclick="ownerTab(${i})" id="otab${i}" style="flex:1;padding:5px;border-radius:6px;border:1px solid rgba(255,255,255,0.1);background:${i===0?'rgba(167,139,250,0.3)':'rgba(255,255,255,0.06)'};color:#fff;cursor:pointer;font-size:11px">${t}</button>`).join('')}
+  </div>
+
+  <!-- TAB 0: PLAYERS -->
+  <div id="otabcontent0">
+    <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:5px">Target player:</div>
+    <select id="op-target" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:#fff;padding:7px;border-radius:7px;margin-bottom:8px;font-size:12px">${playerOptions}</select>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px">
+      <button class="obtn obtn-orange" onclick="ownerCmd('kick')">🥾 Kick</button>
+      <button class="obtn obtn-red" onclick="ownerCmd('kill')">☠️ Kill</button>
+      <button class="obtn obtn-blue" onclick="ownerCmd('freeze')">❄️ Freeze</button>
+      <button class="obtn obtn-blue" onclick="ownerCmd('unfreeze')">🔥 Unfreeze</button>
+      <button class="obtn obtn-green" onclick="ownerCmd('respawn')">✨ Respawn</button>
+      <button class="obtn obtn-green" onclick="ownerCmd('godmode_on')">🛡 Godmode</button>
+      <button class="obtn obtn-purple" onclick="ownerCmd('set_impostor')">😈 → Impostor</button>
+      <button class="obtn obtn-purple" onclick="ownerCmd('set_crewmate')">✅ → Crewmate</button>
+      <button class="obtn obtn-yellow" onclick="ownerCmd('speed_fast')">⚡ Speed x2</button>
+      <button class="obtn obtn-yellow" onclick="ownerCmd('speed_slow')">🐌 Slow x0.5</button>
+      <button class="obtn obtn-yellow" onclick="ownerCmd('speed_normal')">🏃 Normal</button>
+      <button class="obtn obtn-orange" onclick="ownerCmd('reset_tasks')">📋 Reset Tasks</button>
     </div>
-    <div id="otabcontent0">
-      <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:6px">Target player:</div>
-      <select id="op-target" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:#fff;padding:7px;border-radius:7px;margin-bottom:8px;font-size:12px">${playerOptions}</select>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px">
-        <button class="obtn obtn-orange" onclick="ownerCmd('kick')">🥾 Kick</button>
-        <button class="obtn obtn-red" onclick="ownerCmd('kill')">☠️ Kill</button>
-        <button class="obtn obtn-blue" onclick="ownerCmd('freeze')">❄️ Freeze</button>
-        <button class="obtn obtn-blue" onclick="ownerCmd('unfreeze')">🔥 Unfreeze</button>
-        <button class="obtn obtn-green" onclick="ownerCmd('respawn')">✨ Respawn</button>
-        <button class="obtn obtn-green" onclick="ownerCmd('godmode_on')">🛡️ Godmode</button>
-        <button class="obtn obtn-purple" onclick="ownerCmd('set_impostor')">😈 Set Impostor</button>
-        <button class="obtn obtn-purple" onclick="ownerCmd('set_crewmate')">✅ Set Crewmate</button>
-        <button class="obtn obtn-yellow" onclick="ownerCmd('speed_fast')">⚡ Speed x2</button>
-        <button class="obtn obtn-yellow" onclick="ownerCmd('speed_slow')">🐌 Slow x0.5</button>
-        <button class="obtn obtn-yellow" onclick="ownerCmd('speed_normal')">🏃 Normal Speed</button>
-        <button class="obtn obtn-orange" onclick="ownerCmd('reset_tasks')">📋 Reset Tasks</button>
+    <div style="margin-top:8px;font-size:11px;color:rgba(255,255,255,0.4)">Teleport to room:</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-top:4px">
+      ${['cafeteria','reactor','navigation','medbay','storage','electrical','engine'].map(r=>`<button class="obtn obtn-blue" onclick="ownerCmd('teleport_room','${r}')" style="font-size:10px">${r}</button>`).join('')}
+    </div>
+    <div style="margin-top:8px;font-size:11px;color:rgba(255,255,255,0.4)">Give credits to player (PlayFab):</div>
+    <div style="display:flex;gap:5px;margin-top:4px">
+      <input class="inp" id="op-give-amount" type="number" value="500" min="1" style="margin:0;font-size:12px;padding:6px;width:80px">
+      <button class="obtn obtn-green" style="flex:1" onclick="ownerGiveCredits()">💰 Give Credits</button>
+    </div>
+  </div>
+
+  <!-- TAB 1: COMMANDS -->
+  <div id="otabcontent1" style="display:none">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:10px">
+      <button class="obtn obtn-green" onclick="ownerCmd('end_crew')">✅ Crew Win</button>
+      <button class="obtn obtn-red" onclick="ownerCmd('end_imp')">😈 Imp Win</button>
+      <button class="obtn obtn-purple" onclick="ownerCmd('force_meeting')">🚨 Meeting</button>
+      <button class="obtn obtn-purple" onclick="ownerCmd('shuffle_roles')">🎲 Shuffle</button>
+      <button class="obtn obtn-orange" onclick="ownerCmd('all_tasks')">✅ All Tasks</button>
+      <button class="obtn obtn-orange" onclick="ownerCmd('reveal_roles')">🕵 Reveal</button>
+      <button class="obtn obtn-red" onclick="ownerCmd('explosion')">💥 Explode</button>
+      <button class="obtn obtn-blue" onclick="ownerCmd('lock_room')">🔒 Lock</button>
+      <button class="obtn obtn-blue" onclick="ownerCmd('unlock_room')">🔓 Unlock</button>
+      <button class="obtn obtn-orange" onclick="ownerCmd('reset_cooldown')">⏱ CD Reset</button>
+    </div>
+    <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:5px">Broadcast:</div>
+    <input id="op-broadcast" class="inp" placeholder="Announcement..." style="margin-bottom:5px;font-size:12px;padding:7px">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:10px">
+      <button class="obtn obtn-yellow" onclick="ownerCmd('broadcast_gold')">📢 Gold</button>
+      <button class="obtn obtn-red" onclick="ownerCmd('broadcast_red')">🔴 Red Alert</button>
+    </div>
+    <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:5px">Swap roles:</div>
+    <select id="op-swapA" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:#fff;padding:6px;border-radius:7px;margin-bottom:5px;font-size:12px">${playerOptions}</select>
+    <select id="op-swapB" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:#fff;padding:6px;border-radius:7px;margin-bottom:5px;font-size:12px">${playerOptions}</select>
+    <button class="obtn obtn-purple" onclick="ownerCmd('swap_roles')" style="width:100%">🔀 Swap Roles</button>
+  </div>
+
+  <!-- TAB 2: COSMETICS -->
+  <div id="otabcontent2" style="display:none">
+    <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:5px">Target:</div>
+    <select id="op-cos-target" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:#fff;padding:7px;border-radius:7px;margin-bottom:8px;font-size:12px">${playerOptions}</select>
+    <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:5px">🎨 Presets:</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:10px">
+      ${Object.keys(OWNER_COSMETIC_PRESETS).map(name=>`<button class="obtn obtn-yellow" onclick="ownerApplyPreset('${name}')" style="font-size:10px">${name}</button>`).join('')}
+    </div>
+    <hr style="border-color:rgba(255,255,255,0.08);margin:8px 0">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px">
+      <div>
+        <div style="font-size:10px;color:rgba(255,255,255,.4);margin-bottom:3px">Aura color</div>
+        <input id="op-aura-color" type="color" value="#ff00ff" style="width:100%;height:30px;border:none;border-radius:6px;cursor:pointer">
+        <button class="obtn obtn-purple" onclick="ownerCmd('set_aura')" style="width:100%;margin-top:4px">Set Aura</button>
       </div>
-      <div style="margin-top:8px;font-size:11px;color:rgba(255,255,255,0.4)">Teleport to room:</div>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-top:4px">
-        ${['cafeteria','reactor','navigation','medbay','storage','electrical','engine'].map(r=>`<button class="obtn obtn-blue" onclick="ownerCmd('teleport_room','${r}')" style="font-size:10px">${r}</button>`).join('')}
+      <div>
+        <div style="font-size:10px;color:rgba(255,255,255,.4);margin-bottom:3px">Trail color</div>
+        <input id="op-trail-color" type="color" value="#00ff88" style="width:100%;height:30px;border:none;border-radius:6px;cursor:pointer">
+        <button class="obtn obtn-green" onclick="ownerCmd('set_trail')" style="width:100%;margin-top:4px">Set Trail</button>
       </div>
     </div>
-    <div id="otabcontent1" style="display:none">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:10px">
-        <button class="obtn obtn-red" onclick="ownerCmd('end_crew')">✅ Force Crew Win</button>
-        <button class="obtn obtn-red" onclick="ownerCmd('end_imp')">😈 Force Imp Win</button>
-        <button class="obtn obtn-purple" onclick="ownerCmd('force_meeting')">🚨 Force Meeting</button>
-        <button class="obtn obtn-purple" onclick="ownerCmd('shuffle_roles')">🎲 Shuffle Roles</button>
-        <button class="obtn obtn-orange" onclick="ownerCmd('all_tasks')">✅ All Tasks Done</button>
-        <button class="obtn obtn-orange" onclick="ownerCmd('reveal_roles')">🕵️ Reveal Roles</button>
-        <button class="obtn obtn-red" onclick="ownerCmd('explosion')">💥 Explosion</button>
-        <button class="obtn obtn-blue" onclick="ownerCmd('lock_room')">🔒 Lock Room</button>
-        <button class="obtn obtn-blue" onclick="ownerCmd('unlock_room')">🔓 Unlock Room</button>
-        <button class="obtn obtn-orange" onclick="ownerCmd('reset_cooldown')">⏱ Reset Cooldown</button>
-      </div>
-      <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:5px">Broadcast:</div>
-      <input id="op-broadcast" class="inp" placeholder="Announcement..." style="margin-bottom:5px;font-size:12px;padding:7px">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">
-        <button class="obtn obtn-yellow" onclick="ownerCmd('broadcast_gold')">📢 Announce</button>
-        <button class="obtn obtn-red" onclick="ownerCmd('broadcast_red')">🔴 Red Alert</button>
-      </div>
-      <div style="font-size:11px;color:rgba(255,255,255,0.4);margin:8px 0 4px">Swap roles:</div>
-      <select id="op-swapA" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:#fff;padding:6px;border-radius:7px;margin-bottom:5px;font-size:12px">${playerOptions}</select>
-      <select id="op-swapB" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:#fff;padding:6px;border-radius:7px;margin-bottom:5px;font-size:12px">${playerOptions}</select>
-      <button class="obtn obtn-purple" onclick="ownerCmd('swap_roles')" style="width:100%">🔀 Swap Roles</button>
-      <div style="font-size:11px;color:rgba(255,255,255,0.4);margin:8px 0 4px">Give Credits (PlayFab):</div>
-      <div style="display:flex;gap:6px;margin-bottom:6px">
-        <input class="inp" id="owner-give-pf-id" placeholder="PlayFab ID..." style="margin:0;font-size:12px;padding:6px">
-        <input class="inp" id="owner-give-amount" type="number" value="500" style="margin:0;font-size:12px;padding:6px;width:70px">
-      </div>
+    <div style="font-size:10px;color:rgba(255,255,255,.4);margin:8px 0 3px">Title (above name):</div>
+    <input id="op-title" class="inp" placeholder="⭐ LEGEND" style="margin-bottom:5px;font-size:12px;padding:7px">
+    <button class="obtn obtn-yellow" onclick="ownerCmd('set_title')" style="width:100%;margin-bottom:6px">📛 Set Title</button>
+    <div style="font-size:10px;color:rgba(255,255,255,.4);margin-bottom:3px">Badge emoji:</div>
+    <input id="op-badge" class="inp" placeholder="🌟" maxlength="4" style="margin-bottom:5px;font-size:12px;padding:7px">
+    <button class="obtn obtn-blue" onclick="ownerCmd('set_badge')" style="width:100%;margin-bottom:8px">🏅 Set Badge</button>
+    <button class="obtn obtn-red" onclick="ownerCmd('clear_cosmetics')" style="width:100%">🗑 Clear All Cosmetics</button>
+  </div>
+
+  <!-- TAB 3: TAGS (OWNER-ONLY COSMETICS) -->
+  <div id="otabcontent3" style="display:none">
+    <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:6px">Target player (saved to PlayFab):</div>
+    <select id="op-tag-target" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:#fff;padding:7px;border-radius:7px;margin-bottom:8px;font-size:12px">${playerOptions}</select>
+    <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:6px">📋 Select tag to grant/revoke:</div>
+    <div id="owner-tag-list" style="display:flex;flex-direction:column;gap:5px;max-height:300px;overflow-y:auto;margin-bottom:8px">
+      ${OWNER_TAGS.map(tagId=>{
+        const meta=COSMETIC_META[tagId];
+        return `<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;background:rgba(255,255,255,0.04);border-radius:8px;border:1px solid rgba(255,255,255,0.08)">
+          <span style="font-size:16px">${meta.icon}</span>
+          <span style="flex:1;font-size:12px">${meta.name}</span>
+          <button class="obtn obtn-green" style="padding:3px 8px;font-size:10px" onclick="ownerGrantTag('${tagId}',true)">+ Grant</button>
+          <button class="obtn obtn-red" style="padding:3px 8px;font-size:10px" onclick="ownerGrantTag('${tagId}',false)">− Revoke</button>
+        </div>`;
+      }).join('')}
     </div>
-    <div id="otabcontent2" style="display:none">
-      <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:6px">Target:</div>
-      <select id="op-cos-target" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:#fff;padding:7px;border-radius:7px;margin-bottom:8px;font-size:12px">${playerOptions}</select>
-      <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:6px">🎨 Preset cosmetics:</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:10px">
-        ${Object.keys(OWNER_COSMETIC_PRESETS).map(name=>`<button class="obtn obtn-yellow" onclick="ownerApplyPreset('${esc(name)}')" style="font-size:10px">${name}</button>`).join('')}
-      </div>
-      <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:5px">Aura color:</div>
-      <input id="op-aura-color" type="color" value="#ff00ff" style="width:100%;height:32px;border:none;border-radius:7px;margin-bottom:6px;cursor:pointer">
-      <button class="obtn obtn-purple" onclick="ownerCmd('set_aura')" style="width:100%;margin-bottom:6px">🌟 Apply Aura</button>
-      <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:5px">Title:</div>
-      <input id="op-title" class="inp" placeholder="⭐ LEGEND" style="margin-bottom:5px;font-size:12px;padding:7px">
-      <button class="obtn obtn-yellow" onclick="ownerCmd('set_title')" style="width:100%;margin-bottom:6px">📛 Set Title</button>
-      <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:5px">Badge:</div>
-      <input id="op-badge" class="inp" placeholder="🌟" maxlength="4" style="margin-bottom:5px;font-size:12px;padding:7px">
-      <button class="obtn obtn-blue" onclick="ownerCmd('set_badge')" style="width:100%;margin-bottom:6px">🏅 Set Badge</button>
-      <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:5px">Trail color:</div>
-      <input id="op-trail-color" type="color" value="#00ff88" style="width:100%;height:32px;border:none;border-radius:7px;margin-bottom:6px;cursor:pointer">
-      <button class="obtn obtn-green" onclick="ownerCmd('set_trail')" style="width:100%;margin-bottom:6px">✨ Set Trail</button>
-      <button class="obtn obtn-red" onclick="ownerCmd('clear_cosmetics')" style="width:100%">🗑 Clear All</button>
+    <hr style="border-color:rgba(255,255,255,0.08);margin:8px 0">
+    <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:6px">🎁 Grant owner cosmetics (saved to PlayFab):</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px">
+      ${Object.entries(COSMETIC_META).filter(([,c])=>c.ownerOnly&&c.type!=='tag').map(([id,c])=>`<button class="obtn obtn-purple" style="font-size:10px" onclick="ownerGrantCosmetic('${id}')">${c.icon} ${c.name}</button>`).join('')}
     </div>
-    <div id="otabcontent3" style="display:none">
-      <div style="font-size:12px;color:rgba(255,255,255,0.7);margin-bottom:10px">
-        Room: <b style="color:#a78bfa">${gameState.code}</b><br>
-        Phase: <b style="color:#fbbf24">${gameState.phase}</b><br>
-        Players: ${Object.keys(gameState.players).length}
-      </div>
-      <div id="owner-player-list" style="margin-top:10px"></div>
+  </div>
+
+  <!-- TAB 4: SERVER -->
+  <div id="otabcontent4" style="display:none">
+    <div style="font-size:12px;color:rgba(255,255,255,0.7);margin-bottom:10px">
+      Room: <b style="color:#a78bfa">${gameState.code}</b><br>
+      Phase: <b style="color:#fbbf24">${gameState.phase}</b><br>
+      Players: ${Object.keys(gameState.players).length}
     </div>
-    <button onclick="toggleOwnerPanel()" class="obtn obtn-red" style="width:100%;margin-top:12px">✕ Close</button>`;
-  updateOwnerPanelList();ownerTab(0);
+    <div id="owner-player-list-full"></div>
+  </div>
+
+  <button onclick="toggleOwnerPanel()" class="obtn obtn-red" style="width:100%;margin-top:12px">✕ Close</button>`;
+  updateOwnerPanelPlayerList();ownerTab(0);
 }
 
-function updateOwnerPanelList(){
-  if(!gameState)return;
-  const el=document.getElementById('owner-player-list');if(!el)return;
-  el.innerHTML=Object.values(gameState.players).map(p=>`<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.05);font-size:12px"><div style="width:12px;height:12px;border-radius:50%;background:${p.color}"></div><span>${esc(p.username)}</span><button class="obtn obtn-orange" style="margin-left:auto;padding:2px 7px;font-size:10px" onclick="ownerKick('${p.id}','${esc(p.username)}')">Kick</button></div>`).join('');
+function updateOwnerPanelPlayerList(){
+  const el=document.getElementById('owner-player-list-full');if(!el||!gameState)return;
+  el.innerHTML=Object.values(gameState.players).map(p=>`<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.05);font-size:12px"><div style="width:12px;height:12px;border-radius:50%;background:${p.color}"></div><span style="flex:1">${esc(p.username)}</span><button class="obtn obtn-orange" style="padding:2px 7px;font-size:10px" onclick="ownerKick('${p.id}','${esc(p.username)}')">Kick</button></div>`).join('');
 }
 
-function ownerTab(idx){for(let i=0;i<4;i++){const c=document.getElementById(`otabcontent${i}`);const b=document.getElementById(`otab${i}`);if(c)c.style.display=i===idx?'block':'none';if(b)b.style.background=i===idx?'rgba(167,139,250,0.35)':'rgba(255,255,255,0.06)';}}
+function ownerTab(idx){
+  const count=5;
+  for(let i=0;i<count;i++){
+    const c=document.getElementById(`otabcontent${i}`);const b=document.getElementById(`otab${i}`);
+    if(c)c.style.display=i===idx?'block':'none';
+    if(b)b.style.background=i===idx?'rgba(167,139,250,0.35)':'rgba(255,255,255,0.06)';
+  }
+}
 
 function ownerCmd(cmd,extra){
-  const target=document.getElementById('op-target')?.value||document.getElementById('op-cos-target')?.value;
+  const target=(document.getElementById('op-target')&&document.getElementById('op-target').value)||(document.getElementById('op-cos-target')&&document.getElementById('op-cos-target').value)||'';
   switch(cmd){
-    case 'kick': ownerKick(target,gameState?.players[target]?.username||'?');break;
+    case 'kick': ownerKick(target,(gameState&&gameState.players[target]&&gameState.players[target].username)||'?');break;
     case 'kill': wsSend({type:'owner_kill_player',targetId:target,password:OWNER_PASSWORD});break;
     case 'freeze': wsSend({type:'owner_freeze',targetId:target,frozen:true,password:OWNER_PASSWORD});break;
     case 'unfreeze': wsSend({type:'owner_freeze',targetId:target,frozen:false,password:OWNER_PASSWORD});break;
@@ -1306,10 +1609,10 @@ function ownerCmd(cmd,extra){
     case 'speed_slow': wsSend({type:'owner_speed_boost',targetId:target,mult:0.5,password:OWNER_PASSWORD});break;
     case 'speed_normal': wsSend({type:'owner_speed_boost',targetId:target,mult:1,password:OWNER_PASSWORD});break;
     case 'reset_tasks': wsSend({type:'owner_set_tasks',targetId:target,count:5,password:OWNER_PASSWORD});break;
-    case 'teleport_room': wsSend({type:'owner_teleport',targetId:document.getElementById('op-target')?.value,room:extra,password:OWNER_PASSWORD});break;
+    case 'teleport_room': wsSend({type:'owner_teleport',targetId:document.getElementById('op-target')&&document.getElementById('op-target').value,room:extra,password:OWNER_PASSWORD});break;
     case 'end_crew': wsSend({type:'owner_end_game',winner:'crewmate',password:OWNER_PASSWORD});break;
     case 'end_imp': wsSend({type:'owner_end_game',winner:'impostor',password:OWNER_PASSWORD});break;
-    case 'force_meeting': wsSend({type:'owner_force_meeting',reason:'⚡ Owner forced a meeting!',password:OWNER_PASSWORD});break;
+    case 'force_meeting': wsSend({type:'owner_force_meeting',reason:'⚡ Owner called a meeting!',password:OWNER_PASSWORD});break;
     case 'shuffle_roles': wsSend({type:'owner_shuffle_roles',password:OWNER_PASSWORD});break;
     case 'all_tasks': wsSend({type:'owner_all_tasks_done',password:OWNER_PASSWORD});break;
     case 'reveal_roles': wsSend({type:'owner_reveal_roles',password:OWNER_PASSWORD});break;
@@ -1317,17 +1620,72 @@ function ownerCmd(cmd,extra){
     case 'lock_room': wsSend({type:'owner_lock_room',password:OWNER_PASSWORD});break;
     case 'unlock_room': wsSend({type:'owner_unlock_room',password:OWNER_PASSWORD});break;
     case 'reset_cooldown': wsSend({type:'owner_set_killcooldown',seconds:0,password:OWNER_PASSWORD});break;
-    case 'broadcast_gold':{const t=document.getElementById('op-broadcast')?.value;if(t)wsSend({type:'owner_broadcast',text:t,color:'#fbbf24',icon:'📢',password:OWNER_PASSWORD});break;}
-    case 'broadcast_red':{const t=document.getElementById('op-broadcast')?.value;if(t)wsSend({type:'owner_broadcast',text:t,color:'#f87171',icon:'🔴',password:OWNER_PASSWORD});break;}
-    case 'swap_roles':{const a=document.getElementById('op-swapA')?.value;const b=document.getElementById('op-swapB')?.value;if(a&&b&&a!==b)wsSend({type:'owner_swap_roles',targetA:a,targetB:b,password:OWNER_PASSWORD});else notify('Pick 2 different players','#f87171');break;}
-    case 'set_aura':{const c=document.getElementById('op-aura-color')?.value||'#ff00ff';const tgt=document.getElementById('op-cos-target')?.value;wsSend({type:'owner_set_aura',targetId:tgt,color:c,password:OWNER_PASSWORD});break;}
-    case 'set_title':{const title=document.getElementById('op-title')?.value;const tgt=document.getElementById('op-cos-target')?.value;wsSend({type:'owner_set_title',targetId:tgt,title,password:OWNER_PASSWORD});break;}
-    case 'set_badge':{const badge=document.getElementById('op-badge')?.value;const tgt=document.getElementById('op-cos-target')?.value;wsSend({type:'owner_set_badge',targetId:tgt,badge,password:OWNER_PASSWORD});break;}
-    case 'set_trail':{const c=document.getElementById('op-trail-color')?.value||'#00ff88';const tgt=document.getElementById('op-cos-target')?.value;wsSend({type:'owner_set_cosmetic',targetId:tgt,cosType:'trailColor',value:c,password:OWNER_PASSWORD});break;}
-    case 'clear_cosmetics':{const tgt=document.getElementById('op-cos-target')?.value;wsSend({type:'owner_clear_cosmetic',targetId:tgt,password:OWNER_PASSWORD});break;}
+    case 'broadcast_gold':{const t=document.getElementById('op-broadcast')&&document.getElementById('op-broadcast').value;if(t)wsSend({type:'owner_broadcast',text:t,color:'#fbbf24',icon:'📢',password:OWNER_PASSWORD});break;}
+    case 'broadcast_red':{const t=document.getElementById('op-broadcast')&&document.getElementById('op-broadcast').value;if(t)wsSend({type:'owner_broadcast',text:t,color:'#f87171',icon:'🔴',password:OWNER_PASSWORD});break;}
+    case 'swap_roles':{const a=document.getElementById('op-swapA')&&document.getElementById('op-swapA').value;const b=document.getElementById('op-swapB')&&document.getElementById('op-swapB').value;if(a&&b&&a!==b)wsSend({type:'owner_swap_roles',targetA:a,targetB:b,password:OWNER_PASSWORD});else notify('Pick 2 different players','#f87171');break;}
+    case 'set_aura':{const c=document.getElementById('op-aura-color')&&document.getElementById('op-aura-color').value||'#ff00ff';const tgt=document.getElementById('op-cos-target')&&document.getElementById('op-cos-target').value;wsSend({type:'owner_set_aura',targetId:tgt,color:c,password:OWNER_PASSWORD});break;}
+    case 'set_title':{const title=document.getElementById('op-title')&&document.getElementById('op-title').value;const tgt=document.getElementById('op-cos-target')&&document.getElementById('op-cos-target').value;wsSend({type:'owner_set_title',targetId:tgt,title:title,password:OWNER_PASSWORD});break;}
+    case 'set_badge':{const badge=document.getElementById('op-badge')&&document.getElementById('op-badge').value;const tgt=document.getElementById('op-cos-target')&&document.getElementById('op-cos-target').value;wsSend({type:'owner_set_badge',targetId:tgt,badge:badge,password:OWNER_PASSWORD});break;}
+    case 'set_trail':{const c=document.getElementById('op-trail-color')&&document.getElementById('op-trail-color').value||'#00ff88';const tgt=document.getElementById('op-cos-target')&&document.getElementById('op-cos-target').value;wsSend({type:'owner_set_cosmetic',targetId:tgt,cosType:'trailColor',value:c,password:OWNER_PASSWORD});break;}
+    case 'clear_cosmetics':{const tgt=document.getElementById('op-cos-target')&&document.getElementById('op-cos-target').value;wsSend({type:'owner_clear_cosmetic',targetId:tgt,password:OWNER_PASSWORD});break;}
   }
 }
-function ownerApplyPreset(name){const preset=OWNER_COSMETIC_PRESETS[name];if(!preset)return;const tgt=document.getElementById('op-cos-target')?.value;if(!tgt)return;if(preset.aura)wsSend({type:'owner_set_aura',targetId:tgt,color:preset.aura,password:OWNER_PASSWORD});if(preset.title)wsSend({type:'owner_set_title',targetId:tgt,title:preset.title,password:OWNER_PASSWORD});if(preset.badge)wsSend({type:'owner_set_badge',targetId:tgt,badge:preset.badge,password:OWNER_PASSWORD});if(preset.trailColor)wsSend({type:'owner_set_cosmetic',targetId:tgt,cosType:'trailColor',value:preset.trailColor,password:OWNER_PASSWORD});notify(`✨ Applied: ${name}`,'#fbbf24');}
+
+// Grant/revoke tags via PlayFab user data
+async function ownerGrantTag(tagId,grant){
+  const tgtId=document.getElementById('op-tag-target')&&document.getElementById('op-tag-target').value;
+  if(!tgtId){notify('Select a target player first','#f87171');return;}
+  // The target must be in the game — we update PlayFab via the server if they have pfId
+  // We send a server message asking server to update the player's tags in PlayFab
+  wsSend({type:'owner_grant_tag',targetId:tgtId,tagId,grant,password:OWNER_PASSWORD});
+  // Also locally if it's ourselves
+  if(tgtId===myPlayerId){
+    if(grant){if(!myTags.includes(tagId))myTags.push(tagId);}
+    else{myTags=myTags.filter(t=>t!==tagId);}
+    await pfSaveData('tags',JSON.stringify(myTags));
+    saveLocalSession();
+    document.getElementById('menu-player-tags').innerHTML=renderTagsHTML(myTags);
+  }
+  const meta=COSMETIC_META[tagId];
+  notify(grant?`✅ Granted ${meta&&meta.name||tagId}`:`❌ Revoked ${meta&&meta.name||tagId}`,'#fbbf24');
+}
+
+// Grant owner-only cosmetic (saved to PlayFab user data of target)
+async function ownerGrantCosmetic(cosId){
+  const tgtId=document.getElementById('op-tag-target')&&document.getElementById('op-tag-target').value;
+  if(!tgtId){notify('Select a target player first','#f87171');return;}
+  wsSend({type:'owner_grant_cosmetic',targetId:tgtId,cosId,password:OWNER_PASSWORD});
+  // If self, also update local
+  if(tgtId===myPlayerId){
+    if(!pfOwnedItemIds.includes(cosId))pfOwnedItemIds.push(cosId);
+    // Store in owned_items
+    let owned=[];
+    try{const ud=await pfCall('GetUserData',{Keys:['owned_items']});owned=JSON.parse((ud.data.Data&&ud.data.Data.owned_items&&ud.data.Data.owned_items.Value)||'[]');}catch(e){}
+    if(!owned.includes(cosId))owned.push(cosId);
+    await pfSaveData('owned_items',JSON.stringify(owned));
+    saveLocalSession();
+  }
+  const meta=COSMETIC_META[cosId];
+  notify(`✅ Granted ${meta&&meta.name||cosId} cosmetic!`,'#a78bfa');
+}
+
+async function ownerGiveCredits(){
+  const tgtId=document.getElementById('op-target')&&document.getElementById('op-target').value;
+  const amount=parseInt(document.getElementById('op-give-amount')&&document.getElementById('op-give-amount').value)||0;
+  if(!tgtId||amount<=0){notify('Select target and enter amount','#f87171');return;}
+  wsSend({type:'owner_give_credits',targetId:tgtId,amount,password:OWNER_PASSWORD});
+  notify(`💰 Sent ${amount} credits to player`,'#4ade80');
+}
+
+function ownerApplyPreset(name){
+  const preset=OWNER_COSMETIC_PRESETS[name];if(!preset)return;
+  const tgt=document.getElementById('op-cos-target')&&document.getElementById('op-cos-target').value;if(!tgt)return;
+  if(preset.aura)wsSend({type:'owner_set_aura',targetId:tgt,color:preset.aura,password:OWNER_PASSWORD});
+  if(preset.title)wsSend({type:'owner_set_title',targetId:tgt,title:preset.title,password:OWNER_PASSWORD});
+  if(preset.badge)wsSend({type:'owner_set_badge',targetId:tgt,badge:preset.badge,password:OWNER_PASSWORD});
+  if(preset.trailColor)wsSend({type:'owner_set_cosmetic',targetId:tgt,cosType:'trailColor',value:preset.trailColor,password:OWNER_PASSWORD});
+  notify(`✨ Applied: ${name}`,'#fbbf24');
+}
 function ownerKick(id,name){if(!confirm(`Kick ${name}?`))return;wsSend({type:'owner_kick',targetId:id,password:OWNER_PASSWORD,reason:'Kicked by owner'});}
 
 function showRolesReveal(roles){
@@ -1337,7 +1695,7 @@ function showRolesReveal(roles){
   document.body.insertAdjacentHTML('beforeend',html);
 }
 
-function showShopInGame(){showScreen('menu-screen');switchMenuTab('shop',document.querySelectorAll('.tab-btn')[1]);}
+function showShopInGame(){showScreen('menu-screen');const shopBtn=document.querySelectorAll('.tab-btn')[1];if(shopBtn)switchMenuTab('shop',shopBtn);}
 
 // ════════════════════════════════════════════════════
 // EFFECTS
@@ -1362,7 +1720,7 @@ function addMobileControls(){
 // ════════════════════════════════════════════════════
 function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('hidden',s.id!==id));if(id!=='lobby-screen')document.getElementById('meeting-screen').style.display='none';}
 function hideAllScreens(){document.querySelectorAll('.screen').forEach(s=>s.classList.add('hidden'));}
-function notify(text,color='#fff'){const el=document.createElement('div');el.className='notif';el.style.color=color;el.textContent=text;document.getElementById('notifs').appendChild(el);setTimeout(()=>el.remove(),4000);}
+function notify(text,color){color=color||'#fff';const el=document.createElement('div');el.className='notif';el.style.color=color;el.textContent=text;document.getElementById('notifs').appendChild(el);setTimeout(()=>{if(el.parentNode)el.parentNode.removeChild(el);},4000);}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
 // ════════════════════════════════════════════════════
@@ -1370,11 +1728,10 @@ function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').
 // ════════════════════════════════════════════════════
 async function init(){
   buildColorGrid('reg-color-grid',false);
-  // Start WS connection in background (non-blocking)
-  connectWS().catch(()=>{}); // don't block auth if server offline
+  connectWS().catch(()=>{});
   tryAutoLogin();
 }
-setInterval(()=>wsSend({type:'ping'}),25000);
+setInterval(()=>{if(ws&&ws.readyState===WebSocket.OPEN)wsSend({type:'ping'});},25000);
 window.addEventListener('resize',()=>{if(phaserGame)phaserGame.scale.resize(window.innerWidth,window.innerHeight);});
 init();
 </script>

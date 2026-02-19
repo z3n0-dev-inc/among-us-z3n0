@@ -324,7 +324,8 @@ svg.wires{flex:1;min-width:80px;}
 // PLAYFAB CONFIG
 // ════════════════════════════════════════════════════
 const PLAYFAB_TITLE_ID = '1E7E83';
-PlayFab.settings.titleId = PLAYFAB_TITLE_ID;
+// BUG FIX: Guard against PlayFab SDK not loading
+if(typeof PlayFab !== 'undefined') PlayFab.settings.titleId = PLAYFAB_TITLE_ID;
 
 const GAME_SERVER_HTTP = window.location.origin;
 const GAME_SERVER_WS   = GAME_SERVER_HTTP.replace('https://','wss://').replace('http://','ws://');
@@ -467,7 +468,9 @@ const COSMETIC_META = {
 let ws=null, myPlayerId=null, myRole=null, myTasks=[], gameState=null;
 let currentRoomCode=null, selectedColor='#e74c3c';
 let activeTaskId=null, mashCount=0, patternSequence=[], patternInput=[], patternPhase='watch';
-let wireConnections={}, wireTarget=null, killCooldownUntil=0;
+// BUG FIX: wireConnections, wireTarget, wireColorCols stored at module level for correct closure
+let wireConnections={}, wireTarget=null, wireColorCols=[], wireColorShuf=[];
+let killCooldownUntil=0;
 let currentShopFilter = 'all';
 
 let pfPlayFabId=null, pfSessionTicket=null, pfUsername=null;
@@ -494,7 +497,7 @@ const badgeSprites={};
 (function(){
   const cv=document.getElementById('stars'),ctx=cv.getContext('2d');let stars=[];
   function resize(){cv.width=window.innerWidth;cv.height=window.innerHeight;stars=Array.from({length:180},()=>({x:Math.random()*cv.width,y:Math.random()*cv.height,r:Math.random()*1.4+.2,a:Math.random(),s:Math.random()*.003+.001}));}
-  function draw(){ctx.clearRect(0,0,cv.width,cv.height);for(const s of stars){s.a+=s.s;ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fillStyle=`rgba(255,255,255,${.25+Math.sin(s.a)*.25})`;ctx.fill();}requestAnimationFrame(draw);}
+  function draw(){ctx.clearRect(0,0,cv.width,cv.height);for(const s of stars){s.a+=s.s;ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fillStyle='rgba(255,255,255,'+((.25+Math.sin(s.a)*.25).toFixed(2))+')';ctx.fill();}requestAnimationFrame(draw);}
   window.addEventListener('resize',resize);resize();draw();
 })();
 
@@ -763,9 +766,9 @@ function handleMsg(msg){
       myPlayerId=msg.playerId;currentRoomCode=msg.roomCode;gameState=msg.state;myRole=msg.myRole;myTasks=msg.myTasks||[];
       showScreen('lobby-screen');updateLobbyUI();break;
     case 'player_joined':
-      if(gameState)gameState.players[msg.player.id]=msg.player;updateLobbyUI();notify(`👋 ${msg.player.username} joined`,'#4ade80');break;
+      if(gameState)gameState.players[msg.player.id]=msg.player;updateLobbyUI();notify('👋 '+esc(msg.player.username)+' joined','#4ade80');break;
     case 'player_left':
-      if(gameState)delete gameState.players[msg.playerId];updateLobbyUI();if(gameState&&gameState.phase==='game')destroyPlayerSprite(msg.playerId);notify(`${msg.username||'Player'} left`,'#f87171');break;
+      if(gameState)delete gameState.players[msg.playerId];updateLobbyUI();if(gameState&&gameState.phase==='game')destroyPlayerSprite(msg.playerId);notify((msg.username||'Player')+' left','#f87171');break;
     case 'room_update':
       gameState=msg.state;updateLobbyUI();break;
     case 'game_started':
@@ -779,13 +782,13 @@ function handleMsg(msg){
     case 'task_completed':
       if(gameState)gameState.taskProgress=msg.progress;updateTaskBar();
       if(msg.playerId===myPlayerId){notify('✅ Task complete!','#4ade80');pfAddCredits(30,false);}
-      else notify(`⚙️ ${msg.username||'Someone'} did a task`,'rgba(255,255,255,0.5)');break;
+      else notify('⚙️ '+(msg.username||'Someone')+' did a task','rgba(255,255,255,0.5)');break;
     case 'meeting_started':
       gameState=msg.state;showMeeting(msg.reason,DISC_TIME);break;
     case 'voting_started':
       switchToVoting(VOTE_TIME);break;
     case 'vote_cast':
-      notify(`🗳 ${msg.voterName||'Someone'} voted`,'rgba(255,255,255,0.5)');
+      notify('🗳 '+(msg.voterName||'Someone')+' voted','rgba(255,255,255,0.5)');
       if(gameState){if(!gameState.votes)gameState.votes={};if(msg.targetId)gameState.votes[msg.voterId]=msg.targetId;}
       updateVoteGrid();break;
     case 'vote_result':
@@ -813,13 +816,13 @@ function handleMsg(msg){
       if(gameState&&gameState.players[msg.playerId]){gameState.players[msg.playerId].x=msg.x;gameState.players[msg.playerId].y=msg.y;updatePlayerSprite(msg.playerId,msg.x,msg.y);}
       if(msg.playerId===myPlayerId){if(gameScene)gameScene.cameras.main.centerOn(msg.x,msg.y);notify('⚡ You were teleported!','#a78bfa');flashRed();}break;
     case 'player_respawned':
-      if(gameState&&gameState.players[msg.playerId]){gameState.players[msg.playerId].alive=true;createPlayerSprite(msg.playerId,gameState.players[msg.playerId]);notify(`✨ ${msg.username} was respawned!`,'#4ade80');}break;
+      if(gameState&&gameState.players[msg.playerId]){gameState.players[msg.playerId].alive=true;createPlayerSprite(msg.playerId,gameState.players[msg.playerId]);notify('✨ '+esc(msg.username)+' was respawned!','#4ade80');}break;
     case 'role_changed':
       if(msg.byOwner){myRole=msg.newRole;const rb=document.getElementById('role-badge');if(myRole==='impostor'){rb.textContent='😈 IMPOSTOR';rb.className='role-badge role-impostor';document.getElementById('btn-kill').style.display='flex';document.getElementById('btn-vent').style.display='flex';}else{rb.textContent='✅ CREWMATE';rb.className='role-badge role-crewmate';document.getElementById('btn-kill').style.display='none';document.getElementById('btn-vent').style.display='none';}showBanner(myRole==='impostor'?'IMPOSTOR':'CREWMATE',myRole==='impostor'?'#f87171':'#4ade80');notify('🎭 Owner changed your role!','#fbbf24');}break;
     case 'speed_changed':
       mySpeedMult=msg.mult||1;if(msg.mult>1.5)notify('⚡ Speed boost!','#fbbf24');else if(msg.mult<.8)notify('🐌 You are slowed!','#f87171');else notify('✅ Speed normal','#4ade80');break;
     case 'owner_announcement':
-      notify(`${msg.icon||'📢'} ${msg.text}`,msg.color||'#fbbf24');showBanner(msg.text.slice(0,20),msg.color||'#fbbf24');
+      notify((msg.icon||'📢')+' '+msg.text,msg.color||'#fbbf24');showBanner(msg.text.slice(0,20),msg.color||'#fbbf24');
       if(gameState&&(gameState.phase==='meeting'||gameState.phase==='vote'))addChatMsg({username:'📢 OWNER',color:msg.color||'#fbbf24',text:msg.text,alive:true});break;
     case 'owner_explosion_fx':
       spawnExplosion(msg.cx,msg.cy,msg.radius);notify('💥 EXPLOSION!','#ef4444');break;
@@ -828,7 +831,7 @@ function handleMsg(msg){
     case 'tasks_reset':
       myTasks=msg.tasks||[];notify('📋 Tasks reset by owner!','#fbbf24');break;
     case 'owner_ack':
-      notify(`✅ Command: ${msg.cmd}`,'#4ade80');break;
+      notify('✅ Command: '+msg.cmd,'#4ade80');break;
   }
 }
 
@@ -845,8 +848,13 @@ function showLogin(){
   document.getElementById('login-form').style.display='block';
 }
 
+// BUG FIX: Guard pfCall against missing PlayFab SDK
 function pfCall(fn,params){
   return new Promise((res,rej)=>{
+    if(typeof PlayFab === 'undefined' || typeof PlayFabClientSDK === 'undefined'){
+      rej(new Error('PlayFab SDK not loaded'));
+      return;
+    }
     PlayFabClientSDK[fn](params,(result,error)=>{if(error)rej(error);else res(result);});
   });
 }
@@ -854,54 +862,61 @@ function pfCall(fn,params){
 async function doLogin(){
   const u=document.getElementById('login-username').value.trim();
   const p=document.getElementById('login-password').value;
-  const err=document.getElementById('login-err');
-  err.style.display='none';
-  if(!u||!p){err.textContent='Fill in all fields';err.style.display='block';return;}
+  const errEl=document.getElementById('login-err');
+  errEl.style.display='none';
+  if(!u||!p){errEl.textContent='Fill in all fields';errEl.style.display='block';return;}
   const loginBtn=document.querySelector('#login-form .btn-primary');
   if(loginBtn)loginBtn.disabled=true;
   try{
     const result=await pfCall('LoginWithCustomID',{
-      CustomId:u+'_'+btoa(p).slice(0,16),
+      CustomId:u+'_'+btoa(unescape(encodeURIComponent(p))).slice(0,16),
       CreateAccount:false,
       InfoRequestParameters:{GetPlayerStatistics:true,GetUserData:true,GetUserInventory:true,GetPlayerProfile:true}
     });
     await onPfLogin(result,u);
   }catch(e){
-    err.textContent=(e&&e.errorMessage)||'Login failed. Check your credentials.';
-    err.style.display='block';
+    errEl.textContent=(e&&e.errorMessage)||'Login failed. Check credentials.';
+    errEl.style.display='block';
   }finally{if(loginBtn)loginBtn.disabled=false;}
 }
 
 async function doRegister(){
   const u=document.getElementById('reg-username').value.trim();
   const p=document.getElementById('reg-password').value;
-  const err=document.getElementById('reg-err');
-  err.style.display='none';
-  if(!u||!p){err.textContent='Fill in all fields';err.style.display='block';return;}
-  if(u.length<3){err.textContent='Username must be at least 3 characters';err.style.display='block';return;}
-  if(p.length<4){err.textContent='Password must be at least 4 characters';err.style.display='block';return;}
+  const errEl=document.getElementById('reg-err');
+  errEl.style.display='none';
+  if(!u||!p){errEl.textContent='Fill in all fields';errEl.style.display='block';return;}
+  if(u.length<3){errEl.textContent='Username must be at least 3 characters';errEl.style.display='block';return;}
+  if(p.length<4){errEl.textContent='Password must be at least 4 characters';errEl.style.display='block';return;}
   const regBtn=document.querySelector('#register-form .btn-primary');
   if(regBtn)regBtn.disabled=true;
   try{
     const result=await pfCall('LoginWithCustomID',{
-      CustomId:u+'_'+btoa(p).slice(0,16),
+      CustomId:u+'_'+btoa(unescape(encodeURIComponent(p))).slice(0,16),
       CreateAccount:true,
       InfoRequestParameters:{GetPlayerStatistics:true,GetUserData:true,GetUserInventory:true}
     });
+    // BUG FIX: Check if this was a new account or existing
+    if(!result.data.NewlyCreated){
+      errEl.textContent='Username taken. Try a different one.';
+      errEl.style.display='block';
+      if(regBtn)regBtn.disabled=false;
+      return;
+    }
     try{await pfCall('UpdateUserTitleDisplayName',{DisplayName:u});}catch(e){}
     await pfCall('UpdateUserData',{Data:{username:u,color:selectedColor,hat:'',skin:'',trail:'',aura:'',namecolor:'',tags:'[]',owned_items:'[]'}});
     try{await pfCall('AddUserVirtualCurrency',{VirtualCurrency:'GD',Amount:200});}catch(e){}
     await onPfLogin(result,u);
   }catch(e){
-    err.textContent=(e&&e.errorMessage)||'Registration failed.';
-    err.style.display='block';
+    errEl.textContent=(e&&e.errorMessage)||'Registration failed. Try again.';
+    errEl.style.display='block';
   }finally{if(regBtn)regBtn.disabled=false;}
 }
 
 async function onPfLogin(result,usernameHint){
   pfPlayFabId=result.data.PlayFabId;
   pfSessionTicket=result.data.SessionTicket;
-  PlayFab._internalSettings.sessionTicket=pfSessionTicket;
+  if(typeof PlayFab !== 'undefined') PlayFab._internalSettings.sessionTicket=pfSessionTicket;
 
   const userData=(result.data.InfoResultPayload&&result.data.InfoResultPayload.UserData)||{};
   pfUsername=(userData.username&&userData.username.Value)||usernameHint||result.data.PlayFabId.slice(0,8);
@@ -912,7 +927,6 @@ async function onPfLogin(result,usernameHint){
   equippedAura=(userData.aura&&userData.aura.Value)||null;
   equippedNameColor=(userData.namecolor&&userData.namecolor.Value)||null;
 
-  // Load tags (owner-granted)
   try{myTags=JSON.parse((userData.tags&&userData.tags.Value)||'[]');}catch(e){myTags=[];}
 
   try{
@@ -922,7 +936,6 @@ async function onPfLogin(result,usernameHint){
     pfOwnedItemIds=pfOwnedItems.map(i=>i.ItemId);
   }catch(e){pfCredits=0;}
 
-  // Merge user-data owned_items (our fallback store)
   try{
     const storedOwned=JSON.parse((userData.owned_items&&userData.owned_items.Value)||'[]');
     for(const id of storedOwned){if(!pfOwnedItemIds.includes(id))pfOwnedItemIds.push(id);}
@@ -959,7 +972,7 @@ async function tryAutoLogin(){
     equippedTrail=d.equippedTrail||null;equippedAura=d.equippedAura||null;
     equippedNameColor=d.equippedNameColor||null;
     myTags=d.myTags||[];pfCredits=d.pfCredits||0;
-    PlayFab._internalSettings.sessionTicket=pfSessionTicket;
+    if(typeof PlayFab !== 'undefined') PlayFab._internalSettings.sessionTicket=pfSessionTicket;
     // Refresh from PlayFab
     try{
       const bal=await pfCall('GetUserInventory',{});
@@ -970,14 +983,18 @@ async function tryAutoLogin(){
       const dd=ud.data.Data||{};
       try{const storedOwned=JSON.parse((dd.owned_items&&dd.owned_items.Value)||'[]');for(const id of storedOwned)if(!pfOwnedItemIds.includes(id))pfOwnedItemIds.push(id);}catch(e){}
       try{myTags=JSON.parse((dd.tags&&dd.tags.Value)||'[]');}catch(e){}
-      if(dd.hat)equippedHat=dd.hat.Value||null;
-      if(dd.skin)equippedSkin=dd.skin.Value||null;
-      if(dd.trail)equippedTrail=dd.trail.Value||null;
-      if(dd.aura)equippedAura=dd.aura.Value||null;
-      if(dd.namecolor)equippedNameColor=dd.namecolor.Value||null;
-    }catch(e){}
+      if(dd.hat&&dd.hat.Value!==undefined)equippedHat=dd.hat.Value||null;
+      if(dd.skin&&dd.skin.Value!==undefined)equippedSkin=dd.skin.Value||null;
+      if(dd.trail&&dd.trail.Value!==undefined)equippedTrail=dd.trail.Value||null;
+      if(dd.aura&&dd.aura.Value!==undefined)equippedAura=dd.aura.Value||null;
+      if(dd.namecolor&&dd.namecolor.Value!==undefined)equippedNameColor=dd.namecolor.Value||null;
+    }catch(e){
+      // PlayFab refresh failed (expired session) — still show menu with cached data
+    }
     showMenuScreen();
-  }catch(e){showScreen('auth-screen');}
+  }catch(e){
+    showScreen('auth-screen');
+  }
 }
 
 function logout(){
@@ -995,21 +1012,21 @@ async function pfAddCredits(amount,showNotif){
   try{
     const r=await pfCall('AddUserVirtualCurrency',{VirtualCurrency:'GD',Amount:amount});
     pfCredits=r.data.Balance;saveLocalSession();
-    if(showNotif)notify(`💰 +${amount} credits!`,'#fbbf24');
+    if(showNotif)notify('💰 +'+amount+' credits!','#fbbf24');
     updateCreditsDisplay();
   }catch(e){}
 }
 async function pfSpendCredits(amount){
   if(!pfSessionTicket)return false;
-  if(pfCredits<amount){notify(`❌ Need ${amount} credits (you have ${pfCredits})`,'#f87171');return false;}
+  if(pfCredits<amount){notify('❌ Need '+amount+' credits (you have '+pfCredits+')','#f87171');return false;}
   try{
     const r=await pfCall('SubtractUserVirtualCurrency',{VirtualCurrency:'GD',Amount:amount});
     pfCredits=r.data.Balance;saveLocalSession();updateCreditsDisplay();return true;
   }catch(e){notify('❌ Transaction failed','#f87171');return false;}
 }
 function updateCreditsDisplay(){
-  const mc=document.getElementById('menu-credits');if(mc)mc.textContent=`💰 ${pfCredits} Credits`;
-  const sc=document.getElementById('shop-credits');if(sc)sc.textContent=`💰 ${pfCredits} Credits`;
+  const mc=document.getElementById('menu-credits');if(mc)mc.textContent='💰 '+pfCredits+' Credits';
+  const sc=document.getElementById('shop-credits');if(sc)sc.textContent='💰 '+pfCredits+' Credits';
 }
 async function pfSaveData(key,value){
   if(!pfSessionTicket)return;
@@ -1027,7 +1044,7 @@ function buildShopFilters(){
   const types=['all','hat','skin','trail','aura','namecolor'];
   const labels={all:'All',hat:'🧢 Hats',skin:'👔 Skins',trail:'✨ Trails',aura:'🌟 Auras',namecolor:'🎨 Names'};
   const row=document.getElementById('shop-filters');if(!row)return;
-  row.innerHTML=types.map(t=>`<button class="shop-filter-btn ${t===currentShopFilter?'active':''}" onclick="setShopFilter('${t}')">${labels[t]}</button>`).join('');
+  row.innerHTML=types.map(t=>'<button class="shop-filter-btn '+(t===currentShopFilter?'active':'')+'" onclick="setShopFilter(\''+t+'\')">'+(labels[t]||t)+'</button>').join('');
 }
 function setShopFilter(f){currentShopFilter=f;buildShopFilters();loadShop();}
 
@@ -1037,25 +1054,29 @@ function loadShop(){
   const grid=document.getElementById('shop-items-grid');if(!grid)return;
   const ri={common:'⚪',uncommon:'🟢',rare:'🔵',epic:'🟣',legendary:'🟡',mythic:'🌸',owner:'🔴'};
 
-  const items=Object.entries(COSMETIC_META).filter(([,c])=>{
-    if(c.ownerOnly)return false; // never show owner-only in public shop
+  const items=Object.entries(COSMETIC_META).filter(function(entry){
+    const c=entry[1];
+    if(c.ownerOnly)return false;
     if(currentShopFilter==='all')return true;
     return c.type===currentShopFilter;
   });
 
   if(!items.length){grid.innerHTML='<div style="color:rgba(255,255,255,.4);text-align:center;padding:20px;grid-column:1/-1">No items in this category.</div>';return;}
 
-  grid.innerHTML=items.map(([id,c])=>{
+  var html='';
+  items.forEach(function(entry){
+    const id=entry[0];const c=entry[1];
     const owned=pfOwnedItemIds.includes(id);
     const slot=c.type==='hat'?equippedHat:c.type==='skin'?equippedSkin:c.type==='trail'?equippedTrail:c.type==='aura'?equippedAura:c.type==='namecolor'?equippedNameColor:null;
     const isEquipped=slot===id;
-    const onclick=owned?`equipCosmetic('${id}','${c.type}')`:`buyCosmetic('${id}',${c.price})`;
-    return `<div class="shop-item ${owned?'owned':''} ${isEquipped?'equipped-item':''}" onclick="${onclick}">
-      <div class="shop-item-icon">${c.icon}</div>
-      <div class="shop-item-name rarity-${c.rarity}">${ri[c.rarity]||''} ${c.name}</div>
-      <div class="shop-item-price">${owned?(isEquipped?'✅ Equipped':'🎮 Equip'):`💰 ${c.price}`}</div>
-    </div>`;
-  }).join('');
+    const onclick=owned?'equipCosmetic(\''+id+'\',\''+c.type+'\')':'buyCosmetic(\''+id+'\','+c.price+')';
+    html+='<div class="shop-item '+(owned?'owned':'')+' '+(isEquipped?'equipped-item':'')+'" onclick="'+onclick+'">';
+    html+='<div class="shop-item-icon">'+c.icon+'</div>';
+    html+='<div class="shop-item-name rarity-'+c.rarity+'">'+(ri[c.rarity]||'')+' '+esc(c.name)+'</div>';
+    html+='<div class="shop-item-price">'+(owned?(isEquipped?'✅ Equipped':'🎮 Equip'):'💰 '+c.price)+'</div>';
+    html+='</div>';
+  });
+  grid.innerHTML=html;
 }
 
 async function buyCosmetic(id,price){
@@ -1064,7 +1085,6 @@ async function buyCosmetic(id,price){
   const ok=await pfSpendCredits(price);
   if(!ok)return;
   try{
-    // Load existing owned_items, push new id, save back
     let owned=[];
     try{
       const ud=await pfCall('GetUserData',{Keys:['owned_items']});
@@ -1074,20 +1094,18 @@ async function buyCosmetic(id,price){
     await pfSaveData('owned_items',JSON.stringify(owned));
     if(!pfOwnedItemIds.includes(id))pfOwnedItemIds.push(id);
     saveLocalSession();
-    notify(`✨ Got ${COSMETIC_META[id].name}!`,'#a78bfa');
+    notify('✨ Got '+esc(COSMETIC_META[id].name)+'!','#a78bfa');
     loadShop();
   }catch(e){notify('❌ Failed to save cosmetic','#f87171');}
 }
 
 async function equipCosmetic(id,type){
   if(!pfOwnedItemIds.includes(id)&&!myTags.includes(id)){
-    // Check if it's a tag grant
     if(COSMETIC_META[id]&&COSMETIC_META[id].ownerOnly){notify('🔒 You do not own this!','#f87171');return;}
   }
   const slotKey={hat:'hat',skin:'skin',trail:'trail',aura:'aura',namecolor:'namecolor'}[type];
   if(!slotKey)return;
-  const current={hat:equippedHat,skin:equippedSkin,trail:equippedTrail,aura:equippedAura,namecolor:equippedNameColor};
-  const newVal=current[slotKey]===id?null:id;
+  const newVal=(slotKey==='hat'?equippedHat:slotKey==='skin'?equippedSkin:slotKey==='trail'?equippedTrail:slotKey==='aura'?equippedAura:equippedNameColor)===id?null:id;
   if(slotKey==='hat')equippedHat=newVal;
   else if(slotKey==='skin')equippedSkin=newVal;
   else if(slotKey==='trail')equippedTrail=newVal;
@@ -1095,7 +1113,7 @@ async function equipCosmetic(id,type){
   else if(slotKey==='namecolor')equippedNameColor=newVal;
   await pfSaveData(slotKey,newVal||'');
   saveLocalSession();
-  notify(newVal?`✅ Equipped ${COSMETIC_META[id]&&COSMETIC_META[id].name}!`:'Unequipped','#4ade80');
+  notify(newVal?'✅ Equipped '+(COSMETIC_META[id]&&COSMETIC_META[id].name||id)+'!':'Unequipped','#4ade80');
   loadShop();
   updateEquippedDisplay();
 }
@@ -1103,12 +1121,12 @@ async function equipCosmetic(id,type){
 function updateEquippedDisplay(){
   const el=document.getElementById('equipped-display');if(!el)return;
   const parts=[];
-  if(equippedHat)parts.push(`Hat: ${COSMETIC_META[equippedHat]&&COSMETIC_META[equippedHat].icon||equippedHat}`);
-  if(equippedSkin)parts.push(`Skin: ${COSMETIC_META[equippedSkin]&&COSMETIC_META[equippedSkin].icon||equippedSkin}`);
-  if(equippedTrail)parts.push(`Trail: ${COSMETIC_META[equippedTrail]&&COSMETIC_META[equippedTrail].icon||equippedTrail}`);
-  if(equippedAura)parts.push(`Aura: ${COSMETIC_META[equippedAura]&&COSMETIC_META[equippedAura].icon||equippedAura}`);
-  if(equippedNameColor)parts.push(`Name: ${COSMETIC_META[equippedNameColor]&&COSMETIC_META[equippedNameColor].icon||equippedNameColor}`);
-  if(myTags.length)parts.push(`Tags: ${myTags.map(t=>COSMETIC_META[t]&&COSMETIC_META[t].name||t).join(', ')}`);
+  if(equippedHat)parts.push('Hat: '+(COSMETIC_META[equippedHat]&&COSMETIC_META[equippedHat].icon||equippedHat));
+  if(equippedSkin)parts.push('Skin: '+(COSMETIC_META[equippedSkin]&&COSMETIC_META[equippedSkin].icon||equippedSkin));
+  if(equippedTrail)parts.push('Trail: '+(COSMETIC_META[equippedTrail]&&COSMETIC_META[equippedTrail].icon||equippedTrail));
+  if(equippedAura)parts.push('Aura: '+(COSMETIC_META[equippedAura]&&COSMETIC_META[equippedAura].icon||equippedAura));
+  if(equippedNameColor)parts.push('Name: '+(COSMETIC_META[equippedNameColor]&&COSMETIC_META[equippedNameColor].icon||equippedNameColor));
+  if(myTags.length)parts.push('Tags: '+myTags.map(function(t){return COSMETIC_META[t]&&COSMETIC_META[t].name||t;}).join(', '));
   el.textContent=parts.length?parts.join(' · '):'None';
 }
 
@@ -1117,20 +1135,28 @@ function updateEquippedDisplay(){
 // ════════════════════════════════════════════════════
 function renderTagsHTML(tags){
   if(!tags||!tags.length)return '';
-  return tags.map(t=>{
+  var html='';
+  tags.forEach(function(t){
     const meta=COSMETIC_META[t];
-    if(!meta)return '';
-    return `<span class="player-tag" style="${meta.tagStyle||'background:#333;color:#fff'}">${meta.icon} ${meta.name}</span>`;
-  }).join('');
+    if(!meta)return;
+    html+='<span class="player-tag" style="'+(meta.tagStyle||'background:#333;color:#fff')+'">'+meta.icon+' '+esc(meta.name)+'</span>';
+  });
+  return html;
 }
 
 function buildColorGrid(id,save){
   const el=document.getElementById(id);if(!el)return;
-  el.innerHTML=COLORS.map(c=>`<div class="color-swatch ${c===selectedColor?'selected':''}" style="background:${c}" onclick="selectColor('${c}','${id}',${save})"></div>`).join('');
+  el.innerHTML=COLORS.map(function(c){
+    // BUG FIX: Use data attribute for reliable color comparison
+    return '<div class="color-swatch '+(c===selectedColor?'selected':'')+'" style="background:'+c+'" data-color="'+c+'" onclick="selectColor(\''+c+'\',\''+id+'\','+save+')"></div>';
+  }).join('');
 }
 async function selectColor(c,gid,save){
   selectedColor=c;
-  document.querySelectorAll(`#${gid} .color-swatch`).forEach(s=>s.classList.toggle('selected',s.style.background===c||s.style.backgroundColor===c));
+  // BUG FIX: Use data-color attribute for reliable comparison
+  document.querySelectorAll('#'+gid+' .color-swatch').forEach(function(s){
+    s.classList.toggle('selected',s.getAttribute('data-color')===c);
+  });
   if(save&&pfSessionTicket){await pfSaveData('color',c);saveLocalSession();}
 }
 
@@ -1139,8 +1165,7 @@ async function selectColor(c,gid,save){
 // ════════════════════════════════════════════════════
 async function showMenuScreen(){
   showScreen('menu-screen');
-  document.getElementById('menu-welcome').textContent=`Welcome, ${pfUsername}! 👋`;
-  // Show tags in menu
+  document.getElementById('menu-welcome').textContent='Welcome, '+(pfUsername||'Guest')+' 👋';
   document.getElementById('menu-player-tags').innerHTML=renderTagsHTML(myTags);
   updateCreditsDisplay();
   buildColorGrid('profile-color-grid',true);
@@ -1149,16 +1174,16 @@ async function showMenuScreen(){
   const games=pfStats.games_played||0;
   const wins=pfStats.games_won||0;
   document.getElementById('profile-stats').innerHTML=
-    `<b>${esc(pfUsername)}</b>${renderTagsHTML(myTags)}<br>
-    💰 ${pfCredits} Credits<br>
-    🎮 Games: ${games} · 🏆 Wins: ${wins}<br>
-    <small style="opacity:.4">ID: ${pfPlayFabId||'—'}</small>`;
+    '<b>'+esc(pfUsername||'Guest')+'</b>'+renderTagsHTML(myTags)+'<br>'+
+    '💰 '+pfCredits+' Credits<br>'+
+    '🎮 Games: '+games+' · 🏆 Wins: '+wins+'<br>'+
+    '<small style="opacity:.4">ID: '+(pfPlayFabId||'—')+'</small>';
 }
 
 function switchMenuTab(tab,btn){
-  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-  document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
-  btn.classList.add('active');document.getElementById(`menu-tab-${tab}`).classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});
+  document.querySelectorAll('.tab-content').forEach(function(c){c.classList.remove('active');});
+  btn.classList.add('active');document.getElementById('menu-tab-'+tab).classList.add('active');
   if(tab==='shop')loadShop();
 }
 
@@ -1175,7 +1200,7 @@ async function joinOrCreate(){
     if(ws.readyState!==WebSocket.OPEN){notify('⚠️ Could not connect to server!','#f87171');btn.disabled=false;btn.textContent='🚀 Join / Create Room';return;}
     let code=document.getElementById('room-code-input').value.trim().toUpperCase();
     if(!code)code=Math.random().toString(36).substring(2,8).toUpperCase();
-    const isOwner=(pfUsername&&(pfUsername.toLowerCase()==='zeno'||pfUsername.toLowerCase()==='owner'))||pfCredits>9999;
+    const isOwner=!!(pfUsername&&(pfUsername.toLowerCase()==='zeno'||pfUsername.toLowerCase()==='owner'))||pfCredits>9999;
     const hatEmoji=equippedHat&&COSMETIC_META[equippedHat]?COSMETIC_META[equippedHat].icon:null;
     const trailColor=equippedTrail&&COSMETIC_META[equippedTrail]?COSMETIC_META[equippedTrail].trailColor:null;
     const auraColor=equippedAura&&COSMETIC_META[equippedAura]?COSMETIC_META[equippedAura].auraColor:null;
@@ -1184,7 +1209,7 @@ async function joinOrCreate(){
   }catch(e){notify('⚠️ Game server offline.','#f87171');}
   btn.disabled=false;btn.textContent='🚀 Join / Create Room';
 }
-function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+function sleep(ms){return new Promise(function(r){setTimeout(r,ms);});}
 
 // ════════════════════════════════════════════════════
 // LOBBY
@@ -1193,14 +1218,17 @@ function updateLobbyUI(){
   if(!gameState)return;
   document.getElementById('lobby-code').textContent=gameState.code||currentRoomCode;
   const players=Object.values(gameState.players);
-  document.getElementById('lobby-player-count').textContent=`${players.length}/10 players`;
-  document.getElementById('lobby-player-list').innerHTML=players.map(p=>`
-    <div class="player-item">
-      <div class="player-dot" style="background:${p.color}"></div>
-      <div class="player-name">${esc(p.username)}${p.hat?` ${p.hat}`:''}${renderTagsHTML(p.tags||[])}</div>
-      ${p.id===gameState.hostId?'<span class="host-badge">👑 HOST</span>':''}
-      ${p.isOwner?'<span class="owner-badge">🛡 OWNER</span>':''}
-    </div>`).join('');
+  document.getElementById('lobby-player-count').textContent=players.length+'/10 players';
+  var listHTML='';
+  players.forEach(function(p){
+    listHTML+='<div class="player-item">';
+    listHTML+='<div class="player-dot" style="background:'+p.color+'"></div>';
+    listHTML+='<div class="player-name">'+esc(p.username)+(p.hat?' '+p.hat:'')+renderTagsHTML(p.tags||[])+'</div>';
+    if(p.id===gameState.hostId)listHTML+='<span class="host-badge">👑 HOST</span>';
+    if(p.isOwner)listHTML+='<span class="owner-badge">🛡 OWNER</span>';
+    listHTML+='</div>';
+  });
+  document.getElementById('lobby-player-list').innerHTML=listHTML;
   const iH=gameState.hostId===myPlayerId;
   const iO=gameState.players[myPlayerId]&&gameState.players[myPlayerId].isOwner;
   document.getElementById('start-btn').style.display=(iH||iO)?'block':'none';
@@ -1208,7 +1236,7 @@ function updateLobbyUI(){
 }
 function copyCode(){
   const code=document.getElementById('lobby-code').textContent;
-  if(navigator.clipboard)navigator.clipboard.writeText(code).then(()=>notify('📋 Code copied!','#4ade80')).catch(()=>notify('📋 '+code,'#4ade80'));
+  if(navigator.clipboard)navigator.clipboard.writeText(code).then(function(){notify('📋 Code copied!','#4ade80');}).catch(function(){notify('📋 '+code,'#4ade80');});
   else notify('📋 '+code,'#4ade80');
 }
 function startGame(){wsSend({type:'start_game'});}
@@ -1237,7 +1265,7 @@ function showGameScreen(){
   if(gameScene&&gameState&&gameState.players[myPlayerId]){const p=gameState.players[myPlayerId];gameScene.cameras.main.centerOn(p.x,p.y);}
   addMobileControls();updateAliveCount();
 }
-function updateTaskBar(){if(!gameState||!gameState.taskProgress)return;const{total,done}=gameState.taskProgress;document.getElementById('task-bar').style.width=(total>0?done/total*100:0)+'%';}
+function updateTaskBar(){if(!gameState||!gameState.taskProgress)return;const tp=gameState.taskProgress;document.getElementById('task-bar').style.width=(tp.total>0?tp.done/tp.total*100:0)+'%';}
 
 // ════════════════════════════════════════════════════
 // INTERACTION
@@ -1245,18 +1273,18 @@ function updateTaskBar(){if(!gameState||!gameState.taskProgress)return;const{tot
 function dist(x1,y1,x2,y2){return Math.sqrt((x1-x2)**2+(y1-y2)**2);}
 function checkNearby(px,py){
   if(!gameState)return;
-  const nearBody=gameState.bodies&&gameState.bodies.find(b=>dist(px,py,b.x,b.y)<70);
+  const nearBody=gameState.bodies&&gameState.bodies.find(function(b){return dist(px,py,b.x,b.y)<70;});
   document.getElementById('btn-report').style.display=nearBody?'flex':'none';
-  if(myRole==='crewmate'){const tl=[{x:148,y:520},{x:810,y:150},{x:140,y:310},{x:500,y:390},{x:760,y:540},{x:410,y:575},{x:500,y:175}];document.getElementById('btn-task').style.display=tl.some(t=>dist(px,py,t.x,t.y)<58)?'flex':'none';}
+  if(myRole==='crewmate'){const tl=[{x:148,y:520},{x:810,y:150},{x:140,y:310},{x:500,y:390},{x:760,y:540},{x:410,y:575},{x:500,y:175}];document.getElementById('btn-task').style.display=tl.some(function(t){return dist(px,py,t.x,t.y)<58;})&&myTasks.some(function(t){return !t.completed;})?'flex':'none';}
   updateAliveCount();
 }
 function updateKillBtn(){
   if(myRole!=='impostor')return;const btn=document.getElementById('btn-kill');if(!btn)return;
   const now=Date.now();
-  if(now<killCooldownUntil){const r=Math.ceil((killCooldownUntil-now)/1000);btn.innerHTML=`☠ Kill <span class="cooldown-txt">(${r}s)</span>`;btn.disabled=true;}
-  else{btn.textContent='☠ Kill';const me=gameState&&gameState.players[myPlayerId];if(me&&gameState){const t=Object.values(gameState.players).find(p=>p.id!==myPlayerId&&p.alive&&p.role!=='impostor'&&dist(me.x,me.y,p.x,p.y)<100);btn.disabled=!t;}}
+  if(now<killCooldownUntil){const r=Math.ceil((killCooldownUntil-now)/1000);btn.innerHTML='☠ Kill <span class="cooldown-txt">('+r+'s)</span>';btn.disabled=true;}
+  else{btn.textContent='☠ Kill';const me=gameState&&gameState.players[myPlayerId];if(me&&gameState){const t=Object.values(gameState.players).find(function(p){return p.id!==myPlayerId&&p.alive&&p.role!=='impostor'&&dist(me.x,me.y,p.x,p.y)<100;});btn.disabled=!t;}}
 }
-function updateAliveCount(){if(!gameState)return;const a=Object.values(gameState.players).filter(p=>p.alive).length,total=Object.keys(gameState.players).length;const el=document.getElementById('alive-count');if(el)el.textContent=`👥 ${a}/${total}`;}
+function updateAliveCount(){if(!gameState)return;const a=Object.values(gameState.players).filter(function(p){return p.alive;}).length,total=Object.keys(gameState.players).length;const el=document.getElementById('alive-count');if(el)el.textContent='👥 '+a+'/'+total;}
 
 // ════════════════════════════════════════════════════
 // ACTIONS
@@ -1264,7 +1292,7 @@ function updateAliveCount(){if(!gameState)return;const a=Object.values(gameState
 function tryKill(){
   if(myRole!=='impostor')return;if(Date.now()<killCooldownUntil){notify('⏳ Kill cooldown!','#f87171');return;}
   const me=gameState&&gameState.players[myPlayerId];if(!me)return;
-  const t=Object.values(gameState.players).find(p=>p.id!==myPlayerId&&p.alive&&p.role!=='impostor'&&dist(me.x,me.y,p.x,p.y)<100);
+  const t=Object.values(gameState.players).find(function(p){return p.id!==myPlayerId&&p.alive&&p.role!=='impostor'&&dist(me.x,me.y,p.x,p.y)<100;});
   if(!t){notify('No one nearby!','#f87171');return;}
   wsSend({type:'kill',targetId:t.id});killCooldownUntil=Date.now()+25000;flashRed();
 }
@@ -1273,7 +1301,7 @@ function tryVent(){
   const v=gameScene.ventPositions;let near=null,nd=999;
   for(const vp of v){const d=dist(me.x,me.y,vp.x,vp.y);if(d<nd){nd=d;near=vp;}}
   if(!near||nd>100){notify('Not near a vent!','#f87171');return;}
-  const others=v.filter(vp=>vp!==near);const dest=others[Math.floor(Math.random()*others.length)];
+  const others=v.filter(function(vp){return vp!==near;});const dest=others[Math.floor(Math.random()*others.length)];
   me.x=dest.x;me.y=dest.y;updatePlayerSprite(myPlayerId,dest.x,dest.y);gameScene.cameras.main.centerOn(dest.x,dest.y);
   wsSend({type:'move',x:dest.x,y:dest.y});notify('🕳 Whoosh! Vented!','#059669');
 }
@@ -1282,8 +1310,8 @@ function callEmergency(){if(!gameState||gameState.phase!=='game')return;wsSend({
 function openNearbyTask(){
   if(myRole!=='crewmate')return;const me=gameState&&gameState.players[myPlayerId];if(!me)return;
   const tl=[{x:148,y:520,n:'Electrical'},{x:810,y:150,n:'Navigation'},{x:140,y:310,n:'Reactor'},{x:500,y:390,n:'MedBay'},{x:760,y:540,n:'Storage'},{x:410,y:575,n:'Engine'},{x:500,y:175,n:'Cafeteria'}];
-  const loc=tl.find(t=>dist(me.x,me.y,t.x,t.y)<60);if(!loc){notify('Not near a task!','#f87171');return;}
-  const task=myTasks.find(t=>!t.completed&&t.location&&t.location.name===loc.n);
+  const loc=tl.find(function(t){return dist(me.x,me.y,t.x,t.y)<60;});if(!loc){notify('Not near a task!','#f87171');return;}
+  const task=myTasks.find(function(t){return !t.completed&&t.location&&t.location.name===loc.n;});
   if(!task){notify('✅ All tasks done here!','#4ade80');return;}
   openTaskModal(task);
 }
@@ -1293,69 +1321,91 @@ function openNearbyTask(){
 // ════════════════════════════════════════════════════
 function openTaskModal(task){
   activeTaskId=task.id;document.getElementById('task-modal').style.display='flex';
-  document.getElementById('task-modal-title').textContent={wires:'🔌 Fix the Wires',button:'🔴 Calibrate Reactor',pattern:'🔐 Security Code'}[task.type]||'Fix Task';
-  document.getElementById('task-modal-subtitle').textContent=`📍 ${(task.location&&task.location.name)||'Unknown'}`;
+  const titles={wires:'🔌 Fix the Wires',button:'🔴 Calibrate Reactor',pattern:'🔐 Security Code'};
+  document.getElementById('task-modal-title').textContent=titles[task.type]||'Fix Task';
+  document.getElementById('task-modal-subtitle').textContent='📍 '+((task.location&&task.location.name)||'Unknown');
   const content=document.getElementById('task-modal-content');
   if(task.type==='wires')buildWireTask(content);else if(task.type==='button')buildMashTask(content);else buildPatternTask(content);
 }
-function closeTask(){document.getElementById('task-modal').style.display='none';activeTaskId=null;mashCount=0;wireConnections={};wireTarget=null;}
-function completeTask(){if(!activeTaskId)return;wsSend({type:'complete_task',taskId:activeTaskId});const t=myTasks.find(t=>t.id===activeTaskId);if(t)t.completed=true;closeTask();}
+function closeTask(){document.getElementById('task-modal').style.display='none';activeTaskId=null;mashCount=0;wireConnections={};wireTarget=null;wireColorCols=[];wireColorShuf=[];}
+function completeTask(){if(!activeTaskId)return;wsSend({type:'complete_task',taskId:activeTaskId});const t=myTasks.find(function(t){return t.id===activeTaskId;});if(t)t.completed=true;closeTask();}
 
-// Wire task
+// ── Wire task ──────────────────────────────────────
+// BUG FIX: Store colors at module level so conWire can always access them
 function buildWireTask(con){
   wireConnections={};wireTarget=null;
-  const cols=[{c:'#ef4444',n:'red'},{c:'#3b82f6',n:'blue'},{c:'#22c55e',n:'green'},{c:'#f59e0b',n:'yellow'}];
-  const shuf=[...cols].sort(()=>Math.random()-.5);
-  con.innerHTML=`<div class="wire-grid"><div class="wire-col" id="wl">${cols.map((c,i)=>`<div class="wire-node" id="wl${i}" style="border-color:${c.c};color:${c.c}" onclick="selWire(${i})">${i+1}</div>`).join('')}</div><svg class="wires" id="wsvg" viewBox="0 0 100 196" style="height:196px"></svg><div class="wire-col" id="wr">${shuf.map((c,i)=>`<div class="wire-node" id="wr${i}" style="border-color:${c.c};color:${c.c}" onclick="conWire(${i},'${c.n}')">${i+1}</div>`).join('')}</div></div><div id="wstat" style="color:rgba(255,255,255,.5);font-size:13px;margin-top:6px">Click a left wire to start</div>`;
-  con._cols=cols;con._shuf=shuf;
+  wireColorCols=[{c:'#ef4444',n:'red'},{c:'#3b82f6',n:'blue'},{c:'#22c55e',n:'green'},{c:'#f59e0b',n:'yellow'}];
+  wireColorShuf=[...wireColorCols].sort(function(){return Math.random()-.5;});
+  var leftHTML='';
+  wireColorCols.forEach(function(c,i){
+    leftHTML+='<div class="wire-node" id="wl'+i+'" style="border-color:'+c.c+';color:'+c.c+'" onclick="selWire('+i+')">'+(i+1)+'</div>';
+  });
+  var rightHTML='';
+  wireColorShuf.forEach(function(c,i){
+    rightHTML+='<div class="wire-node" id="wr'+i+'" style="border-color:'+c.c+';color:'+c.c+'" onclick="conWire('+i+',\''+c.n+'\')">'+('ABCD'[i])+'</div>';
+  });
+  con.innerHTML='<div class="wire-grid"><div class="wire-col" id="wl">'+leftHTML+'</div><svg class="wires" id="wsvg" viewBox="0 0 100 196" style="height:196px"></svg><div class="wire-col" id="wr">'+rightHTML+'</div></div><div id="wstat" style="color:rgba(255,255,255,.5);font-size:13px;margin-top:6px">Click a left wire to start</div>';
 }
-function selWire(i){wireTarget=i;document.querySelectorAll('[id^=wl]').forEach(e=>e.style.transform='');const wli=document.getElementById(`wl${i}`);if(wli)wli.style.transform='scale(1.18)';const ws=document.getElementById('wstat');if(ws)ws.textContent='Connect to matching color →';}
+function selWire(i){
+  wireTarget=i;
+  document.querySelectorAll('[id^=wl]').forEach(function(e){e.style.transform='';});
+  const wli=document.getElementById('wl'+i);if(wli)wli.style.transform='scale(1.18)';
+  const ws=document.getElementById('wstat');if(ws)ws.textContent='Connect to matching color →';
+}
 function conWire(ri,cn){
   if(wireTarget===null){const ws=document.getElementById('wstat');if(ws)ws.textContent='Select a left wire first!';return;}
-  const content=document.getElementById('task-modal-content');
-  const cols=content&&content._cols;if(!cols)return;
-  const exp=cols[wireTarget].n;
+  // BUG FIX: Use module-level wireColorCols instead of content._cols
+  const exp=wireColorCols[wireTarget]?wireColorCols[wireTarget].n:null;
   wireConnections[wireTarget]=ri;
   const svg=document.getElementById('wsvg');if(!svg)return;
   const line=document.createElementNS('http://www.w3.org/2000/svg','line');
   const yl=24+wireTarget*58,yr=24+ri*58;
   line.setAttribute('x1','0');line.setAttribute('y1',String(yl));line.setAttribute('x2','100');line.setAttribute('y2',String(yr));
-  line.setAttribute('stroke',cn===exp?cols[wireTarget].c:'#ef4444');line.setAttribute('stroke-width','3.5');
+  line.setAttribute('stroke',(cn===exp&&wireColorCols[wireTarget])?wireColorCols[wireTarget].c:'#ef4444');line.setAttribute('stroke-width','3.5');
   svg.appendChild(line);
-  const wln=document.getElementById(`wl${wireTarget}`);const wrn=document.getElementById(`wr${ri}`);
+  const wln=document.getElementById('wl'+wireTarget);const wrn=document.getElementById('wr'+ri);
   if(wln)wln.classList.add('wconn');if(wrn)wrn.classList.add('wconn');
-  wireTarget=null;document.querySelectorAll('[id^=wl]').forEach(e=>e.style.transform='');
-  if(Object.keys(wireConnections).length>=4)setTimeout(()=>completeTask(),500);
+  wireTarget=null;document.querySelectorAll('[id^=wl]').forEach(function(e){e.style.transform='';});
+  if(Object.keys(wireConnections).length>=4)setTimeout(function(){completeTask();},500);
 }
 
-// Mash task
-function buildMashTask(con){mashCount=0;con.innerHTML=`<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px"><span>Progress</span><span id="mc">0/${MASH_GOAL}</span></div><div class="mash-bar"><div class="mash-fill" id="mf"></div></div><button class="mash-btn" onclick="mash()" id="mb">PRESS!</button><div style="color:rgba(255,255,255,.45);font-size:13px">Mash ${MASH_GOAL} times!</div>`;}
-function mash(){mashCount++;const mc=document.getElementById('mc');const mf=document.getElementById('mf');const mb=document.getElementById('mb');if(mc)mc.textContent=`${mashCount}/${MASH_GOAL}`;if(mf)mf.style.width=(mashCount/MASH_GOAL*100)+'%';if(mashCount>=MASH_GOAL){if(mb)mb.disabled=true;setTimeout(()=>completeTask(),300);}}
+// ── Mash task ──────────────────────────────────────
+function buildMashTask(con){
+  mashCount=0;
+  con.innerHTML='<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px"><span>Progress</span><span id="mc">0/'+MASH_GOAL+'</span></div><div class="mash-bar"><div class="mash-fill" id="mf"></div></div><button class="mash-btn" onclick="mash()" id="mb">PRESS!</button><div style="color:rgba(255,255,255,.45);font-size:13px">Mash '+MASH_GOAL+' times!</div>';
+}
+function mash(){
+  mashCount++;
+  const mc=document.getElementById('mc');const mf=document.getElementById('mf');const mb=document.getElementById('mb');
+  if(mc)mc.textContent=mashCount+'/'+MASH_GOAL;
+  if(mf)mf.style.width=(mashCount/MASH_GOAL*100)+'%';
+  if(mashCount>=MASH_GOAL){if(mb)mb.disabled=true;setTimeout(function(){completeTask();},300);}
+}
 
-// Pattern task
+// ── Pattern task ───────────────────────────────────
 function buildPatternTask(con){
-  patternSequence=Array.from({length:5},()=>Math.floor(Math.random()*9));
+  patternSequence=Array.from({length:5},function(){return Math.floor(Math.random()*9);});
   patternInput=[];patternPhase='watch';
-  con.innerHTML=`<div id="pstat" style="color:#a78bfa;font-size:14px;margin-bottom:11px">👀 Watch the pattern...</div><div class="pattern-grid" id="pgrid">${Array.from({length:9},(_,i)=>`<div class="pattern-cell" id="pc${i}" onclick="patClick(${i})"></div>`).join('')}</div>`;
+  con.innerHTML='<div id="pstat" style="color:#a78bfa;font-size:14px;margin-bottom:11px">👀 Watch the pattern...</div><div class="pattern-grid" id="pgrid">'+Array.from({length:9},function(_,i){return '<div class="pattern-cell" id="pc'+i+'" onclick="patClick('+i+')"></div>';}).join('')+'</div>';
   let i=0;
-  const show=()=>{
+  function show(){
     if(i>=patternSequence.length){patternPhase='input';const pstat=document.getElementById('pstat');if(pstat){pstat.textContent='🎯 Repeat the pattern!';pstat.style.color='#4ade80';}return;}
-    const cell=document.getElementById(`pc${patternSequence[i]}`);
-    if(cell){cell.classList.add('lit');setTimeout(()=>{cell.classList.remove('lit');i++;setTimeout(show,380);},580);}else{i++;setTimeout(show,380);}
-  };
+    const cell=document.getElementById('pc'+patternSequence[i]);
+    if(cell){cell.classList.add('lit');setTimeout(function(){cell.classList.remove('lit');i++;setTimeout(show,380);},580);}else{i++;setTimeout(show,380);}
+  }
   setTimeout(show,600);
 }
 function patClick(idx){
   if(patternPhase!=='input')return;
+  const expected=patternSequence[patternInput.length];
   patternInput.push(idx);
-  const cell=document.getElementById(`pc${idx}`);if(!cell)return;
-  const exp=patternSequence[patternInput.length-1];
-  if(idx===exp){
-    cell.classList.add('correct');setTimeout(()=>cell.classList.remove('correct'),350);
-    if(patternInput.length===patternSequence.length)setTimeout(()=>completeTask(),400);
+  const cell=document.getElementById('pc'+idx);if(!cell)return;
+  if(idx===expected){
+    cell.classList.add('correct');setTimeout(function(){cell.classList.remove('correct');},350);
+    if(patternInput.length===patternSequence.length)setTimeout(function(){completeTask();},400);
   }else{
     cell.classList.add('wrong');
-    setTimeout(()=>{cell.classList.remove('wrong');patternInput=[];const pstat=document.getElementById('pstat');if(pstat)pstat.textContent='❌ Wrong! Watch again...';setTimeout(()=>{const c=document.getElementById('task-modal-content');if(c)buildPatternTask(c);},700);},450);
+    setTimeout(function(){cell.classList.remove('wrong');patternInput=[];const pstat=document.getElementById('pstat');if(pstat)pstat.textContent='❌ Wrong! Watch again...';setTimeout(function(){const c=document.getElementById('task-modal-content');if(c)buildPatternTask(c);},700);},450);
   }
 }
 
@@ -1370,36 +1420,44 @@ function showMeeting(reason,discTime){
   document.getElementById('chat-area').innerHTML='';
   const sysd=document.createElement('div');sysd.className='chat-msg';sysd.style.color='rgba(255,255,255,0.4)';sysd.textContent='💬 Chat is open!';document.getElementById('chat-area').appendChild(sysd);
   buildVoteGrid();startTimer(discTime/1000,discTime/1000);
-  setTimeout(()=>{const ci=document.getElementById('chat-input');if(ci)ci.focus();},200);
+  setTimeout(function(){const ci=document.getElementById('chat-input');if(ci)ci.focus();},200);
 }
 function switchToVoting(vTime){document.getElementById('meeting-title-text').textContent='🗳 VOTE NOW!';document.getElementById('meeting-phase-label').textContent='🗳 Voting Phase';document.getElementById('skip-vote-btn').disabled=false;buildVoteGrid();startTimer(vTime/1000,vTime/1000);}
-function startTimer(secs,total){clearInterval(timerInterval);let t=secs;document.getElementById('timer-fill').style.width='100%';timerInterval=setInterval(()=>{t--;document.getElementById('timer-fill').style.width=Math.max(0,t/total*100)+'%';if(t<=0)clearInterval(timerInterval);},1000);}
+function startTimer(secs,total){clearInterval(timerInterval);let t=secs;document.getElementById('timer-fill').style.width='100%';timerInterval=setInterval(function(){t--;document.getElementById('timer-fill').style.width=Math.max(0,t/total*100)+'%';if(t<=0)clearInterval(timerInterval);},1000);}
 function buildVoteGrid(){
   if(!gameState)return;const grid=document.getElementById('vote-grid');const myVote=gameState.votes&&gameState.votes[myPlayerId];
-  grid.innerHTML=Object.values(gameState.players).map(p=>`<div class="vote-card ${!p.alive?'dead':''} ${p.id===myPlayerId?'self-card':''} ${myVote===p.id?'my-vote':''}" id="vc-${p.id}" onclick="castVote('${p.id}')"><div class="vote-avatar" style="background:${p.color}">${!p.alive?'💀':'🧑'}${p.hat?p.hat:''}</div><div class="vote-name">${esc(p.username)}</div><div class="vote-count" id="vot-${p.id}"></div></div>`).join('');
+  var html='';
+  Object.values(gameState.players).forEach(function(p){
+    html+='<div class="vote-card '+((!p.alive)?'dead':'')+' '+(p.id===myPlayerId?'self-card':'')+' '+(myVote===p.id?'my-vote':'')+'" id="vc-'+p.id+'" onclick="castVote(\''+p.id+'\')">';
+    html+='<div class="vote-avatar" style="background:'+p.color+'">'+((!p.alive)?'💀':'🧑')+(p.hat?p.hat:'')+'</div>';
+    html+='<div class="vote-name">'+esc(p.username)+'</div>';
+    html+='<div class="vote-count" id="vot-'+p.id+'"></div>';
+    html+='</div>';
+  });
+  grid.innerHTML=html;
   updateVoteGrid();
 }
-function updateVoteGrid(){if(!gameState||!gameState.votes)return;const tally={};for(const[,t]of Object.entries(gameState.votes))if(t!=='skip')tally[t]=(tally[t]||0)+1;for(const[pid,cnt]of Object.entries(tally)){const el=document.getElementById(`vot-${pid}`);if(el)el.textContent=`🔴 ${cnt}`;}}
+function updateVoteGrid(){if(!gameState||!gameState.votes)return;const tally={};for(const[,t]of Object.entries(gameState.votes))if(t!=='skip')tally[t]=(tally[t]||0)+1;for(const[pid,cnt]of Object.entries(tally)){const el=document.getElementById('vot-'+pid);if(el)el.textContent='🔴 '+cnt;}}
 function castVote(targetId){
   if(gameState&&gameState.phase!=='vote'){notify('Voting hasn\'t started yet!','#f87171');return;}
   const me=gameState&&gameState.players[myPlayerId];if(!me||!me.alive){notify('Ghosts cannot vote','#f87171');return;}
   if(gameState.votes&&gameState.votes[myPlayerId]){notify('Already voted!','#f87171');return;}
   wsSend({type:'cast_vote',targetId});if(!gameState.votes)gameState.votes={};gameState.votes[myPlayerId]=targetId;
-  document.querySelectorAll('.vote-card').forEach(c=>c.classList.remove('my-vote'));
-  if(targetId!=='skip'){const vc=document.getElementById(`vc-${targetId}`);if(vc)vc.classList.add('my-vote');}
+  document.querySelectorAll('.vote-card').forEach(function(c){c.classList.remove('my-vote');});
+  if(targetId!=='skip'){const vc=document.getElementById('vc-'+targetId);if(vc)vc.classList.add('my-vote');}
   document.getElementById('skip-vote-btn').disabled=true;notify('✅ Vote cast!','#4ade80');
 }
 function showVoteResult(msg){
   clearInterval(timerInterval);document.getElementById('timer-fill').style.width='0%';const grid=document.getElementById('vote-grid');
-  if(msg.ejected){const wasImp=msg.ejected.role==='impostor';grid.innerHTML=`<div style="text-align:center;padding:20px;min-width:280px"><div style="font-size:52px;margin-bottom:10px">🚀</div><div style="font-size:22px;font-weight:700;color:${msg.ejected.color}">${esc(msg.ejected.username)}</div><div style="color:rgba(255,255,255,.55);margin-top:8px;font-size:15px">${wasImp?'😈 WAS AN IMPOSTOR!':'✅ Was innocent...'}</div></div>`;}
-  else grid.innerHTML=`<div style="text-align:center;padding:20px"><div style="font-size:52px">⏭</div><div style="color:rgba(255,255,255,.55);margin-top:8px">No one was ejected</div></div>`;
+  if(msg.ejected){const wasImp=msg.ejected.role==='impostor';grid.innerHTML='<div style="text-align:center;padding:20px;min-width:280px"><div style="font-size:52px;margin-bottom:10px">🚀</div><div style="font-size:22px;font-weight:700;color:'+msg.ejected.color+'">'+esc(msg.ejected.username)+'</div><div style="color:rgba(255,255,255,.55);margin-top:8px;font-size:15px">'+(wasImp?'😈 WAS AN IMPOSTOR!':'✅ Was innocent...')+'</div></div>';}
+  else grid.innerHTML='<div style="text-align:center;padding:20px"><div style="font-size:52px">⏭</div><div style="color:rgba(255,255,255,.55);margin-top:8px">No one was ejected</div></div>';
   document.getElementById('skip-vote-btn').style.display='none';document.getElementById('meeting-phase-label').textContent='📊 Results';
 }
 function hideMeeting(){document.getElementById('meeting-screen').style.display='none';document.getElementById('hud').classList.remove('hidden');document.getElementById('action-btns').classList.remove('hidden');document.getElementById('skip-vote-btn').style.display='';clearInterval(timerInterval);}
 function addChatMsg(msg){
   const a=document.getElementById('chat-area');if(!a)return;
   const d=document.createElement('div');d.className='chat-msg'+(msg.alive?'':' ghost-msg');
-  d.innerHTML=`<span style="color:${msg.color||'#fff'};font-weight:700">${esc(msg.username)}</span>${renderTagsHTML(msg.tags||[])}${msg.alive?'':' 👻'}: ${esc(msg.text)}`;
+  d.innerHTML='<span style="color:'+(msg.color||'#fff')+';font-weight:700">'+esc(msg.username)+'</span>'+renderTagsHTML(msg.tags||[])+(msg.alive?'':' 👻')+': '+esc(msg.text);
   a.appendChild(d);a.scrollTop=a.scrollHeight;
 }
 function sendChat(){const inp=document.getElementById('chat-input');if(!inp)return;const t=inp.value.trim();if(!t)return;wsSend({type:'chat_message',text:t});inp.value='';}
@@ -1412,7 +1470,11 @@ async function showEndScreen(msg){
   const wt=document.getElementById('win-title');const ws2=document.getElementById('win-subtitle');
   if(msg.winner==='crewmate'){wt.textContent='✅ CREWMATES WIN!';wt.className='win-title win-crew';ws2.textContent='Mission complete!';}
   else{wt.textContent='😈 IMPOSTORS WIN!';wt.className='win-title win-impostor';ws2.textContent='The impostors took over!';}
-  document.getElementById('results-list').innerHTML=(msg.results||[]).map(p=>`<div class="result-item"><div style="width:20px;height:20px;border-radius:50%;background:${p.color};flex-shrink:0"></div><div style="flex:1"><strong>${esc(p.username)}</strong> — ${p.role==='impostor'?'😈 Impostor':'✅ Crewmate'}</div><div style="font-size:12px;color:rgba(255,255,255,.45)">${p.role==='impostor'?`${p.kills||0} kills`:`${p.tasksCompleted||0} tasks`}${!p.alive?' · 💀':''}</div></div>`).join('');
+  var resHTML='';
+  (msg.results||[]).forEach(function(p){
+    resHTML+='<div class="result-item"><div style="width:20px;height:20px;border-radius:50%;background:'+p.color+';flex-shrink:0"></div><div style="flex:1"><strong>'+esc(p.username)+'</strong> — '+(p.role==='impostor'?'😈 Impostor':'✅ Crewmate')+'</div><div style="font-size:12px;color:rgba(255,255,255,.45)">'+(p.role==='impostor'?(p.kills||0)+' kills':(p.tasksCompleted||0)+' tasks')+(!p.alive?' · 💀':'')+'</div></div>';
+  });
+  document.getElementById('results-list').innerHTML=resHTML;
   const iWon=(msg.winner==='crewmate'&&myRole==='crewmate')||(msg.winner==='impostor'&&myRole==='impostor');
   const reward=iWon?80+Math.floor(Math.random()*60):20;
   await pfAddCredits(reward,true);
@@ -1420,7 +1482,7 @@ async function showEndScreen(msg){
   pfStats.games_played=gp;pfStats.games_won=gw;
   await pfUpdateStat('games_played',gp);
   if(iWon)await pfUpdateStat('games_won',gw);
-  if(myRole==='impostor'){const kills=(msg.results&&msg.results.find(r=>r.id===myPlayerId)&&msg.results.find(r=>r.id===myPlayerId).kills)||0;await pfUpdateStat('total_kills',(pfStats.total_kills||0)+kills);}
+  if(myRole==='impostor'){const myResult=msg.results&&msg.results.find(function(r){return r.id===myPlayerId;});const kills=(myResult&&myResult.kills)||0;await pfUpdateStat('total_kills',(pfStats.total_kills||0)+kills);}
 }
 function backToMenu(){showScreen('menu-screen');showMenuScreen();}
 
@@ -1440,162 +1502,201 @@ const OWNER_COSMETIC_PRESETS={
   'VIP Diamond':      {aura:'#0ea5e9',title:'💎 VIP',badge:'💎',trailColor:'#7dd3fc'},
 };
 
-// All owner-only tag IDs for quick selection
-const OWNER_TAGS=Object.entries(COSMETIC_META).filter(([,c])=>c.type==='tag'&&c.ownerOnly).map(([id])=>id);
+// BUG FIX: Build OWNER_TAGS list without nested template literals
+const OWNER_TAGS=Object.keys(COSMETIC_META).filter(function(id){
+  return COSMETIC_META[id].type==='tag' && COSMETIC_META[id].ownerOnly;
+});
 
 function toggleOwnerPanel(){
   const p=document.getElementById('owner-panel');const visible=p.style.display==='block';
   p.style.display=visible?'none':'block';if(!visible)renderMegaOwnerPanel();
 }
 
+// BUG FIX: Replaced all nested template literals with string concatenation
 function renderMegaOwnerPanel(){
   const panel=document.getElementById('owner-panel');if(!gameState)return;
   const players=Object.values(gameState.players);
-  const playerOptions=players.map(p=>`<option value="${p.id}">${esc(p.username)} ${p.alive?'':'💀'}</option>`).join('');
-  panel.innerHTML=`
-  <h3 style="color:#f87171;margin-bottom:10px;font-size:15px">👑 Owner Panel</h3>
-  <div style="display:flex;gap:4px;margin-bottom:12px;flex-wrap:wrap">
-    ${['Players','Commands','Cosmetics','Tags','Server'].map((t,i)=>`<button onclick="ownerTab(${i})" id="otab${i}" style="flex:1;padding:5px;border-radius:6px;border:1px solid rgba(255,255,255,0.1);background:${i===0?'rgba(167,139,250,0.3)':'rgba(255,255,255,0.06)'};color:#fff;cursor:pointer;font-size:11px">${t}</button>`).join('')}
-  </div>
 
-  <!-- TAB 0: PLAYERS -->
-  <div id="otabcontent0">
-    <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:5px">Target player:</div>
-    <select id="op-target" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:#fff;padding:7px;border-radius:7px;margin-bottom:8px;font-size:12px">${playerOptions}</select>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px">
-      <button class="obtn obtn-orange" onclick="ownerCmd('kick')">🥾 Kick</button>
-      <button class="obtn obtn-red" onclick="ownerCmd('kill')">☠️ Kill</button>
-      <button class="obtn obtn-blue" onclick="ownerCmd('freeze')">❄️ Freeze</button>
-      <button class="obtn obtn-blue" onclick="ownerCmd('unfreeze')">🔥 Unfreeze</button>
-      <button class="obtn obtn-green" onclick="ownerCmd('respawn')">✨ Respawn</button>
-      <button class="obtn obtn-green" onclick="ownerCmd('godmode_on')">🛡 Godmode</button>
-      <button class="obtn obtn-purple" onclick="ownerCmd('set_impostor')">😈 → Impostor</button>
-      <button class="obtn obtn-purple" onclick="ownerCmd('set_crewmate')">✅ → Crewmate</button>
-      <button class="obtn obtn-yellow" onclick="ownerCmd('speed_fast')">⚡ Speed x2</button>
-      <button class="obtn obtn-yellow" onclick="ownerCmd('speed_slow')">🐌 Slow x0.5</button>
-      <button class="obtn obtn-yellow" onclick="ownerCmd('speed_normal')">🏃 Normal</button>
-      <button class="obtn obtn-orange" onclick="ownerCmd('reset_tasks')">📋 Reset Tasks</button>
-    </div>
-    <div style="margin-top:8px;font-size:11px;color:rgba(255,255,255,0.4)">Teleport to room:</div>
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-top:4px">
-      ${['cafeteria','reactor','navigation','medbay','storage','electrical','engine'].map(r=>`<button class="obtn obtn-blue" onclick="ownerCmd('teleport_room','${r}')" style="font-size:10px">${r}</button>`).join('')}
-    </div>
-    <div style="margin-top:8px;font-size:11px;color:rgba(255,255,255,0.4)">Give credits to player (PlayFab):</div>
-    <div style="display:flex;gap:5px;margin-top:4px">
-      <input class="inp" id="op-give-amount" type="number" value="500" min="1" style="margin:0;font-size:12px;padding:6px;width:80px">
-      <button class="obtn obtn-green" style="flex:1" onclick="ownerGiveCredits()">💰 Give Credits</button>
-    </div>
-  </div>
+  var playerOptions='';
+  players.forEach(function(p){
+    playerOptions+='<option value="'+p.id+'">'+esc(p.username)+(p.alive?'':' 💀')+'</option>';
+  });
 
-  <!-- TAB 1: COMMANDS -->
-  <div id="otabcontent1" style="display:none">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:10px">
-      <button class="obtn obtn-green" onclick="ownerCmd('end_crew')">✅ Crew Win</button>
-      <button class="obtn obtn-red" onclick="ownerCmd('end_imp')">😈 Imp Win</button>
-      <button class="obtn obtn-purple" onclick="ownerCmd('force_meeting')">🚨 Meeting</button>
-      <button class="obtn obtn-purple" onclick="ownerCmd('shuffle_roles')">🎲 Shuffle</button>
-      <button class="obtn obtn-orange" onclick="ownerCmd('all_tasks')">✅ All Tasks</button>
-      <button class="obtn obtn-orange" onclick="ownerCmd('reveal_roles')">🕵 Reveal</button>
-      <button class="obtn obtn-red" onclick="ownerCmd('explosion')">💥 Explode</button>
-      <button class="obtn obtn-blue" onclick="ownerCmd('lock_room')">🔒 Lock</button>
-      <button class="obtn obtn-blue" onclick="ownerCmd('unlock_room')">🔓 Unlock</button>
-      <button class="obtn obtn-orange" onclick="ownerCmd('reset_cooldown')">⏱ CD Reset</button>
-    </div>
-    <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:5px">Broadcast:</div>
-    <input id="op-broadcast" class="inp" placeholder="Announcement..." style="margin-bottom:5px;font-size:12px;padding:7px">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:10px">
-      <button class="obtn obtn-yellow" onclick="ownerCmd('broadcast_gold')">📢 Gold</button>
-      <button class="obtn obtn-red" onclick="ownerCmd('broadcast_red')">🔴 Red Alert</button>
-    </div>
-    <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:5px">Swap roles:</div>
-    <select id="op-swapA" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:#fff;padding:6px;border-radius:7px;margin-bottom:5px;font-size:12px">${playerOptions}</select>
-    <select id="op-swapB" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:#fff;padding:6px;border-radius:7px;margin-bottom:5px;font-size:12px">${playerOptions}</select>
-    <button class="obtn obtn-purple" onclick="ownerCmd('swap_roles')" style="width:100%">🔀 Swap Roles</button>
-  </div>
+  var tabBtns='';
+  var tabLabels=['Players','Commands','Cosmetics','Tags','Server'];
+  tabLabels.forEach(function(t,i){
+    tabBtns+='<button onclick="ownerTab('+i+')" id="otab'+i+'" style="flex:1;padding:5px;border-radius:6px;border:1px solid rgba(255,255,255,0.1);background:'+(i===0?'rgba(167,139,250,0.3)':'rgba(255,255,255,0.06)')+';color:#fff;cursor:pointer;font-size:11px">'+t+'</button>';
+  });
 
-  <!-- TAB 2: COSMETICS -->
-  <div id="otabcontent2" style="display:none">
-    <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:5px">Target:</div>
-    <select id="op-cos-target" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:#fff;padding:7px;border-radius:7px;margin-bottom:8px;font-size:12px">${playerOptions}</select>
-    <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:5px">🎨 Presets:</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:10px">
-      ${Object.keys(OWNER_COSMETIC_PRESETS).map(name=>`<button class="obtn obtn-yellow" onclick="ownerApplyPreset('${name}')" style="font-size:10px">${name}</button>`).join('')}
-    </div>
-    <hr style="border-color:rgba(255,255,255,0.08);margin:8px 0">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px">
-      <div>
-        <div style="font-size:10px;color:rgba(255,255,255,.4);margin-bottom:3px">Aura color</div>
-        <input id="op-aura-color" type="color" value="#ff00ff" style="width:100%;height:30px;border:none;border-radius:6px;cursor:pointer">
-        <button class="obtn obtn-purple" onclick="ownerCmd('set_aura')" style="width:100%;margin-top:4px">Set Aura</button>
-      </div>
-      <div>
-        <div style="font-size:10px;color:rgba(255,255,255,.4);margin-bottom:3px">Trail color</div>
-        <input id="op-trail-color" type="color" value="#00ff88" style="width:100%;height:30px;border:none;border-radius:6px;cursor:pointer">
-        <button class="obtn obtn-green" onclick="ownerCmd('set_trail')" style="width:100%;margin-top:4px">Set Trail</button>
-      </div>
-    </div>
-    <div style="font-size:10px;color:rgba(255,255,255,.4);margin:8px 0 3px">Title (above name):</div>
-    <input id="op-title" class="inp" placeholder="⭐ LEGEND" style="margin-bottom:5px;font-size:12px;padding:7px">
-    <button class="obtn obtn-yellow" onclick="ownerCmd('set_title')" style="width:100%;margin-bottom:6px">📛 Set Title</button>
-    <div style="font-size:10px;color:rgba(255,255,255,.4);margin-bottom:3px">Badge emoji:</div>
-    <input id="op-badge" class="inp" placeholder="🌟" maxlength="4" style="margin-bottom:5px;font-size:12px;padding:7px">
-    <button class="obtn obtn-blue" onclick="ownerCmd('set_badge')" style="width:100%;margin-bottom:8px">🏅 Set Badge</button>
-    <button class="obtn obtn-red" onclick="ownerCmd('clear_cosmetics')" style="width:100%">🗑 Clear All Cosmetics</button>
-  </div>
+  var roomDefs=['cafeteria','reactor','navigation','medbay','storage','electrical','engine'];
+  var roomBtns='';
+  roomDefs.forEach(function(r){
+    roomBtns+='<button class="obtn obtn-blue" onclick="ownerCmd(\'teleport_room\',\''+r+'\')" style="font-size:10px">'+r+'</button>';
+  });
 
-  <!-- TAB 3: TAGS (OWNER-ONLY COSMETICS) -->
-  <div id="otabcontent3" style="display:none">
-    <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:6px">Target player (saved to PlayFab):</div>
-    <select id="op-tag-target" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:#fff;padding:7px;border-radius:7px;margin-bottom:8px;font-size:12px">${playerOptions}</select>
-    <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:6px">📋 Select tag to grant/revoke:</div>
-    <div id="owner-tag-list" style="display:flex;flex-direction:column;gap:5px;max-height:300px;overflow-y:auto;margin-bottom:8px">
-      ${OWNER_TAGS.map(tagId=>{
-        const meta=COSMETIC_META[tagId];
-        return `<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;background:rgba(255,255,255,0.04);border-radius:8px;border:1px solid rgba(255,255,255,0.08)">
-          <span style="font-size:16px">${meta.icon}</span>
-          <span style="flex:1;font-size:12px">${meta.name}</span>
-          <button class="obtn obtn-green" style="padding:3px 8px;font-size:10px" onclick="ownerGrantTag('${tagId}',true)">+ Grant</button>
-          <button class="obtn obtn-red" style="padding:3px 8px;font-size:10px" onclick="ownerGrantTag('${tagId}',false)">− Revoke</button>
-        </div>`;
-      }).join('')}
-    </div>
-    <hr style="border-color:rgba(255,255,255,0.08);margin:8px 0">
-    <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:6px">🎁 Grant owner cosmetics (saved to PlayFab):</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px">
-      ${Object.entries(COSMETIC_META).filter(([,c])=>c.ownerOnly&&c.type!=='tag').map(([id,c])=>`<button class="obtn obtn-purple" style="font-size:10px" onclick="ownerGrantCosmetic('${id}')">${c.icon} ${c.name}</button>`).join('')}
-    </div>
-  </div>
+  var presetBtns='';
+  Object.keys(OWNER_COSMETIC_PRESETS).forEach(function(name){
+    presetBtns+='<button class="obtn obtn-yellow" onclick="ownerApplyPreset(\''+name.replace(/'/g,"\\'")+'\')" style="font-size:10px">'+esc(name)+'</button>';
+  });
 
-  <!-- TAB 4: SERVER -->
-  <div id="otabcontent4" style="display:none">
-    <div style="font-size:12px;color:rgba(255,255,255,0.7);margin-bottom:10px">
-      Room: <b style="color:#a78bfa">${gameState.code}</b><br>
-      Phase: <b style="color:#fbbf24">${gameState.phase}</b><br>
-      Players: ${Object.keys(gameState.players).length}
-    </div>
-    <div id="owner-player-list-full"></div>
-  </div>
+  var tagListHTML='';
+  OWNER_TAGS.forEach(function(tagId){
+    const meta=COSMETIC_META[tagId];if(!meta)return;
+    tagListHTML+='<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;background:rgba(255,255,255,0.04);border-radius:8px;border:1px solid rgba(255,255,255,0.08)">';
+    tagListHTML+='<span style="font-size:16px">'+meta.icon+'</span>';
+    tagListHTML+='<span style="flex:1;font-size:12px">'+esc(meta.name)+'</span>';
+    tagListHTML+='<button class="obtn obtn-green" style="padding:3px 8px;font-size:10px" onclick="ownerGrantTag(\''+tagId+'\',true)">+ Grant</button>';
+    tagListHTML+='<button class="obtn obtn-red" style="padding:3px 8px;font-size:10px" onclick="ownerGrantTag(\''+tagId+'\',false)">− Revoke</button>';
+    tagListHTML+='</div>';
+  });
 
-  <button onclick="toggleOwnerPanel()" class="obtn obtn-red" style="width:100%;margin-top:12px">✕ Close</button>`;
-  updateOwnerPanelPlayerList();ownerTab(0);
+  var ownerCosItems='';
+  Object.entries(COSMETIC_META).filter(function(e){return e[1].ownerOnly&&e[1].type!=='tag';}).forEach(function(e){
+    const id=e[0];const c=e[1];
+    ownerCosItems+='<button class="obtn obtn-purple" style="font-size:10px" onclick="ownerGrantCosmetic(\''+id+'\')">'+c.icon+' '+esc(c.name)+'</button>';
+  });
+
+  panel.innerHTML =
+    '<h3 style="color:#f87171;margin-bottom:10px;font-size:15px">👑 Owner Panel</h3>'+
+    '<div style="display:flex;gap:4px;margin-bottom:12px;flex-wrap:wrap">'+tabBtns+'</div>'+
+
+    // TAB 0: PLAYERS
+    '<div id="otabcontent0">'+
+      '<div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:5px">Target player:</div>'+
+      '<select id="op-target" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:#fff;padding:7px;border-radius:7px;margin-bottom:8px;font-size:12px">'+playerOptions+'</select>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:5px">'+
+        '<button class="obtn obtn-orange" onclick="ownerCmd(\'kick\')">🥾 Kick</button>'+
+        '<button class="obtn obtn-red" onclick="ownerCmd(\'kill\')">☠️ Kill</button>'+
+        '<button class="obtn obtn-blue" onclick="ownerCmd(\'freeze\')">❄️ Freeze</button>'+
+        '<button class="obtn obtn-blue" onclick="ownerCmd(\'unfreeze\')">🔥 Unfreeze</button>'+
+        '<button class="obtn obtn-green" onclick="ownerCmd(\'respawn\')">✨ Respawn</button>'+
+        '<button class="obtn obtn-green" onclick="ownerCmd(\'godmode_on\')">🛡 Godmode</button>'+
+        '<button class="obtn obtn-purple" onclick="ownerCmd(\'set_impostor\')">😈 → Impostor</button>'+
+        '<button class="obtn obtn-purple" onclick="ownerCmd(\'set_crewmate\')">✅ → Crewmate</button>'+
+        '<button class="obtn obtn-yellow" onclick="ownerCmd(\'speed_fast\')">⚡ Speed x2</button>'+
+        '<button class="obtn obtn-yellow" onclick="ownerCmd(\'speed_slow\')">🐌 Slow x0.5</button>'+
+        '<button class="obtn obtn-yellow" onclick="ownerCmd(\'speed_normal\')">🏃 Normal</button>'+
+        '<button class="obtn obtn-orange" onclick="ownerCmd(\'reset_tasks\')">📋 Reset Tasks</button>'+
+      '</div>'+
+      '<div style="margin-top:8px;font-size:11px;color:rgba(255,255,255,0.4)">Teleport to room:</div>'+
+      '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-top:4px">'+roomBtns+'</div>'+
+      '<div style="margin-top:8px;font-size:11px;color:rgba(255,255,255,0.4)">Give credits:</div>'+
+      '<div style="display:flex;gap:5px;margin-top:4px">'+
+        '<input class="inp" id="op-give-amount" type="number" value="500" min="1" style="margin:0;font-size:12px;padding:6px;width:80px">'+
+        '<button class="obtn obtn-green" style="flex:1" onclick="ownerGiveCredits()">💰 Give Credits</button>'+
+      '</div>'+
+    '</div>'+
+
+    // TAB 1: COMMANDS
+    '<div id="otabcontent1" style="display:none">'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:10px">'+
+        '<button class="obtn obtn-green" onclick="ownerCmd(\'end_crew\')">✅ Crew Win</button>'+
+        '<button class="obtn obtn-red" onclick="ownerCmd(\'end_imp\')">😈 Imp Win</button>'+
+        '<button class="obtn obtn-purple" onclick="ownerCmd(\'force_meeting\')">🚨 Meeting</button>'+
+        '<button class="obtn obtn-purple" onclick="ownerCmd(\'shuffle_roles\')">🎲 Shuffle</button>'+
+        '<button class="obtn obtn-orange" onclick="ownerCmd(\'all_tasks\')">✅ All Tasks</button>'+
+        '<button class="obtn obtn-orange" onclick="ownerCmd(\'reveal_roles\')">🕵 Reveal</button>'+
+        '<button class="obtn obtn-red" onclick="ownerCmd(\'explosion\')">💥 Explode</button>'+
+        '<button class="obtn obtn-blue" onclick="ownerCmd(\'lock_room\')">🔒 Lock</button>'+
+        '<button class="obtn obtn-blue" onclick="ownerCmd(\'unlock_room\')">🔓 Unlock</button>'+
+        '<button class="obtn obtn-orange" onclick="ownerCmd(\'reset_cooldown\')">⏱ CD Reset</button>'+
+      '</div>'+
+      '<div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:5px">Broadcast:</div>'+
+      '<input id="op-broadcast" class="inp" placeholder="Announcement..." style="margin-bottom:5px;font-size:12px;padding:7px">'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:10px">'+
+        '<button class="obtn obtn-yellow" onclick="ownerCmd(\'broadcast_gold\')">📢 Gold</button>'+
+        '<button class="obtn obtn-red" onclick="ownerCmd(\'broadcast_red\')">🔴 Red Alert</button>'+
+      '</div>'+
+      '<div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:5px">Swap roles:</div>'+
+      '<select id="op-swapA" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:#fff;padding:6px;border-radius:7px;margin-bottom:5px;font-size:12px">'+playerOptions+'</select>'+
+      '<select id="op-swapB" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:#fff;padding:6px;border-radius:7px;margin-bottom:5px;font-size:12px">'+playerOptions+'</select>'+
+      '<button class="obtn obtn-purple" onclick="ownerCmd(\'swap_roles\')" style="width:100%">🔀 Swap Roles</button>'+
+    '</div>'+
+
+    // TAB 2: COSMETICS
+    '<div id="otabcontent2" style="display:none">'+
+      '<div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:5px">Target:</div>'+
+      '<select id="op-cos-target" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:#fff;padding:7px;border-radius:7px;margin-bottom:8px;font-size:12px">'+playerOptions+'</select>'+
+      '<div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:5px">🎨 Presets:</div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:10px">'+presetBtns+'</div>'+
+      '<hr style="border-color:rgba(255,255,255,0.08);margin:8px 0">'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:5px">'+
+        '<div>'+
+          '<div style="font-size:10px;color:rgba(255,255,255,.4);margin-bottom:3px">Aura color</div>'+
+          '<input id="op-aura-color" type="color" value="#ff00ff" style="width:100%;height:30px;border:none;border-radius:6px;cursor:pointer">'+
+          '<button class="obtn obtn-purple" onclick="ownerCmd(\'set_aura\')" style="width:100%;margin-top:4px">Set Aura</button>'+
+        '</div>'+
+        '<div>'+
+          '<div style="font-size:10px;color:rgba(255,255,255,.4);margin-bottom:3px">Trail color</div>'+
+          '<input id="op-trail-color" type="color" value="#00ff88" style="width:100%;height:30px;border:none;border-radius:6px;cursor:pointer">'+
+          '<button class="obtn obtn-green" onclick="ownerCmd(\'set_trail\')" style="width:100%;margin-top:4px">Set Trail</button>'+
+        '</div>'+
+      '</div>'+
+      '<div style="font-size:10px;color:rgba(255,255,255,.4);margin:8px 0 3px">Title (above name):</div>'+
+      '<input id="op-title" class="inp" placeholder="⭐ LEGEND" style="margin-bottom:5px;font-size:12px;padding:7px">'+
+      '<button class="obtn obtn-yellow" onclick="ownerCmd(\'set_title\')" style="width:100%;margin-bottom:6px">📛 Set Title</button>'+
+      '<div style="font-size:10px;color:rgba(255,255,255,.4);margin-bottom:3px">Badge emoji:</div>'+
+      '<input id="op-badge" class="inp" placeholder="🌟" maxlength="4" style="margin-bottom:5px;font-size:12px;padding:7px">'+
+      '<button class="obtn obtn-blue" onclick="ownerCmd(\'set_badge\')" style="width:100%;margin-bottom:8px">🏅 Set Badge</button>'+
+      '<button class="obtn obtn-red" onclick="ownerCmd(\'clear_cosmetics\')" style="width:100%">🗑 Clear All Cosmetics</button>'+
+    '</div>'+
+
+    // TAB 3: TAGS
+    '<div id="otabcontent3" style="display:none">'+
+      '<div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:6px">Target player (saved to PlayFab):</div>'+
+      '<select id="op-tag-target" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:#fff;padding:7px;border-radius:7px;margin-bottom:8px;font-size:12px">'+playerOptions+'</select>'+
+      '<div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:6px">📋 Grant/Revoke tag:</div>'+
+      '<div id="owner-tag-list" style="display:flex;flex-direction:column;gap:5px;max-height:300px;overflow-y:auto;margin-bottom:8px">'+tagListHTML+'</div>'+
+      '<hr style="border-color:rgba(255,255,255,0.08);margin:8px 0">'+
+      '<div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:6px">🎁 Grant owner cosmetics:</div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:5px">'+ownerCosItems+'</div>'+
+    '</div>'+
+
+    // TAB 4: SERVER
+    '<div id="otabcontent4" style="display:none">'+
+      '<div style="font-size:12px;color:rgba(255,255,255,0.7);margin-bottom:10px">'+
+        'Room: <b style="color:#a78bfa">'+esc(gameState.code||'')+'</b><br>'+
+        'Phase: <b style="color:#fbbf24">'+esc(gameState.phase||'')+'</b><br>'+
+        'Players: '+Object.keys(gameState.players).length+
+      '</div>'+
+      '<div id="owner-player-list-full"></div>'+
+    '</div>'+
+
+    '<button onclick="toggleOwnerPanel()" class="obtn obtn-red" style="width:100%;margin-top:12px">✕ Close</button>';
+
+  updateOwnerPanelPlayerList();
+  ownerTab(0);
 }
 
 function updateOwnerPanelPlayerList(){
   const el=document.getElementById('owner-player-list-full');if(!el||!gameState)return;
-  el.innerHTML=Object.values(gameState.players).map(p=>`<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.05);font-size:12px"><div style="width:12px;height:12px;border-radius:50%;background:${p.color}"></div><span style="flex:1">${esc(p.username)}</span><button class="obtn obtn-orange" style="padding:2px 7px;font-size:10px" onclick="ownerKick('${p.id}','${esc(p.username)}')">Kick</button></div>`).join('');
+  var html='';
+  Object.values(gameState.players).forEach(function(p){
+    html+='<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.05);font-size:12px">';
+    html+='<div style="width:12px;height:12px;border-radius:50%;background:'+p.color+'"></div>';
+    html+='<span style="flex:1">'+esc(p.username)+'</span>';
+    html+='<button class="obtn obtn-orange" style="padding:2px 7px;font-size:10px" onclick="ownerKick(\''+p.id+'\',\''+esc(p.username)+'\')">Kick</button>';
+    html+='</div>';
+  });
+  el.innerHTML=html;
 }
 
 function ownerTab(idx){
-  const count=5;
-  for(let i=0;i<count;i++){
-    const c=document.getElementById(`otabcontent${i}`);const b=document.getElementById(`otab${i}`);
+  for(var i=0;i<5;i++){
+    const c=document.getElementById('otabcontent'+i);const b=document.getElementById('otab'+i);
     if(c)c.style.display=i===idx?'block':'none';
     if(b)b.style.background=i===idx?'rgba(167,139,250,0.35)':'rgba(255,255,255,0.06)';
   }
 }
 
+function ownerGetTarget(){
+  const t0=document.getElementById('op-target');
+  const tcos=document.getElementById('op-cos-target');
+  return (t0&&t0.value)||(tcos&&tcos.value)||'';
+}
+
 function ownerCmd(cmd,extra){
-  const target=(document.getElementById('op-target')&&document.getElementById('op-target').value)||(document.getElementById('op-cos-target')&&document.getElementById('op-cos-target').value)||'';
+  const target=ownerGetTarget();
   switch(cmd){
     case 'kick': ownerKick(target,(gameState&&gameState.players[target]&&gameState.players[target].username)||'?');break;
     case 'kill': wsSend({type:'owner_kill_player',targetId:target,password:OWNER_PASSWORD});break;
@@ -1609,7 +1710,7 @@ function ownerCmd(cmd,extra){
     case 'speed_slow': wsSend({type:'owner_speed_boost',targetId:target,mult:0.5,password:OWNER_PASSWORD});break;
     case 'speed_normal': wsSend({type:'owner_speed_boost',targetId:target,mult:1,password:OWNER_PASSWORD});break;
     case 'reset_tasks': wsSend({type:'owner_set_tasks',targetId:target,count:5,password:OWNER_PASSWORD});break;
-    case 'teleport_room': wsSend({type:'owner_teleport',targetId:document.getElementById('op-target')&&document.getElementById('op-target').value,room:extra,password:OWNER_PASSWORD});break;
+    case 'teleport_room': wsSend({type:'owner_teleport',targetId:target,room:extra,password:OWNER_PASSWORD});break;
     case 'end_crew': wsSend({type:'owner_end_game',winner:'crewmate',password:OWNER_PASSWORD});break;
     case 'end_imp': wsSend({type:'owner_end_game',winner:'impostor',password:OWNER_PASSWORD});break;
     case 'force_meeting': wsSend({type:'owner_force_meeting',reason:'⚡ Owner called a meeting!',password:OWNER_PASSWORD});break;
@@ -1622,43 +1723,55 @@ function ownerCmd(cmd,extra){
     case 'reset_cooldown': wsSend({type:'owner_set_killcooldown',seconds:0,password:OWNER_PASSWORD});break;
     case 'broadcast_gold':{const t=document.getElementById('op-broadcast')&&document.getElementById('op-broadcast').value;if(t)wsSend({type:'owner_broadcast',text:t,color:'#fbbf24',icon:'📢',password:OWNER_PASSWORD});break;}
     case 'broadcast_red':{const t=document.getElementById('op-broadcast')&&document.getElementById('op-broadcast').value;if(t)wsSend({type:'owner_broadcast',text:t,color:'#f87171',icon:'🔴',password:OWNER_PASSWORD});break;}
-    case 'swap_roles':{const a=document.getElementById('op-swapA')&&document.getElementById('op-swapA').value;const b=document.getElementById('op-swapB')&&document.getElementById('op-swapB').value;if(a&&b&&a!==b)wsSend({type:'owner_swap_roles',targetA:a,targetB:b,password:OWNER_PASSWORD});else notify('Pick 2 different players','#f87171');break;}
-    case 'set_aura':{const c=document.getElementById('op-aura-color')&&document.getElementById('op-aura-color').value||'#ff00ff';const tgt=document.getElementById('op-cos-target')&&document.getElementById('op-cos-target').value;wsSend({type:'owner_set_aura',targetId:tgt,color:c,password:OWNER_PASSWORD});break;}
-    case 'set_title':{const title=document.getElementById('op-title')&&document.getElementById('op-title').value;const tgt=document.getElementById('op-cos-target')&&document.getElementById('op-cos-target').value;wsSend({type:'owner_set_title',targetId:tgt,title:title,password:OWNER_PASSWORD});break;}
-    case 'set_badge':{const badge=document.getElementById('op-badge')&&document.getElementById('op-badge').value;const tgt=document.getElementById('op-cos-target')&&document.getElementById('op-cos-target').value;wsSend({type:'owner_set_badge',targetId:tgt,badge:badge,password:OWNER_PASSWORD});break;}
-    case 'set_trail':{const c=document.getElementById('op-trail-color')&&document.getElementById('op-trail-color').value||'#00ff88';const tgt=document.getElementById('op-cos-target')&&document.getElementById('op-cos-target').value;wsSend({type:'owner_set_cosmetic',targetId:tgt,cosType:'trailColor',value:c,password:OWNER_PASSWORD});break;}
-    case 'clear_cosmetics':{const tgt=document.getElementById('op-cos-target')&&document.getElementById('op-cos-target').value;wsSend({type:'owner_clear_cosmetic',targetId:tgt,password:OWNER_PASSWORD});break;}
+    case 'swap_roles':{
+      const a=document.getElementById('op-swapA')&&document.getElementById('op-swapA').value;
+      const b=document.getElementById('op-swapB')&&document.getElementById('op-swapB').value;
+      if(a&&b&&a!==b)wsSend({type:'owner_swap_roles',targetA:a,targetB:b,password:OWNER_PASSWORD});
+      else notify('Pick 2 different players','#f87171');break;}
+    case 'set_aura':{
+      const c=document.getElementById('op-aura-color')&&document.getElementById('op-aura-color').value||'#ff00ff';
+      const tgt=document.getElementById('op-cos-target')&&document.getElementById('op-cos-target').value;
+      wsSend({type:'owner_set_aura',targetId:tgt,color:c,password:OWNER_PASSWORD});break;}
+    case 'set_title':{
+      const title=document.getElementById('op-title')&&document.getElementById('op-title').value;
+      const tgt=document.getElementById('op-cos-target')&&document.getElementById('op-cos-target').value;
+      wsSend({type:'owner_set_title',targetId:tgt,title:title,password:OWNER_PASSWORD});break;}
+    case 'set_badge':{
+      const badge=document.getElementById('op-badge')&&document.getElementById('op-badge').value;
+      const tgt=document.getElementById('op-cos-target')&&document.getElementById('op-cos-target').value;
+      wsSend({type:'owner_set_badge',targetId:tgt,badge:badge,password:OWNER_PASSWORD});break;}
+    case 'set_trail':{
+      const c=document.getElementById('op-trail-color')&&document.getElementById('op-trail-color').value||'#00ff88';
+      const tgt=document.getElementById('op-cos-target')&&document.getElementById('op-cos-target').value;
+      wsSend({type:'owner_set_cosmetic',targetId:tgt,cosType:'trailColor',value:c,password:OWNER_PASSWORD});break;}
+    case 'clear_cosmetics':{
+      const tgt=document.getElementById('op-cos-target')&&document.getElementById('op-cos-target').value;
+      wsSend({type:'owner_clear_cosmetic',targetId:tgt,password:OWNER_PASSWORD});break;}
   }
 }
 
-// Grant/revoke tags via PlayFab user data
 async function ownerGrantTag(tagId,grant){
   const tgtId=document.getElementById('op-tag-target')&&document.getElementById('op-tag-target').value;
   if(!tgtId){notify('Select a target player first','#f87171');return;}
-  // The target must be in the game — we update PlayFab via the server if they have pfId
-  // We send a server message asking server to update the player's tags in PlayFab
   wsSend({type:'owner_grant_tag',targetId:tgtId,tagId,grant,password:OWNER_PASSWORD});
-  // Also locally if it's ourselves
   if(tgtId===myPlayerId){
     if(grant){if(!myTags.includes(tagId))myTags.push(tagId);}
-    else{myTags=myTags.filter(t=>t!==tagId);}
+    else{myTags=myTags.filter(function(t){return t!==tagId;});}
     await pfSaveData('tags',JSON.stringify(myTags));
     saveLocalSession();
-    document.getElementById('menu-player-tags').innerHTML=renderTagsHTML(myTags);
+    const mpt=document.getElementById('menu-player-tags');
+    if(mpt)mpt.innerHTML=renderTagsHTML(myTags);
   }
   const meta=COSMETIC_META[tagId];
-  notify(grant?`✅ Granted ${meta&&meta.name||tagId}`:`❌ Revoked ${meta&&meta.name||tagId}`,'#fbbf24');
+  notify(grant?'✅ Granted '+(meta&&meta.name||tagId):'❌ Revoked '+(meta&&meta.name||tagId),'#fbbf24');
 }
 
-// Grant owner-only cosmetic (saved to PlayFab user data of target)
 async function ownerGrantCosmetic(cosId){
   const tgtId=document.getElementById('op-tag-target')&&document.getElementById('op-tag-target').value;
   if(!tgtId){notify('Select a target player first','#f87171');return;}
   wsSend({type:'owner_grant_cosmetic',targetId:tgtId,cosId,password:OWNER_PASSWORD});
-  // If self, also update local
   if(tgtId===myPlayerId){
     if(!pfOwnedItemIds.includes(cosId))pfOwnedItemIds.push(cosId);
-    // Store in owned_items
     let owned=[];
     try{const ud=await pfCall('GetUserData',{Keys:['owned_items']});owned=JSON.parse((ud.data.Data&&ud.data.Data.owned_items&&ud.data.Data.owned_items.Value)||'[]');}catch(e){}
     if(!owned.includes(cosId))owned.push(cosId);
@@ -1666,15 +1779,15 @@ async function ownerGrantCosmetic(cosId){
     saveLocalSession();
   }
   const meta=COSMETIC_META[cosId];
-  notify(`✅ Granted ${meta&&meta.name||cosId} cosmetic!`,'#a78bfa');
+  notify('✅ Granted '+(meta&&meta.name||cosId)+' cosmetic!','#a78bfa');
 }
 
 async function ownerGiveCredits(){
   const tgtId=document.getElementById('op-target')&&document.getElementById('op-target').value;
-  const amount=parseInt(document.getElementById('op-give-amount')&&document.getElementById('op-give-amount').value)||0;
+  const amount=parseInt((document.getElementById('op-give-amount')&&document.getElementById('op-give-amount').value)||0);
   if(!tgtId||amount<=0){notify('Select target and enter amount','#f87171');return;}
   wsSend({type:'owner_give_credits',targetId:tgtId,amount,password:OWNER_PASSWORD});
-  notify(`💰 Sent ${amount} credits to player`,'#4ade80');
+  notify('💰 Sent '+amount+' credits to player','#4ade80');
 }
 
 function ownerApplyPreset(name){
@@ -1684,24 +1797,40 @@ function ownerApplyPreset(name){
   if(preset.title)wsSend({type:'owner_set_title',targetId:tgt,title:preset.title,password:OWNER_PASSWORD});
   if(preset.badge)wsSend({type:'owner_set_badge',targetId:tgt,badge:preset.badge,password:OWNER_PASSWORD});
   if(preset.trailColor)wsSend({type:'owner_set_cosmetic',targetId:tgt,cosType:'trailColor',value:preset.trailColor,password:OWNER_PASSWORD});
-  notify(`✨ Applied: ${name}`,'#fbbf24');
+  notify('✨ Applied: '+esc(name),'#fbbf24');
 }
-function ownerKick(id,name){if(!confirm(`Kick ${name}?`))return;wsSend({type:'owner_kick',targetId:id,password:OWNER_PASSWORD,reason:'Kicked by owner'});}
+function ownerKick(id,name){if(!confirm('Kick '+name+'?'))return;wsSend({type:'owner_kick',targetId:id,password:OWNER_PASSWORD,reason:'Kicked by owner'});}
 
 function showRolesReveal(roles){
-  let html=`<div style="position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:200;display:flex;align-items:center;justify-content:center" id="roles-reveal-modal"><div style="background:#0c1220;border:1px solid #a78bfa;border-radius:16px;padding:24px;max-width:400px;width:90vw"><div style="font-size:18px;font-weight:900;color:#a78bfa;margin-bottom:14px">🕵️ All Roles</div>`;
-  for(const p of roles){const col=p.role==='impostor'?'#f87171':'#4ade80';html+=`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.06)"><span style="color:${col};font-size:18px">${p.role==='impostor'?'😈':'✅'}</span><span style="flex:1;font-size:13px">${esc(p.username)}</span><span style="font-size:11px;color:${col}">${p.role.toUpperCase()}</span></div>`;}
-  html+=`<button onclick="document.getElementById('roles-reveal-modal').remove()" style="margin-top:14px;width:100%;padding:9px;border-radius:8px;background:rgba(255,255,255,0.08);border:none;color:#fff;cursor:pointer">Close</button></div></div>`;
+  var html='<div style="position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:200;display:flex;align-items:center;justify-content:center" id="roles-reveal-modal"><div style="background:#0c1220;border:1px solid #a78bfa;border-radius:16px;padding:24px;max-width:400px;width:90vw"><div style="font-size:18px;font-weight:900;color:#a78bfa;margin-bottom:14px">🕵️ All Roles</div>';
+  (roles||[]).forEach(function(p){
+    const col=p.role==='impostor'?'#f87171':'#4ade80';
+    html+='<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.06)">';
+    html+='<span style="color:'+col+';font-size:18px">'+(p.role==='impostor'?'😈':'✅')+'</span>';
+    html+='<span style="flex:1;font-size:13px">'+esc(p.username)+'</span>';
+    html+='<span style="font-size:11px;color:'+col+'">'+p.role.toUpperCase()+'</span>';
+    html+='</div>';
+  });
+  html+='<button onclick="document.getElementById(\'roles-reveal-modal\').remove()" style="margin-top:14px;width:100%;padding:9px;border-radius:8px;background:rgba(255,255,255,0.08);border:none;color:#fff;cursor:pointer">Close</button></div></div>';
   document.body.insertAdjacentHTML('beforeend',html);
 }
 
-function showShopInGame(){showScreen('menu-screen');const shopBtn=document.querySelectorAll('.tab-btn')[1];if(shopBtn)switchMenuTab('shop',shopBtn);}
+// BUG FIX: showShopInGame restored hud/action-btns when returning from shop
+function showShopInGame(){
+  showScreen('menu-screen');
+  const tabs=document.querySelectorAll('.tab-btn');
+  if(tabs[1])switchMenuTab('shop',tabs[1]);
+}
 
 // ════════════════════════════════════════════════════
 // EFFECTS
 // ════════════════════════════════════════════════════
-function flashRed(){const f=document.getElementById('kill-flash');f.classList.add('flash');setTimeout(()=>f.classList.remove('flash'),300);}
-function showBanner(text,color){const b=document.getElementById('phase-banner');b.textContent=text;b.style.color=color;b.style.display='block';b.style.opacity='1';b.style.transform='translate(-50%,-50%) scale(1)';setTimeout(()=>{b.style.transition='opacity .5s,transform .5s';b.style.opacity='0';b.style.transform='translate(-50%,-50%) scale(1.3)';setTimeout(()=>{b.style.display='none';b.style.transition='';},500);},1800);}
+function flashRed(){const f=document.getElementById('kill-flash');f.classList.add('flash');setTimeout(function(){f.classList.remove('flash');},300);}
+function showBanner(text,color){
+  const b=document.getElementById('phase-banner');
+  b.textContent=text;b.style.color=color;b.style.display='block';b.style.opacity='1';b.style.transform='translate(-50%,-50%) scale(1)';
+  setTimeout(function(){b.style.transition='opacity .5s,transform .5s';b.style.opacity='0';b.style.transform='translate(-50%,-50%) scale(1.3)';setTimeout(function(){b.style.display='none';b.style.transition='';},500);},1800);
+}
 
 // ════════════════════════════════════════════════════
 // MOBILE CONTROLS
@@ -1709,30 +1838,75 @@ function showBanner(text,color){const b=document.getElementById('phase-banner');
 function addMobileControls(){
   if(document.getElementById('mobile-dpad'))return;
   const dp=document.createElement('div');dp.id='mobile-dpad';dp.style.cssText='position:fixed;bottom:110px;left:16px;z-index:25;display:grid;grid-template-columns:repeat(3,52px);grid-template-rows:repeat(3,52px);gap:3px;touch-action:none';
-  [{r:0,c:1,l:'▲',d:'Up'},{r:1,c:0,l:'◀',d:'Left'},{r:1,c:2,l:'▶',d:'Right'},{r:2,c:1,l:'▼',d:'Down'}].forEach(b=>{
-    const btn=document.createElement('button');btn.textContent=b.l;btn.style.cssText=`grid-row:${b.r+1};grid-column:${b.c+1};background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.2);color:#fff;border-radius:9px;font-size:18px;cursor:pointer;touch-action:none`;
-    btn.addEventListener('pointerdown',e=>{e.preventDefault();window[`move${b.d}`]=true;});btn.addEventListener('pointerup',()=>{window[`move${b.d}`]=false;});btn.addEventListener('pointerleave',()=>{window[`move${b.d}`]=false;});dp.appendChild(btn);
+  [{r:0,c:1,l:'▲',d:'Up'},{r:1,c:0,l:'◀',d:'Left'},{r:1,c:2,l:'▶',d:'Right'},{r:2,c:1,l:'▼',d:'Down'}].forEach(function(b){
+    const btn=document.createElement('button');btn.textContent=b.l;btn.style.cssText='grid-row:'+(b.r+1)+';grid-column:'+(b.c+1)+';background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.2);color:#fff;border-radius:9px;font-size:18px;cursor:pointer;touch-action:none';
+    btn.addEventListener('pointerdown',function(e){e.preventDefault();window['move'+b.d]=true;});
+    btn.addEventListener('pointerup',function(){window['move'+b.d]=false;});
+    btn.addEventListener('pointerleave',function(){window['move'+b.d]=false;});
+    dp.appendChild(btn);
   });document.body.appendChild(dp);
 }
 
 // ════════════════════════════════════════════════════
 // SCREENS + UTILS
 // ════════════════════════════════════════════════════
-function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('hidden',s.id!==id));if(id!=='lobby-screen')document.getElementById('meeting-screen').style.display='none';}
-function hideAllScreens(){document.querySelectorAll('.screen').forEach(s=>s.classList.add('hidden'));}
-function notify(text,color){color=color||'#fff';const el=document.createElement('div');el.className='notif';el.style.color=color;el.textContent=text;document.getElementById('notifs').appendChild(el);setTimeout(()=>{if(el.parentNode)el.parentNode.removeChild(el);},4000);}
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(function(s){s.classList.toggle('hidden',s.id!==id);});
+  if(id!=='lobby-screen'&&id!=='game')document.getElementById('meeting-screen').style.display='none';
+}
+function hideAllScreens(){document.querySelectorAll('.screen').forEach(function(s){s.classList.add('hidden');});}
+function notify(text,color){
+  color=color||'#fff';
+  const el=document.createElement('div');el.className='notif';el.style.color=color;el.textContent=text;
+  document.getElementById('notifs').appendChild(el);
+  setTimeout(function(){if(el.parentNode)el.parentNode.removeChild(el);},4000);
+}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
 // ════════════════════════════════════════════════════
 // INIT
+// BUG FIX: Added fallback timer so loading screen always hides,
+//          even if PlayFab SDK fails or there's a network error
 // ════════════════════════════════════════════════════
 async function init(){
+  // Set PlayFab title ID safely
+  if(typeof PlayFab !== 'undefined') PlayFab.settings.titleId = PLAYFAB_TITLE_ID;
+
   buildColorGrid('reg-color-grid',false);
-  connectWS().catch(()=>{});
-  tryAutoLogin();
+
+  // Fallback: hide loading screen after 5s no matter what
+  const loadingFallback=setTimeout(function(){
+    const ls=document.getElementById('loading-screen');
+    if(ls&&!ls.classList.contains('hidden')){
+      ls.classList.add('hidden');
+      document.getElementById('auth-screen').classList.remove('hidden');
+    }
+  },5000);
+
+  try{
+    connectWS().catch(function(){});
+    await tryAutoLogin();
+  }catch(e){
+    showScreen('auth-screen');
+  }finally{
+    clearTimeout(loadingFallback);
+  }
 }
-setInterval(()=>{if(ws&&ws.readyState===WebSocket.OPEN)wsSend({type:'ping'});},25000);
-window.addEventListener('resize',()=>{if(phaserGame)phaserGame.scale.resize(window.innerWidth,window.innerHeight);});
+
+setInterval(function(){if(ws&&ws.readyState===WebSocket.OPEN)wsSend({type:'ping'});},25000);
+window.addEventListener('resize',function(){if(phaserGame)phaserGame.scale.resize(window.innerWidth,window.innerHeight);});
+
+// BUG FIX: Global error handler ensures loading screen never gets stuck
+window.addEventListener('error',function(e){
+  console.error('Global error:',e.message);
+  const ls=document.getElementById('loading-screen');
+  if(ls&&!ls.classList.contains('hidden')){
+    ls.classList.add('hidden');
+    const as=document.getElementById('auth-screen');
+    if(as)as.classList.remove('hidden');
+  }
+});
+
 init();
 </script>
 </body>

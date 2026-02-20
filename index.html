@@ -496,78 +496,144 @@ var COLORS = [
 ];
 
 // ── WALK ZONES (Skeld-accurate) ──
-// Walk zones: rooms have proper wall collisions with entrance gaps only
-// Format: {x,y,w,h} = walkable rectangle
+// ── WALK ZONES: precisely matched to room image pixel bounds ──
+// Each room has its interior + entrance gap(s) connecting to corridors
+// Corridors have their own zones; rooms are isolated except at entrances
 var WALK = [
-  // ── CORRIDORS (always walkable) ──
-  {x:280,y:252,w:755,h:118},   // Main horizontal hall
-  {x:268,y:172,w:92,h:378},    // Left vertical hall
-  {x:1002,y:252,w:86,h:288},   // Right vertical hall
-  {x:268,y:558,w:792,h:66},    // Bottom hall
-  {x:607,y:382,w:62,h:128},    // MedBay connector
-  {x:804,y:384,w:65,h:108},    // O2 connector
 
-  // ── CAFETERIA (top center, enter from bottom-center) ──
-  {x:358,y:58,w:285,h:195},    // main floor
-  {x:448,y:248,w:105,h:20},    // entrance gap bottom
+  // ══════════════════════════════════════
+  // CORRIDORS
+  // ══════════════════════════════════════
 
-  // ── WEAPONS / SEC-HALL (top mid-right, enter from left or bottom) ──
-  {x:818,y:58,w:164,h:165},
-  {x:818,y:220,w:55,h:35},     // entrance gap bottom-left
+  // Main top corridor: cafeteria-right → sec_hall-left (y aligned with caf bottom)
+  {x:657, y:248, w:152, h:41, n:'Hall'},
 
-  // ── NAVIGATION (top right, enter from left) ──
-  {x:1098,y:58,w:225,h:185},
-  {x:1000,y:140,w:30,h:45},    // entrance gap left
+  // Top right corridor: sec_hall-right → navigation-left
+  {x:991, y:48,  w:101, h:38, n:'Hall'},
 
-  // ── SHIELDS (right mid, enter from left) ──
-  {x:1080,y:318,w:240,h:180},
-  {x:1000,y:368,w:25,h:50},    // entrance gap left
+  // Left arm: upper_engine-bottom → left vertical
+  {x:274, y:175, w:86,  h:75, n:'Hall'},
 
-  // ── COMMUNICATIONS (bottom right, enter from left or top) ──
-  {x:1080,y:598,w:240,h:148},
-  {x:1000,y:570,w:25,h:50},    // entrance gap top-left
+  // Left vertical: connects upper area down to security top
+  {x:284, y:248, w:76,  h:120, n:'Hall'},
 
-  // ── ADMIN (center-right bottom, enter from left) ──
-  {x:848,y:500,w:178,h:178},
-  {x:820,y:548,w:30,h:50},     // entrance gap left
+  // Left vertical lower: security-bottom → lower_engine area
+  {x:284, y:520, w:76,  h:38,  n:'Hall'},
 
-  // ── STORAGE (center bottom, enter from top or left) ──
-  {x:718,y:502,w:188,h:228},
-  {x:760,y:490,w:60,h:20},     // entrance gap top
-  {x:700,y:540,w:20,h:60},     // entrance gap left
+  // Lower left connector: left vertical → lower_engine
+  {x:274, y:556, w:86,  h:80,  n:'Hall'},
 
-  // ── ELECTRICAL (bottom left, enter from right or top) ──
-  {x:360,y:592,w:188,h:138},
-  {x:440,y:572,w:60,h:25},     // entrance gap top
-  {x:545,y:600,w:25,h:55},     // entrance gap right
+  // Right vertical: navigation-bottom through shields to comms
+  {x:1075, y:246, w:66, h:80,  n:'Hall'},
+  {x:1075, y:508, w:66, h:84,  n:'Hall'},
 
-  // ── O2 (center, enter from left or bottom) ──
-  {x:808,y:294,w:172,h:130},
-  {x:840,y:378,w:60,h:15},     // entrance gap bottom
+  // Bottom hall: lower_engine-right → storage-left
+  {x:274, y:624, w:441, h:46, n:'Hall'},
 
-  // ── MEDBAY (center, enter from right or bottom) ──
-  {x:626,y:294,w:170,h:130},
-  {x:636,y:378,w:60,h:15},     // entrance gap bottom
+  // MedBay/O2 mid corridor connecting to main
+  {x:544, y:286, w:73,  h:80,  n:'Hall'},
+  {x:801, y:286, w:76,  h:80,  n:'Hall'},
 
-  // ── SECURITY (left mid, enter from right or top) ──
-  {x:366,y:372,w:172,h:138},
-  {x:440,y:358,w:60,h:20},     // entrance gap top
-  {x:536,y:400,w:20,h:55},     // entrance gap right
+  // Admin/Storage connector
+  {x:843, y:499, w:76,  h:44,  n:'Hall'},
 
-  // ── UPPER ENGINE (upper left, enter from bottom or right) ──
-  {x:78,y:58,w:185,h:110},
-  {x:155,y:165,w:55,h:20},     // entrance gap bottom
-  {x:260,y:80,w:20,h:55},      // entrance gap right
+  // Electrical connector from bottom hall
+  {x:351, y:581, w:58,  h:44,  n:'Hall'},
 
-  // ── LOWER ENGINE (lower left, enter from top or right) ──
-  {x:78,y:562,w:185,h:138},
-  {x:155,y:548,w:55,h:20},     // entrance gap top
-  {x:260,y:590,w:20,h:55},     // entrance gap right
+  // ══════════════════════════════════════
+  // ROOMS — interior + entrance gaps
+  // ══════════════════════════════════════
 
-  // ── REACTOR (far left, enter from right) ──
-  {x:72,y:212,w:200,h:252},
-  {x:268,y:290,w:20,h:60},     // entrance gap right-top
-  {x:268,y:490,w:20,h:60},     // entrance gap right-bottom
+  // CAFETERIA: x:342-657 y:47-289
+  // Interior (inset from walls a bit)
+  {x:352, y:57,  w:295, h:222, n:'Cafeteria'},
+  // Bottom entrance: connects to main hall at y:248
+  {x:432, y:269, w:100, h:22,  n:'Cafeteria'},
+
+  // WEAPONS/SEC-HALL: x:809-991 y:45-238
+  {x:819, y:55,  w:162, h:173, n:'Weapons'},
+  // Left entrance to main top hall
+  {x:809, y:100, w:22,  h:60,  n:'Weapons'},
+  // Bottom entrance to top-right corridor
+  {x:849, y:228, w:80,  h:22,  n:'Weapons'},
+
+  // NAVIGATION: x:1092-1332 y:50-246
+  {x:1102, y:60, w:220, h:176, n:'Navigation'},
+  // Left entrance (from top right corridor)
+  {x:1081, y:90, w:22,  h:60,  n:'Navigation'},
+  // Bottom entrance to right vertical
+  {x:1122, y:236, w:70, h:22,  n:'Navigation'},
+
+  // SHIELDS: x:1074-1329 y:312-508
+  {x:1084, y:322, w:235, h:176, n:'Shields'},
+  // Left entrance (from right vertical)
+  {x:1063, y:360, w:22,  h:60,  n:'Shields'},
+
+  // COMMUNICATIONS: x:1074-1329 y:590-754
+  {x:1084, y:600, w:235, h:144, n:'Communications'},
+  // Left/top entrance (from right vertical bottom)
+  {x:1063, y:610, w:22,  h:60,  n:'Communications'},
+
+  // O2: x:800-984 y:286-430
+  {x:810, y:296, w:164, h:124, n:'O2'},
+  // Left entrance (from O2 hall connector)
+  {x:790, y:320, w:22,  h:50,  n:'O2'},
+  // Bottom entrance (to admin corridor)
+  {x:840, y:420, w:70,  h:22,  n:'O2'},
+
+  // MEDBAY: x:617-801 y:286-430
+  {x:627, y:296, w:164, h:124, n:'MedBay'},
+  // Right entrance (from MedBay hall connector)
+  {x:791, y:320, w:22,  h:50,  n:'MedBay'},
+  // Bottom entrance
+  {x:657, y:420, w:70,  h:22,  n:'MedBay'},
+
+  // ADMIN: x:842-1033 y:496-688
+  {x:852, y:506, w:171, h:172, n:'Admin'},
+  // Top-left entrance (from admin/storage hall)
+  {x:870, y:485, w:70,  h:22,  n:'Admin'},
+
+  // STORAGE: x:715-909 y:499-737
+  {x:725, y:509, w:174, h:218, n:'Storage'},
+  // Top entrance (from bottom hall area)
+  {x:755, y:488, w:60,  h:22,  n:'Storage'},
+  // Left entrance
+  {x:704, y:540, w:22,  h:60,  n:'Storage'},
+
+  // ELECTRICAL: x:351-555 y:581-735
+  {x:361, y:591, w:184, h:134, n:'Electrical'},
+  // Top entrance (from bottom-hall connector)
+  {x:391, y:570, w:60,  h:22,  n:'Electrical'},
+  // Right entrance
+  {x:545, y:610, w:22,  h:60,  n:'Electrical'},
+
+  // SECURITY: x:360-544 y:366-520
+  {x:370, y:376, w:164, h:134, n:'Security'},
+  // Top entrance (from left vertical)
+  {x:400, y:355, w:60,  h:22,  n:'Security'},
+  // Right entrance (to MedBay/O2 area)
+  {x:534, y:400, w:22,  h:60,  n:'Security'},
+
+  // UPPER ENGINE: x:74-274 y:51-175
+  {x:84,  y:61,  w:180, h:104, n:'Upper Engine'},
+  // Bottom entrance (to left arm corridor)
+  {x:124, y:165, w:60,  h:22,  n:'Upper Engine'},
+  // Right entrance
+  {x:264, y:81,  w:22,  h:60,  n:'Upper Engine'},
+
+  // LOWER ENGINE: x:74-274 y:556-710
+  {x:84,  y:566, w:180, h:134, n:'Lower Engine'},
+  // Top entrance
+  {x:124, y:545, w:60,  h:22,  n:'Lower Engine'},
+  // Right entrance
+  {x:264, y:596, w:22,  h:60,  n:'Lower Engine'},
+
+  // REACTOR: x:64-284 y:204-468
+  {x:74,  y:214, w:200, h:244, n:'Reactor'},
+  // Right top entrance
+  {x:264, y:240, w:22,  h:60,  n:'Reactor'},
+  // Right bottom entrance
+  {x:264, y:420, w:22,  h:50,  n:'Reactor'},
 ];
 
 var TLOCS = [
@@ -918,67 +984,67 @@ function buildSkeldMap(sc){
   }
 
   // ── AU-AUTHENTIC HALLWAY TEXTURE ──
+  // Matches WALK zone corridors exactly for visual accuracy
   function drawHallway(rx,ry,rw,rh){
-    // Base floor - dark gunmetal
-    g.fillStyle(0x1e2428,1); g.fillRect(rx,ry,rw,rh);
-    // Diagonal checker tiles (AU style - rotated 45deg approximation)
-    var ts=20;
-    for(var ty=ry-ts;ty<ry+rh+ts;ty+=ts){
-      for(var tx=rx-ts;tx<rx+rw+ts;tx+=ts){
+    // Base — dark steel
+    g.fillStyle(0x1c2226,1); g.fillRect(rx,ry,rw,rh);
+    // Checker tiles (AU style)
+    var ts=18;
+    for(var ty=ry;ty<ry+rh;ty+=ts){
+      for(var tx=rx;tx<rx+rw;tx+=ts){
         if(((Math.floor((tx-rx)/ts)+(Math.floor((ty-ry)/ts)))%2)===0){
-          g.fillStyle(0x252c31,1);
-          // Clipped fill
+          g.fillStyle(0x242b30,1);
           var cx2=Math.max(tx,rx), cy2=Math.max(ty,ry);
           var cw=Math.min(tx+ts,rx+rw)-cx2, ch=Math.min(ty+ts,ry+rh)-cy2;
           if(cw>0&&ch>0) g.fillRect(cx2,cy2,cw,ch);
         }
       }
     }
-    // Center stripe - lighter highlight lane
-    if(rw>rh){
-      // horizontal hall
-      var stripe=Math.floor(rh*0.28);
-      g.fillStyle(0x2a3338,1); g.fillRect(rx,ry+stripe,rw,rh-stripe*2);
-      // center line
-      g.lineStyle(1,0x3a4a52,.5); g.lineBetween(rx,ry+Math.floor(rh/2),rx+rw,ry+Math.floor(rh/2));
-      // edge glow lines
-      g.lineStyle(2,0x0a1014,1); g.lineBetween(rx,ry,rx+rw,ry); g.lineBetween(rx,ry+rh,rx+rw,ry+rh);
-      g.lineStyle(1,0x3d5060,.6); g.lineBetween(rx,ry+1,rx+rw,ry+1); g.lineBetween(rx,ry+rh-1,rx+rw,ry+rh-1);
-      // floor rivets/bolts every 40px
+    // Center highlight stripe
+    if(rw>=rh){
+      var sp=Math.floor(rh*.25);
+      g.fillStyle(0x2a3338,.7); g.fillRect(rx,ry+sp,rw,rh-sp*2);
+      g.lineStyle(1,0x3d5060,.45); g.lineBetween(rx,ry+Math.floor(rh/2),rx+rw,ry+Math.floor(rh/2));
+      g.lineStyle(2,0x0a1014,1);
+      g.lineBetween(rx,ry,rx+rw,ry); g.lineBetween(rx,ry+rh,rx+rw,ry+rh);
+      g.lineStyle(1,0x3a5060,.5);
+      g.lineBetween(rx,ry+1,rx+rw,ry+1); g.lineBetween(rx,ry+rh-1,rx+rw,ry+rh-1);
+      // Rivets
       g.fillStyle(0x3a4a52,1);
-      for(var bx=rx+20;bx<rx+rw-10;bx+=40){
-        g.fillRect(bx,ry+3,4,4); g.fillRect(bx,ry+rh-7,4,4);
+      for(var bx=rx+14;bx<rx+rw-8;bx+=36){
+        g.fillRect(bx,ry+2,3,3); g.fillRect(bx,ry+rh-5,3,3);
       }
     } else {
-      // vertical hall
-      var stripe=Math.floor(rw*0.28);
-      g.fillStyle(0x2a3338,1); g.fillRect(rx+stripe,ry,rw-stripe*2,rh);
-      g.lineStyle(1,0x3a4a52,.5); g.lineBetween(rx+Math.floor(rw/2),ry,rx+Math.floor(rw/2),ry+rh);
-      g.lineStyle(2,0x0a1014,1); g.lineBetween(rx,ry,rx,ry+rh); g.lineBetween(rx+rw,ry,rx+rw,ry+rh);
-      g.lineStyle(1,0x3d5060,.6); g.lineBetween(rx+1,ry,rx+1,ry+rh); g.lineBetween(rx+rw-1,ry,rx+rw-1,ry+rh);
+      var sp=Math.floor(rw*.25);
+      g.fillStyle(0x2a3338,.7); g.fillRect(rx+sp,ry,rw-sp*2,rh);
+      g.lineStyle(1,0x3d5060,.45); g.lineBetween(rx+Math.floor(rw/2),ry,rx+Math.floor(rw/2),ry+rh);
+      g.lineStyle(2,0x0a1014,1);
+      g.lineBetween(rx,ry,rx,ry+rh); g.lineBetween(rx+rw,ry,rx+rw,ry+rh);
+      g.lineStyle(1,0x3a5060,.5);
+      g.lineBetween(rx+1,ry,rx+1,ry+rh); g.lineBetween(rx+rw-1,ry,rx+rw-1,ry+rh);
       g.fillStyle(0x3a4a52,1);
-      for(var by=ry+20;by<ry+rh-10;by+=40){
-        g.fillRect(rx+3,by,4,4); g.fillRect(rx+rw-7,by,4,4);
+      for(var by=ry+14;by<ry+rh-8;by+=36){
+        g.fillRect(rx+2,by,3,3); g.fillRect(rx+rw-5,by,3,3);
       }
     }
-    // Outer wall shadow
     g.lineStyle(3,0x080c0e,1); g.strokeRect(rx,ry,rw,rh);
   }
 
-  // Draw all corridors
-  drawHallway(280,252,755,118);   // Main horizontal
-  drawHallway(268,172,92,378);    // Left vertical
-  drawHallway(1002,252,86,288);   // Right vertical
-  drawHallway(268,558,792,66);    // Bottom
-  drawHallway(607,382,62,128);    // MedBay connector
-  drawHallway(804,384,65,108);    // O2 connector
+  // Draw corridors matching WALK zones exactly
+  drawHallway(657, 248, 152, 41);   // Main top: caf→sec_hall
+  drawHallway(991, 48,  101, 38);   // Top right: sec_hall→nav
+  drawHallway(274, 175, 86,  75);   // Left arm: upper_eng→left vertical
+  drawHallway(284, 248, 76,  120);  // Left vertical upper
+  drawHallway(284, 520, 76,  38);   // Left vertical lower
+  drawHallway(274, 556, 86,  80);   // Lower left connector
+  drawHallway(1075,246, 66,  80);   // Right vertical upper
+  drawHallway(1075,508, 66,  84);   // Right vertical lower
+  drawHallway(274, 624, 441, 46);   // Bottom hall
+  drawHallway(544, 286, 73,  80);   // MedBay connector
+  drawHallway(801, 286, 76,  80);   // O2 connector
+  drawHallway(843, 499, 76,  44);   // Admin/Storage connector
+  drawHallway(351, 581, 58,  44);   // Electrical connector
 
-  // Directional arrows on main hall
-  var hag=sc.add.graphics().setDepth(2);
-  for(var ax=320;ax<980;ax+=80){
-    hag.lineStyle(1.5,0xffffff,.07);
-    hag.lineBetween(ax,298,ax+8,290); hag.lineBetween(ax+8,290,ax+16,298);
-  }
 
   // ── PLACE REAL ROOM IMAGES ──
   // [textureKey, centerX, centerY, displayW, displayH]
@@ -1073,10 +1139,12 @@ function bakeTexture(sc,color,alive,frame){
   frame=frame||0;
   var key='au_'+color.replace('#','')+(alive?'a':'d')+'_f'+frame;
   if(sc.textures.exists(key))return key;
-  var W=40,H=50,cv2=document.createElement('canvas');cv2.width=W;cv2.height=H;
+  // 2x resolution canvas for crisp rendering, displayed at half size via Phaser scale
+  var W=80,H=100,cv2=document.createElement('canvas');cv2.width=W;cv2.height=H;
   var ctx2=cv2.getContext('2d');
-  var legOffset=[0,2,-1,2][frame];
-  drawCrewmateAnimated(ctx2,W/2,H/2+5,{scale:0.62,color:color,alive:alive,alpha:1,legOffset:legOffset,frame:frame});
+  ctx2.imageSmoothingEnabled=true;ctx2.imageSmoothingQuality='high';
+  var legOffset=[0,3,-2,3][frame];
+  drawCrewmateAnimated(ctx2,W/2,H/2+8,{scale:1.1,color:color,alive:alive,alpha:1,legOffset:legOffset,frame:frame});
   sc.textures.addCanvas(key,cv2);return key;
 }
 
@@ -1192,7 +1260,7 @@ function mkSprite(id,pd){
   // Pre-bake all 4 walk frames
   [0,1,2,3].forEach(function(f){bakeTexture(gsc,col,alive,f);});
   var tkey=bakeTexture(gsc,col,alive,0);
-  grp.body=gsc.add.image(x,y,tkey).setOrigin(.5,.65).setDepth(8).setScale(1);
+  grp.body=gsc.add.image(x,y,tkey).setOrigin(.5,.65).setDepth(8).setScale(0.5);
   grp._walkFrame=0;grp._walkTick=0;grp._moving=false;grp._alive=alive;grp._col=col;
 
   if(id===myId){
@@ -1200,24 +1268,24 @@ function mkSprite(id,pd){
     gsc.tweens.add({targets:grp.ring,alpha:{from:.04,to:.35},yoyo:true,repeat:-1,duration:1400});
   }
 
-  if(skin&&CM[skin])grp.sk=gsc.add.text(x,y+1,CM[skin].icon,{fontSize:'8px',fontFamily:'serif'}).setOrigin(.5).setDepth(10).setAlpha(alive?.82:.22);
-  if(hat&&CM[hat])grp.ht=gsc.add.text(x,y-22,CM[hat].icon,{fontSize:'12px',fontFamily:'serif'}).setOrigin(.5).setDepth(11);
+  if(skin&&CM[skin])grp.sk=gsc.add.text(x,y+2,CM[skin].icon,{fontSize:'10px',fontFamily:'serif'}).setOrigin(.5).setDepth(10).setAlpha(alive?.82:.22);
+  if(hat&&CM[hat])grp.ht=gsc.add.text(x,y-26,CM[hat].icon,{fontSize:'14px',fontFamily:'serif'}).setOrigin(.5).setDepth(11);
 
   var nc=mod.nameColor||pd.nameColor||'#ffffff';
-  grp.nm=gsc.add.text(x,y-30,pd.username||'?',{fontSize:'6px',color:nc,fontFamily:'Nunito,sans-serif',fontStyle:'bold',stroke:'#000000',strokeThickness:3}).setOrigin(.5).setDepth(12).setAlpha(alive?1:.3);
+  grp.nm=gsc.add.text(x,y-38,pd.username||'?',{fontSize:'7px',color:nc,fontFamily:'Nunito,sans-serif',fontStyle:'bold',stroke:'#000000',strokeThickness:4}).setOrigin(.5).setDepth(12).setAlpha(alive?1:.3);
 
   if(pd.isOwner){
     grp.crown=gsc.add.text(x,y-42,'👑',{fontSize:'9px'}).setOrigin(.5).setDepth(13);
     gsc.tweens.add({targets:grp.crown,y:y-45,yoyo:true,repeat:-1,duration:800});
     // OWNER tag badge above name
-    grp.ownerTag=gsc.add.text(x,y-50,'OWNER',{
-      fontSize:'5px',color:'#ff4444',fontFamily:'Nunito,sans-serif',fontStyle:'bold',
-      backgroundColor:'#1a0000',padding:{x:3,y:2},
-      stroke:'#000',strokeThickness:2
+    grp.ownerTag=gsc.add.text(x,y-56,'OWNER',{
+      fontSize:'6px',color:'#ff6666',fontFamily:'Nunito,sans-serif',fontStyle:'bold',
+      backgroundColor:'#1a0000',padding:{x:4,y:2},
+      stroke:'#000',strokeThickness:3
     }).setOrigin(.5).setDepth(14);
   }
   if(mod.godmode){grp.godRing=gsc.add.circle(x,y,28).setStrokeStyle(2.5,0xffd700,.9).setDepth(7);gsc.tweens.add({targets:grp.godRing,alpha:{from:.15,to:1},yoyo:true,repeat:-1,duration:280});}
-  if(mod.frozen)grp.frostTxt=gsc.add.text(x,y-42,'❄️',{fontSize:'10px'}).setOrigin(.5).setDepth(14);
+  if(mod.frozen)grp.frostTxt=gsc.add.text(x,y-48,'❄️',{fontSize:'12px'}).setOrigin(.5).setDepth(14);
 
   grp.x=x;grp.y=y;grp.color=col;
   pSprites[id]=grp;
@@ -1251,15 +1319,15 @@ function movSprite(id,x,y){
       }
     }
   }
-  if(g.nm)g.nm.setPosition(x,y-30);
-  if(g.ht)g.ht.setPosition(x,y-22);
-  if(g.sk)g.sk.setPosition(x,y+1);
+  if(g.nm)g.nm.setPosition(x,y-38);
+  if(g.ht)g.ht.setPosition(x,y-26);
+  if(g.sk)g.sk.setPosition(x,y+2);
   if(g.ring)g.ring.setPosition(x,y+4);
   if(g.aura)g.aura.setPosition(x,y+2);
-  if(g.crown)g.crown.setPosition(x,y-42);
-  if(g.ownerTag)g.ownerTag.setPosition(x,y-50);
+  if(g.crown)g.crown.setPosition(x,y-48);
+  if(g.ownerTag)g.ownerTag.setPosition(x,y-56);
   if(g.godRing)g.godRing.setPosition(x,y);
-  if(g.frostTxt)g.frostTxt.setPosition(x,y-42);
+  if(g.frostTxt)g.frostTxt.setPosition(x,y-48);
   var tc=(pmods[id]&&pmods[id].trailColor)||(id===myId&&eTrail&&CM[eTrail]?CM[eTrail].tc:null);
   if(tc){
     for(var i=0;i<2;i++)trails.push({x:x+(Math.random()-.5)*8,y:y+7+(Math.random()-.5)*5,c:tc,a:.65,r:Math.random()*2.5+1.5,vx:(Math.random()-.5)*.35,vy:(Math.random()-.5)*.35});
@@ -1961,61 +2029,153 @@ function unequipType(type){
 }
 
 // ── WARDROBE ──
-function openWard(){document.getElementById('ward-over').style.display='flex';redrawPreviews();updWardTags();buildWardSlots();var wc=document.getElementById('ward-cred');if(wc)wc.textContent=pfCred;}
+function openWard(){document.getElementById('ward-over').style.display='flex';redrawPreviews();updWardActiveTags();buildWardSlots();switchWardTab('cosmetics');var wc=document.getElementById('ward-cred');if(wc)wc.textContent=pfCred;}
 function closeWard(){document.getElementById('ward-over').style.display='none';}
 
+function switchWardTab(tab){
+  var cp=document.getElementById('ward-cosmetics-panel');
+  var tp=document.getElementById('ward-tags-panel');
+  var bt=document.getElementById('ward-tab-tags');
+  var bc=document.getElementById('ward-tab-cosmetics');
+  if(tab==='cosmetics'){
+    if(cp)cp.style.display='grid';
+    if(tp)tp.style.display='none';
+    if(bc)bc.style.background='rgba(255,255,255,.1)';bc&&(bc.style.color='#fff');
+    if(bt)bt.style.background='transparent';bt&&(bt.style.color='rgba(255,255,255,.4)');
+  } else {
+    if(cp)cp.style.display='none';
+    if(tp){tp.style.display='flex';}
+    if(bt)bt.style.background='rgba(255,255,255,.1)';bt&&(bt.style.color='#fff');
+    if(bc)bc.style.background='transparent';bc&&(bc.style.color='rgba(255,255,255,.4)');
+    buildWardTagsPanel();
+  }
+}
+
+function buildWardTagsPanel(){
+  var cont=document.getElementById('ward-tags-panel');if(!cont)return;cont.innerHTML='';
+  var ownedTags=pfOwned.filter(function(id){return CM[id]&&CM[id].type==='tag';});
+  if(!ownedTags.length){
+    var empty=document.createElement('div');
+    empty.style.cssText='text-align:center;padding:30px 10px;color:rgba(255,255,255,.2);font-size:10px;font-weight:800';
+    empty.innerHTML='🏷️<br><br>No tags yet.<br><span style="font-size:9px;opacity:.6">Tags are granted by the owner.</span>';
+    cont.appendChild(empty);
+    return;
+  }
+  // Header
+  var hdr=document.createElement('div');
+  hdr.style.cssText='font-size:9px;font-weight:900;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:4px;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,.08)';
+  hdr.textContent='Your Tags — click to equip/unequip';
+  cont.appendChild(hdr);
+  // Active tags (currently equipped = in myTags)
+  ownedTags.forEach(function(tagId){
+    var td=CM[tagId];if(!td)return;
+    var isActive=myTags.includes(tagId);
+    var row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:all .14s;border:2px solid '+(isActive?'rgba(255,255,255,.3)':'rgba(255,255,255,.07)')+';background:'+(isActive?'rgba(255,255,255,.07)':'rgba(0,0,0,.3)');
+    var badge=document.createElement('div');
+    badge.style.cssText=td.style+';padding:4px 10px;border-radius:5px;font-size:10px;font-weight:900;display:inline-flex;align-items:center;gap:4px;flex-shrink:0';
+    badge.textContent=td.icon+' '+td.name;
+    var info=document.createElement('div');
+    info.style.cssText='flex:1;min-width:0';
+    info.innerHTML='<div style="font-size:8px;font-weight:900;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.5px">'+td.rarity.toUpperCase()+' TAG</div>'
+      +(isActive?'<div style="font-size:8px;color:#4ade80;font-weight:800;margin-top:2px">✓ Active — click to remove</div>':'<div style="font-size:8px;color:rgba(255,255,255,.3);margin-top:2px">Click to equip</div>');
+    row.appendChild(badge);row.appendChild(info);
+    row.onmouseenter=function(){row.style.borderColor=isActive?'rgba(255,255,255,.5)':'rgba(255,255,255,.2)';};
+    row.onmouseleave=function(){row.style.borderColor=isActive?'rgba(255,255,255,.3)':'rgba(255,255,255,.07)';};
+    row.onclick=function(){
+      if(isActive){
+        myTags=myTags.filter(function(t){return t!==tagId;});
+      } else {
+        myTags=myTags.filter(function(t){return t!==tagId;});
+        myTags.push(tagId);
+      }
+      // Sync tags to server (display only — source of truth is always PlayFab inventory)
+      wsSend({type:'update_tags',tags:myTags});
+      buildWardTagsPanel();
+      updWardActiveTags();
+      notify((isActive?'🏷️ Removed ':'🏷️ Equipped ')+td.name,'#f1c40f');
+    };
+    cont.appendChild(row);
+  });
+}
+
+function updWardActiveTags(){
+  var el=document.getElementById('ward-active-tags');if(!el)return;el.innerHTML='';
+  myTags.forEach(function(tagId){
+    var td=CM[tagId];if(!td)return;
+    var span=document.createElement('div');
+    span.style.cssText=td.style+';padding:3px 8px;border-radius:5px;font-size:8px;font-weight:900;display:inline-flex;align-items:center;gap:3px';
+    span.textContent=td.icon+' '+td.name;
+    el.appendChild(span);
+  });
+  if(!myTags.length){
+    el.innerHTML='<div style="font-size:8px;color:rgba(255,255,255,.18);text-align:center">No tags equipped</div>';
+  }
+}
+
 function buildWardSlots(){
-  var cont=document.getElementById('ward-slots');if(!cont)return;cont.innerHTML='';
+  var cont=document.getElementById('ward-cosmetics-panel');if(!cont)return;cont.innerHTML='';
   var types=[
-    {key:'hat',label:'🎩 Hat',val:eHat},
-    {key:'skin',label:'👕 Skin',val:eSkin},
-    {key:'trail',label:'✨ Trail',val:eTrail},
-    {key:'aura',label:'💫 Aura',val:eAura},
-    {key:'namecolor',label:'🎨 Name Color',val:eNC}
+    {key:'hat',label:'🎩 Hats'},
+    {key:'skin',label:'👕 Skins'},
+    {key:'trail',label:'✨ Trails'},
+    {key:'aura',label:'💫 Auras'},
+    {key:'namecolor',label:'🎨 Name Colors'}
   ];
+  var eqMap={hat:eHat,skin:eSkin,trail:eTrail,aura:eAura,namecolor:eNC};
   types.forEach(function(slot){
-    // Section header
+    var ownedItems=pfOwned.filter(function(id){return CM[id]&&CM[id].type===slot.key;});
+    if(!ownedItems.length)return; // skip empty categories
     var sec=document.createElement('div');
-    sec.style.cssText='grid-column:1/-1;font-size:8px;font-weight:900;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:1.5px;margin-top:8px;padding-bottom:4px;border-bottom:1px solid rgba(255,255,255,.06)';
-    sec.textContent=slot.label+(slot.val&&CM[slot.val]?' — '+CM[slot.val].name:' — None');
+    sec.style.cssText='grid-column:1/-1;font-size:8px;font-weight:900;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:1.5px;margin-top:6px;padding-bottom:4px;border-bottom:1px solid rgba(255,255,255,.07)';
+    sec.textContent=slot.label;
     cont.appendChild(sec);
-    // ONLY items in pfOwned (granted by PlayFab server) - no client-side grants
-    var owned=pfOwned.filter(function(id){return CM[id]&&CM[id].type===slot.key;});
-    if(!owned.length){
-      var empty=document.createElement('div');
-      empty.style.cssText='font-size:9px;color:rgba(255,255,255,.2);padding:6px 0;grid-column:1/-1';
-      empty.textContent='No items owned. Visit the shop!';
-      cont.appendChild(empty);
-      return;
-    }
-    owned.forEach(function(itemId){
+    ownedItems.forEach(function(itemId){
       var cm=CM[itemId];if(!cm)return;
-      var isEq=(slot.val===itemId);
+      var isEq=(eqMap[slot.key]===itemId);
       var el=document.createElement('div');
-      el.style.cssText='background:'+(isEq?'rgba(241,196,15,.12)':' rgba(0,0,0,.35)')+';border:2px solid '+(isEq?'#f1c40f':'rgba(255,255,255,.08)')+';border-radius:10px;padding:8px 6px;text-align:center;cursor:pointer;transition:all .14s';
-      el.innerHTML='<div style="font-size:20px;margin-bottom:2px">'+cm.icon+'</div><div style="font-size:7px;font-weight:800;color:rgba(255,255,255,.7)">'+cm.name+'</div>'+(isEq?'<div style="font-size:6px;color:#f1c40f;margin-top:2px;font-weight:900">✓ EQUIPPED</div>':'');
-      el.onmouseenter=function(){if(!isEq)el.style.borderColor='rgba(255,255,255,.35)';};
-      el.onmouseleave=function(){if(!isEq)el.style.borderColor='rgba(255,255,255,.08)';};
+      el.style.cssText='background:'+(isEq?'rgba(241,196,15,.1)':'rgba(0,0,0,.4)')+';border:2px solid '+(isEq?'rgba(241,196,15,.6)':'rgba(255,255,255,.07)')+';border-radius:10px;padding:9px 6px;text-align:center;cursor:pointer;transition:all .14s';
+      el.innerHTML='<div style="font-size:22px;margin-bottom:3px">'+cm.icon+'</div>'
+        +'<div style="font-size:7px;font-weight:800;color:rgba(255,255,255,.7)">'+cm.name+'</div>'
+        +(isEq?'<div style="font-size:6px;color:#f1c40f;margin-top:2px;font-weight:900">✓ ON</div>':'');
+      el.onmouseenter=function(){if(!isEq)el.style.borderColor='rgba(255,255,255,.25)';};
+      el.onmouseleave=function(){if(!isEq)el.style.borderColor='rgba(255,255,255,.07)';};
       el.onclick=function(){
-        if(isEq){unequipType(slot.key);}
-        else{
+        var oldEq=eqMap[slot.key];
+        if(isEq){
+          // Unequip
+          if(slot.key==='hat')eHat=null;
+          else if(slot.key==='skin')eSkin=null;
+          else if(slot.key==='trail')eTrail=null;
+          else if(slot.key==='aura')eAura=null;
+          else if(slot.key==='namecolor')eNC=null;
+          notify('Unequipped '+cm.name,'#aaa');
+        } else {
           if(slot.key==='hat')eHat=itemId;
           else if(slot.key==='skin')eSkin=itemId;
           else if(slot.key==='trail')eTrail=itemId;
           else if(slot.key==='aura')eAura=itemId;
           else if(slot.key==='namecolor')eNC=itemId;
-          pfSave(slot.key,itemId);
-          wsSend({type:'update_cosmetics',hat:eHat,skin:eSkin,trail:eTrail?CM[eTrail].tc:null,aura:eAura?CM[eAura].ac:null,nameColor:eNC?CM[eNC].nc:null});
-          saveSess();notify('✅ Equipped '+cm.name,'#f1c40f');
+          notify('✅ Equipped '+cm.name,'#f1c40f');
         }
+        pfSave(slot.key, isEq?null:itemId);
+        wsSend({type:'update_cosmetics',hat:eHat,skin:eSkin,
+          trail:eTrail&&CM[eTrail]?CM[eTrail].tc:null,
+          aura:eAura&&CM[eAura]?CM[eAura].ac:null,
+          nameColor:eNC&&CM[eNC]?CM[eNC].nc:null});
+        saveSess();
         redrawPreviews();buildWardSlots();
       };
       cont.appendChild(el);
     });
   });
+  if(!cont.children.length){
+    cont.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:30px 10px;color:rgba(255,255,255,.2);font-size:10px;font-weight:800">🛒 Visit the shop to buy cosmetics!</div>';
+  }
 }
 
-function updWardTags(){
+
+function updWardActiveTags(){
   var el=document.getElementById('ward-tags');if(!el)return;el.innerHTML='';
   (myTags||[]).forEach(function(tagId){var td=CM[tagId];if(!td)return;var span=document.createElement('span');span.style.cssText=td.style+';padding:2px 8px;border-radius:4px;font-size:8px;font-weight:900;display:inline-flex;align-items:center;gap:3px';span.textContent=td.icon+' '+td.name;el.appendChild(span);});
   if(!myTags||!myTags.length)el.innerHTML='<span style="font-size:9px;color:rgba(255,255,255,.18)">No tags</span>';

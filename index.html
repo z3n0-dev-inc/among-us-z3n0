@@ -78,20 +78,51 @@ body{font-family:'Nunito',sans-serif;user-select:none;color:#fff;touch-action:no
 .tli{font-size:9px;padding:2px 0;display:flex;align-items:center;gap:5px;font-weight:700}
 .tli.done{opacity:.25;text-decoration:line-through}
 .tli-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
-/* AU ACTION BUTTONS - authentic style */
-#actions{position:fixed;bottom:16px;right:12px;display:flex;flex-direction:column;gap:6px;z-index:25;align-items:flex-end}
+/* AU ACTION BUTTONS - polished AU-authentic style */
+#actions{position:fixed;bottom:20px;right:16px;display:flex;flex-direction:column;gap:8px;z-index:25;align-items:flex-end}
 #actions.hidden{display:none}
-.abtn{display:flex;align-items:center;gap:8px;padding:11px 20px;border-radius:10px;border:none;font-size:12px;font-weight:900;cursor:pointer;text-transform:uppercase;letter-spacing:.6px;font-family:'Nunito',sans-serif;transition:all .12s;box-shadow:0 5px 0 rgba(0,0,0,.7),0 6px 18px rgba(0,0,0,.7);position:relative;min-width:130px;justify-content:center}
-.abtn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 7px 0 rgba(0,0,0,.7),0 8px 22px rgba(0,0,0,.7)}
-.abtn:active:not(:disabled){transform:translateY(3px);box-shadow:0 2px 0 rgba(0,0,0,.7)}
-.abtn:disabled{opacity:.25;cursor:not-allowed;transform:none!important;box-shadow:none!important}
-#btn-kill{background:linear-gradient(180deg,#e74c3c 0%,#922b21 100%);color:#fff;display:none;border:2px solid rgba(255,120,120,.25)}
-#btn-vent{background:linear-gradient(180deg,#2d9e60 0%,#1a6635 100%);color:#fff;display:none;border:2px solid rgba(80,220,130,.2)}
-#btn-sabotage{background:linear-gradient(180deg,#e67e22 0%,#b95c0a 100%);color:#fff;display:none;border:2px solid rgba(255,150,50,.2)}
-#btn-report{background:linear-gradient(180deg,#e67e22 0%,#ba6010 100%);color:#fff;display:none;border:2px solid rgba(255,140,50,.2)}
-#btn-task{background:linear-gradient(180deg,#2980b9 0%,#1a5276 100%);color:#fff;display:none;border:2px solid rgba(80,160,230,.2)}
-#btn-emergency{background:linear-gradient(180deg,#8e44ad 0%,#6c3483 100%);color:#fff;border:2px solid rgba(180,100,230,.2)}
-.cd-txt{font-size:8px;font-weight:700;opacity:.7}
+.abtn{
+  display:flex;align-items:center;gap:10px;
+  padding:0;height:52px;border-radius:12px;border:none;
+  font-size:13px;font-weight:900;cursor:pointer;
+  text-transform:uppercase;letter-spacing:.8px;
+  font-family:'Nunito',sans-serif;
+  transition:transform .1s,box-shadow .1s,filter .1s;
+  box-shadow:0 6px 0 rgba(0,0,0,.8),0 8px 24px rgba(0,0,0,.6);
+  position:relative;min-width:148px;justify-content:flex-start;
+  overflow:hidden;
+}
+.abtn-inner{display:flex;align-items:center;gap:10px;padding:0 18px;width:100%;height:100%}
+.abtn-icon{font-size:22px;flex-shrink:0;filter:drop-shadow(0 1px 3px rgba(0,0,0,.5))}
+.abtn-lbl{display:flex;flex-direction:column;line-height:1.1}
+.abtn-lbl span{font-size:11px;opacity:.65;font-weight:700}
+.abtn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 8px 0 rgba(0,0,0,.8),0 10px 28px rgba(0,0,0,.6);filter:brightness(1.08)}
+.abtn:active:not(:disabled){transform:translateY(4px);box-shadow:0 2px 0 rgba(0,0,0,.8);filter:brightness(.92)}
+.abtn:disabled{opacity:.22;cursor:not-allowed;transform:none!important;box-shadow:none!important}
+/* Kill button - deep red, blood */
+#btn-kill{background:linear-gradient(135deg,#c0392b 0%,#7b1a1a 100%);color:#fff;display:none;
+  box-shadow:0 6px 0 #4a0808,0 8px 24px rgba(192,57,43,.5);}
+#btn-kill .abtn-inner{background:linear-gradient(90deg,rgba(255,80,80,.08) 0%,transparent 60%)}
+/* Vent button - dark teal */
+#btn-vent{background:linear-gradient(135deg,#16a085 0%,#0e4f3d 100%);color:#fff;display:none;
+  box-shadow:0 6px 0 #083326,0 8px 24px rgba(22,160,133,.4);}
+/* Sabotage - warning orange */
+#btn-sabotage{background:linear-gradient(135deg,#e67e22 0%,#8a3e0a 100%);color:#fff;display:none;
+  box-shadow:0 6px 0 #4a1e00,0 8px 24px rgba(230,126,34,.4);}
+/* Report - orange/amber */
+#btn-report{background:linear-gradient(135deg,#d4ac0d 0%,#7a5600 100%);color:#fff;display:none;
+  box-shadow:0 6px 0 #3d2a00,0 8px 24px rgba(212,172,13,.4);}
+/* Task - blue */
+#btn-task{background:linear-gradient(135deg,#2471a3 0%,#0d3657 100%);color:#fff;display:none;
+  box-shadow:0 6px 0 #061d33,0 8px 24px rgba(36,113,163,.4);}
+/* Emergency - deep red with pulse */
+#btn-emergency{background:linear-gradient(135deg,#922b21 0%,#4a0808 100%);color:#fff;
+  box-shadow:0 6px 0 #2a0303,0 8px 24px rgba(146,43,33,.5);
+  animation:emerPulse 2s ease-in-out infinite;}
+@keyframes emerPulse{0%,100%{box-shadow:0 6px 0 #2a0303,0 8px 24px rgba(146,43,33,.5)}50%{box-shadow:0 6px 0 #2a0303,0 8px 36px rgba(200,30,20,.8)}}
+.cd-txt{font-size:9px;font-weight:700;opacity:.7;display:block}
+/* Shine overlay on buttons */
+.abtn::before{content:'';position:absolute;top:0;left:0;right:0;height:50%;background:linear-gradient(180deg,rgba(255,255,255,.12) 0%,transparent 100%);border-radius:12px 12px 0 0;pointer-events:none}
 #ghost-lbl{display:none;position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:25;background:rgba(0,0,0,.8);border:2px solid rgba(255,255,255,.15);border-radius:10px;padding:7px 18px;font-size:11px;font-weight:900;color:rgba(255,255,255,.35);letter-spacing:.5px;text-align:center;text-transform:uppercase}
 /* MEETING */
 #meeting-scr{position:fixed;inset:0;z-index:55;display:none;flex-direction:column;align-items:center;justify-content:flex-start;padding:12px 10px 8px;gap:6px;overflow-y:auto;background:linear-gradient(160deg,#1a0008,#08000e)}
@@ -293,6 +324,7 @@ body{font-family:'Nunito',sans-serif;user-select:none;color:#fff;touch-action:no
     <div id="hud-right">
       <button class="hbtn" onclick="openWard()">👗</button>
       <button class="hbtn" id="opanel-hbtn" style="display:none;background:rgba(192,57,43,.2);border-color:rgba(192,57,43,.45);color:#e74c3c" onclick="openOwnerPanel()">⚡ Admin</button>
+      <button class="hbtn" style="background:rgba(0,0,0,.4);border-color:rgba(255,255,255,.1);color:rgba(255,255,255,.3);font-size:12px" onclick="tryUnlockAdmin()" title="Enter admin code">🔒</button>
     </div>
   </div>
 </div>
@@ -306,12 +338,24 @@ body{font-family:'Nunito',sans-serif;user-select:none;color:#fff;touch-action:no
 
 <!-- ACTIONS -->
 <div id="actions" class="hidden">
-  <button class="abtn" id="btn-kill" onclick="tryKill()">☠️ Kill <span class="cd-txt" id="kill-cd"></span></button>
-  <button class="abtn" id="btn-vent" onclick="tryVent()">🕳️ Vent</button>
-  <button class="abtn" id="btn-sabotage" onclick="trySabotage()">⚡ Sabotage</button>
-  <button class="abtn" id="btn-report" onclick="repBody()">📢 Report</button>
-  <button class="abtn" id="btn-task" onclick="doTask()">🔧 Task</button>
-  <button class="abtn" id="btn-emergency" onclick="callEmerg()">🚨 Meeting</button>
+  <button class="abtn" id="btn-kill" onclick="tryKill()">
+    <div class="abtn-inner"><span class="abtn-icon">🔪</span><div class="abtn-lbl">KILL<span id="kill-cd" class="cd-txt"></span></div></div>
+  </button>
+  <button class="abtn" id="btn-vent" onclick="tryVent()">
+    <div class="abtn-inner"><span class="abtn-icon">🕳️</span><div class="abtn-lbl">VENT<span>Use vent</span></div></div>
+  </button>
+  <button class="abtn" id="btn-sabotage" onclick="trySabotage()">
+    <div class="abtn-inner"><span class="abtn-icon">⚡</span><div class="abtn-lbl">SABOTAGE<span>Cause chaos</span></div></div>
+  </button>
+  <button class="abtn" id="btn-report" onclick="repBody()">
+    <div class="abtn-inner"><span class="abtn-icon">🚨</span><div class="abtn-lbl">REPORT<span>Found a body</span></div></div>
+  </button>
+  <button class="abtn" id="btn-task" onclick="doTask()">
+    <div class="abtn-inner"><span class="abtn-icon">⚙️</span><div class="abtn-lbl">USE<span>Do task</span></div></div>
+  </button>
+  <button class="abtn" id="btn-emergency" onclick="callEmerg()">
+    <div class="abtn-inner"><span class="abtn-icon">📣</span><div class="abtn-lbl">MEETING<span>Emergency</span></div></div>
+  </button>
 </div>
 
 <div id="dpad">
@@ -377,7 +421,7 @@ body{font-family:'Nunito',sans-serif;user-select:none;color:#fff;touch-action:no
           <div id="ward-tags" style="display:flex;flex-wrap:wrap;gap:3px"></div>
         </div>
       </div>
-      <div id="ward-slots" style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:7px;align-content:start"></div>
+      <div id="ward-slots" style="flex:1;display:grid;grid-template-columns:repeat(3,1fr);gap:6px;align-content:start;max-height:70vh;overflow-y:auto;padding-right:4px"></div>
     </div>
   </div>
 </div>
@@ -402,6 +446,8 @@ body{font-family:'Nunito',sans-serif;user-select:none;color:#fff;touch-action:no
       <button class="op-btn" onclick="ownerAll('shuffle')">🔀 Shuffle</button>
       <button class="op-btn" onclick="ownerAll('reveal')">👁 Reveal</button>
       <button class="op-btn" onclick="ownerAll('meeting')">📢 Meeting</button>
+      <button class="op-btn" onclick="ownerAll('reset_speed')">🔄 Reset Speed</button>
+      <button class="op-btn" onclick="ownerAll('kill_all_imp')">💀 Kill Imps</button>
     </div>
   </div>
 </div>
@@ -439,9 +485,9 @@ var OWN_PW = 'Zeno2026';
 var DISC_T = 25000, VOTE_T = 60000;
 
 var MAP_W = 1400, MAP_H = 800;
-var SPEED = 3.2;
+var SPEED = 2.0;
 var MASH_GOAL = 22;
-var ZOOM = 2.8;
+var ZOOM = 3.2;
 
 var COLORS = [
   '#c51111','#132ed1','#117f2d','#ed54ba',
@@ -450,17 +496,78 @@ var COLORS = [
 ];
 
 // ── WALK ZONES (Skeld-accurate) ──
+// Walk zones: rooms have proper wall collisions with entrance gaps only
+// Format: {x,y,w,h} = walkable rectangle
 var WALK = [
-  {x:340,y:50,w:320,h:240},{x:810,y:50,w:200,h:170},
-  {x:1090,y:50,w:240,h:200},{x:1070,y:310,w:260,h:200},
-  {x:1070,y:590,w:260,h:170},{x:660,y:490,w:310,h:250},
-  {x:60,y:200,w:230,h:270},{x:60,y:50,w:210,h:130},
-  {x:60,y:570,w:210,h:160},{x:340,y:360,w:200,h:160},
-  {x:600,y:260,w:220,h:180},{x:340,y:590,w:210,h:160},
-  {x:800,y:290,w:190,h:150},{x:840,y:490,w:190,h:200},
-  {x:280,y:240,w:760,h:140},{x:265,y:160,w:100,h:390},
-  {x:1000,y:240,w:90,h:300},{x:265,y:550,w:800,h:80},
-  {x:600,y:380,w:70,h:140},{x:800,y:380,w:70,h:120},
+  // ── CORRIDORS (always walkable) ──
+  {x:280,y:252,w:755,h:118},   // Main horizontal hall
+  {x:268,y:172,w:92,h:378},    // Left vertical hall
+  {x:1002,y:252,w:86,h:288},   // Right vertical hall
+  {x:268,y:558,w:792,h:66},    // Bottom hall
+  {x:607,y:382,w:62,h:128},    // MedBay connector
+  {x:804,y:384,w:65,h:108},    // O2 connector
+
+  // ── CAFETERIA (top center, enter from bottom-center) ──
+  {x:358,y:58,w:285,h:195},    // main floor
+  {x:448,y:248,w:105,h:20},    // entrance gap bottom
+
+  // ── WEAPONS / SEC-HALL (top mid-right, enter from left or bottom) ──
+  {x:818,y:58,w:164,h:165},
+  {x:818,y:220,w:55,h:35},     // entrance gap bottom-left
+
+  // ── NAVIGATION (top right, enter from left) ──
+  {x:1098,y:58,w:225,h:185},
+  {x:1000,y:140,w:30,h:45},    // entrance gap left
+
+  // ── SHIELDS (right mid, enter from left) ──
+  {x:1080,y:318,w:240,h:180},
+  {x:1000,y:368,w:25,h:50},    // entrance gap left
+
+  // ── COMMUNICATIONS (bottom right, enter from left or top) ──
+  {x:1080,y:598,w:240,h:148},
+  {x:1000,y:570,w:25,h:50},    // entrance gap top-left
+
+  // ── ADMIN (center-right bottom, enter from left) ──
+  {x:848,y:500,w:178,h:178},
+  {x:820,y:548,w:30,h:50},     // entrance gap left
+
+  // ── STORAGE (center bottom, enter from top or left) ──
+  {x:718,y:502,w:188,h:228},
+  {x:760,y:490,w:60,h:20},     // entrance gap top
+  {x:700,y:540,w:20,h:60},     // entrance gap left
+
+  // ── ELECTRICAL (bottom left, enter from right or top) ──
+  {x:360,y:592,w:188,h:138},
+  {x:440,y:572,w:60,h:25},     // entrance gap top
+  {x:545,y:600,w:25,h:55},     // entrance gap right
+
+  // ── O2 (center, enter from left or bottom) ──
+  {x:808,y:294,w:172,h:130},
+  {x:840,y:378,w:60,h:15},     // entrance gap bottom
+
+  // ── MEDBAY (center, enter from right or bottom) ──
+  {x:626,y:294,w:170,h:130},
+  {x:636,y:378,w:60,h:15},     // entrance gap bottom
+
+  // ── SECURITY (left mid, enter from right or top) ──
+  {x:366,y:372,w:172,h:138},
+  {x:440,y:358,w:60,h:20},     // entrance gap top
+  {x:536,y:400,w:20,h:55},     // entrance gap right
+
+  // ── UPPER ENGINE (upper left, enter from bottom or right) ──
+  {x:78,y:58,w:185,h:110},
+  {x:155,y:165,w:55,h:20},     // entrance gap bottom
+  {x:260,y:80,w:20,h:55},      // entrance gap right
+
+  // ── LOWER ENGINE (lower left, enter from top or right) ──
+  {x:78,y:562,w:185,h:138},
+  {x:155,y:548,w:55,h:20},     // entrance gap top
+  {x:260,y:590,w:20,h:55},     // entrance gap right
+
+  // ── REACTOR (far left, enter from right) ──
+  {x:72,y:212,w:200,h:252},
+  {x:268,y:290,w:20,h:60},     // entrance gap right-top
+  {x:268,y:490,w:20,h:60},     // entrance gap right-bottom
 ];
 
 var TLOCS = [
@@ -554,20 +661,24 @@ var CM = {
   nc_lime:{icon:'🍋',name:'Lime Name',rarity:'uncommon',type:'namecolor',price:200,nc:'#a3e635'},
   nc_orange:{icon:'🟠',name:'Orange Name',rarity:'rare',type:'namecolor',price:260,nc:'#f97316'},
   nc_rainbow:{icon:'🌈',name:'Rainbow Name',rarity:'legendary',type:'namecolor',price:900,nc:'#f472b6'},
-  tag_owner:{icon:'👑',name:'OWNER',rarity:'owner',type:'tag',own:true,style:'background:#c0392b;color:#fff'},
-  tag_z3n0:{icon:'⚡',name:'Z3N0',rarity:'owner',type:'tag',own:true,style:'background:linear-gradient(90deg,#6c3483,#ad1457);color:#fff'},
-  tag_mod:{icon:'🛡️',name:'MOD',rarity:'owner',type:'tag',own:true,style:'background:#1a5276;color:#fff'},
-  tag_admin:{icon:'🔑',name:'ADMIN',rarity:'owner',type:'tag',own:true,style:'background:#7d6608;color:#f9e79f'},
-  tag_dev:{icon:'💻',name:'DEV',rarity:'owner',type:'tag',own:true,style:'background:#0e6655;color:#a9dfbf'},
-  tag_vip:{icon:'💎',name:'VIP',rarity:'owner',type:'tag',own:true,style:'background:linear-gradient(90deg,#117a65,#6c3483);color:#fff'},
-  tag_pro:{icon:'🏆',name:'PRO',rarity:'owner',type:'tag',own:true,style:'background:#6e2f1a;color:#fad7a0'},
-  tag_legend:{icon:'🌟',name:'LEGEND',rarity:'owner',type:'tag',own:true,style:'background:linear-gradient(90deg,#d4ac0d,#ca6f1e);color:#000'},
-  tag_og:{icon:'🅾️',name:'OG',rarity:'owner',type:'tag',own:true,style:'background:#1c1c2e;color:#d2b4de'},
-  tag_donor:{icon:'💸',name:'DONOR',rarity:'owner',type:'tag',own:true,style:'background:#0e6655;color:#76d7c4'},
-  tag_galaxy:{icon:'🌌',name:'GALAXY',rarity:'owner',type:'tag',own:true,style:'background:linear-gradient(90deg,#1e1b4b,#4c1d95,#1e1b4b);color:#a5b4fc'},
-  tag_zero:{icon:'0️⃣',name:'ZERO',rarity:'owner',type:'tag',own:true,style:'background:#111;color:#fff;border:1px solid #333'},
-  tag_elite:{icon:'💠',name:'ELITE',rarity:'owner',type:'tag',own:true,style:'background:linear-gradient(90deg,#0c4a6e,#1e40af);color:#bfdbfe'},
-  tag_traitor:{icon:'🔪',name:'TRAITOR',rarity:'owner',type:'tag',own:true,style:'background:linear-gradient(90deg,#7f1d1d,#991b1b);color:#fca5a5'},
+  // ── OWNER TAG (shown above name as badge) ──
+  tag_owner:{icon:'👑',name:'OWNER',rarity:'owner',type:'tag',style:'background:linear-gradient(90deg,#c0392b,#922b21);color:#fff;font-weight:900'},
+  tag_z3n0:{icon:'⚡',name:'Z3N0',rarity:'owner',type:'tag',style:'background:linear-gradient(90deg,#6c3483,#ad1457);color:#fff'},
+  tag_mod:{icon:'🛡️',name:'MOD',rarity:'owner',type:'tag',style:'background:#1a5276;color:#fff'},
+  tag_admin:{icon:'🔑',name:'ADMIN',rarity:'owner',type:'tag',style:'background:#7d6608;color:#f9e79f'},
+  tag_dev:{icon:'💻',name:'DEV',rarity:'owner',type:'tag',style:'background:#0e6655;color:#a9dfbf'},
+  tag_vip:{icon:'💎',name:'VIP',rarity:'owner',type:'tag',style:'background:linear-gradient(90deg,#117a65,#6c3483);color:#fff'},
+  tag_pro:{icon:'🏆',name:'PRO',rarity:'owner',type:'tag',style:'background:#6e2f1a;color:#fad7a0'},
+  tag_legend:{icon:'🌟',name:'LEGEND',rarity:'owner',type:'tag',style:'background:linear-gradient(90deg,#d4ac0d,#ca6f1e);color:#000'},
+  tag_og:{icon:'🅾️',name:'OG',rarity:'owner',type:'tag',style:'background:#1c1c2e;color:#d2b4de'},
+  tag_donor:{icon:'💸',name:'DONOR',rarity:'owner',type:'tag',style:'background:#0e6655;color:#76d7c4'},
+  tag_galaxy:{icon:'🌌',name:'GALAXY',rarity:'owner',type:'tag',style:'background:linear-gradient(90deg,#1e1b4b,#4c1d95,#1e1b4b);color:#a5b4fc'},
+  tag_zero:{icon:'0️⃣',name:'ZERO',rarity:'owner',type:'tag',style:'background:#111;color:#fff;border:1px solid #333'},
+  tag_elite:{icon:'💠',name:'ELITE',rarity:'owner',type:'tag',style:'background:linear-gradient(90deg,#0c4a6e,#1e40af);color:#bfdbfe'},
+  tag_traitor:{icon:'🔪',name:'TRAITOR',rarity:'owner',type:'tag',style:'background:linear-gradient(90deg,#7f1d1d,#991b1b);color:#fca5a5'},
+  tag_host:{icon:'🎮',name:'HOST',rarity:'owner',type:'tag',style:'background:linear-gradient(90deg,#1a3a6e,#1e40af);color:#93c5fd'},
+  tag_sus:{icon:'🔴',name:'SUS',rarity:'owner',type:'tag',style:'background:linear-gradient(90deg,#991b1b,#7f1d1d);color:#fca5a5'},
+  tag_boss:{icon:'👹',name:'BOSS',rarity:'owner',type:'tag',style:'background:linear-gradient(90deg,#4a044e,#7f1d1d);color:#f0abfc'},
 };
 
 var ws=null,myId=null,myRole=null,myTasks=[],gs=null,roomCode=null;
@@ -806,26 +917,68 @@ function buildSkeldMap(sc){
           g.fillRect(tx,ty,ts,ts);
   }
 
-  var H1=0x292d30, H2=0x222629;
-  // Main horizontal corridor
-  tileFloor(280,252,755,118,H1,H2);
-  // Left vertical corridor
-  tileFloor(268,172,92,378,H1,H2);
-  // Right vertical corridor (to Shields/Comms)
-  tileFloor(1002,252,86,288,H1,H2);
-  // Bottom corridor
-  tileFloor(268,558,792,66,H1,H2);
-  // MedBay connector
-  tileFloor(607,382,62,128,H1,H2);
-  // O2 connector
-  tileFloor(804,384,65,108,H1,H2);
+  // ── AU-AUTHENTIC HALLWAY TEXTURE ──
+  function drawHallway(rx,ry,rw,rh){
+    // Base floor - dark gunmetal
+    g.fillStyle(0x1e2428,1); g.fillRect(rx,ry,rw,rh);
+    // Diagonal checker tiles (AU style - rotated 45deg approximation)
+    var ts=20;
+    for(var ty=ry-ts;ty<ry+rh+ts;ty+=ts){
+      for(var tx=rx-ts;tx<rx+rw+ts;tx+=ts){
+        if(((Math.floor((tx-rx)/ts)+(Math.floor((ty-ry)/ts)))%2)===0){
+          g.fillStyle(0x252c31,1);
+          // Clipped fill
+          var cx2=Math.max(tx,rx), cy2=Math.max(ty,ry);
+          var cw=Math.min(tx+ts,rx+rw)-cx2, ch=Math.min(ty+ts,ry+rh)-cy2;
+          if(cw>0&&ch>0) g.fillRect(cx2,cy2,cw,ch);
+        }
+      }
+    }
+    // Center stripe - lighter highlight lane
+    if(rw>rh){
+      // horizontal hall
+      var stripe=Math.floor(rh*0.28);
+      g.fillStyle(0x2a3338,1); g.fillRect(rx,ry+stripe,rw,rh-stripe*2);
+      // center line
+      g.lineStyle(1,0x3a4a52,.5); g.lineBetween(rx,ry+Math.floor(rh/2),rx+rw,ry+Math.floor(rh/2));
+      // edge glow lines
+      g.lineStyle(2,0x0a1014,1); g.lineBetween(rx,ry,rx+rw,ry); g.lineBetween(rx,ry+rh,rx+rw,ry+rh);
+      g.lineStyle(1,0x3d5060,.6); g.lineBetween(rx,ry+1,rx+rw,ry+1); g.lineBetween(rx,ry+rh-1,rx+rw,ry+rh-1);
+      // floor rivets/bolts every 40px
+      g.fillStyle(0x3a4a52,1);
+      for(var bx=rx+20;bx<rx+rw-10;bx+=40){
+        g.fillRect(bx,ry+3,4,4); g.fillRect(bx,ry+rh-7,4,4);
+      }
+    } else {
+      // vertical hall
+      var stripe=Math.floor(rw*0.28);
+      g.fillStyle(0x2a3338,1); g.fillRect(rx+stripe,ry,rw-stripe*2,rh);
+      g.lineStyle(1,0x3a4a52,.5); g.lineBetween(rx+Math.floor(rw/2),ry,rx+Math.floor(rw/2),ry+rh);
+      g.lineStyle(2,0x0a1014,1); g.lineBetween(rx,ry,rx,ry+rh); g.lineBetween(rx+rw,ry,rx+rw,ry+rh);
+      g.lineStyle(1,0x3d5060,.6); g.lineBetween(rx+1,ry,rx+1,ry+rh); g.lineBetween(rx+rw-1,ry,rx+rw-1,ry+rh);
+      g.fillStyle(0x3a4a52,1);
+      for(var by=ry+20;by<ry+rh-10;by+=40){
+        g.fillRect(rx+3,by,4,4); g.fillRect(rx+rw-7,by,4,4);
+      }
+    }
+    // Outer wall shadow
+    g.lineStyle(3,0x080c0e,1); g.strokeRect(rx,ry,rw,rh);
+  }
 
-  // Corridor wall edges
-  g.lineStyle(2,0x3a4a52,.4);
-  g.strokeRect(280,252,755,118);
-  g.strokeRect(268,172,92,378);
-  g.strokeRect(1002,252,86,288);
-  g.strokeRect(268,558,792,66);
+  // Draw all corridors
+  drawHallway(280,252,755,118);   // Main horizontal
+  drawHallway(268,172,92,378);    // Left vertical
+  drawHallway(1002,252,86,288);   // Right vertical
+  drawHallway(268,558,792,66);    // Bottom
+  drawHallway(607,382,62,128);    // MedBay connector
+  drawHallway(804,384,65,108);    // O2 connector
+
+  // Directional arrows on main hall
+  var hag=sc.add.graphics().setDepth(2);
+  for(var ax=320;ax<980;ax+=80){
+    hag.lineStyle(1.5,0xffffff,.07);
+    hag.lineBetween(ax,298,ax+8,290); hag.lineBetween(ax+8,290,ax+16,298);
+  }
 
   // ── PLACE REAL ROOM IMAGES ──
   // [textureKey, centerX, centerY, displayW, displayH]
@@ -888,16 +1041,28 @@ function buildSkeldMap(sc){
   eHit.on('pointerover',function(){document.body.style.cursor='pointer';});
   eHit.on('pointerout',function(){document.body.style.cursor='default';});
 
-  // ── TASK DOTS ──
+  // ── TASK DOTS - Real AU style yellow diamond ──
   TLOCS.forEach(function(t,i){
+    // Outer glow pulse ring
+    var glow=sc.add.graphics().setDepth(7);
+    glow.fillStyle(0xf1c40f,.08);glow.fillCircle(t.x,t.y,22);
+    sc.tweens.add({targets:glow,scaleX:{from:.6,to:2.2},scaleY:{from:.6,to:2.2},alpha:{from:.35,to:0},repeat:-1,duration:1200+i*80,ease:'Sine.Out'});
+    // AU task marker: yellow diamond shape
     var tg2=sc.add.graphics().setDepth(9);
-    tg2.fillStyle(0xf1c40f,.55);tg2.fillCircle(t.x,t.y,7);
-    tg2.lineStyle(1.5,0xfbbf24,.8);tg2.strokeCircle(t.x,t.y,7);
-    tg2.fillStyle(0xffffff,.8);tg2.fillCircle(t.x,t.y,2.5);
-    sc.tweens.add({targets:tg2,alpha:{from:.25,to:.9},yoyo:true,repeat:-1,duration:650+i*70});
-    var ring=sc.add.graphics().setDepth(8);
-    ring.lineStyle(1,0xf39c12,.3);ring.strokeCircle(t.x,t.y,13);
-    sc.tweens.add({targets:ring,scaleX:{from:.5,to:1.8},scaleY:{from:.5,to:1.8},alpha:{from:.5,to:0},repeat:-1,duration:1100+i*90});
+    // Outer dark border diamond
+    tg2.fillStyle(0xb8860b,1);
+    tg2.fillTriangle(t.x,t.y-12, t.x+10,t.y, t.x,t.y+12);
+    tg2.fillTriangle(t.x,t.y-12, t.x-10,t.y, t.x,t.y+12);
+    // Inner bright yellow diamond
+    tg2.fillStyle(0xf1c40f,1);
+    tg2.fillTriangle(t.x,t.y-9, t.x+7.5,t.y, t.x,t.y+9);
+    tg2.fillTriangle(t.x,t.y-9, t.x-7.5,t.y, t.x,t.y+9);
+    // Center shine
+    tg2.fillStyle(0xffffff,.7);tg2.fillCircle(t.x-1,t.y-2,2.5);
+    // Pulsing alpha
+    sc.tweens.add({targets:tg2,alpha:{from:.55,to:1},yoyo:true,repeat:-1,duration:600+i*55,ease:'Sine.InOut'});
+    // Task label
+    sc.add.text(t.x,t.y+17,t.n,{fontSize:'5px',color:'#f1c40f',fontFamily:'Nunito',fontStyle:'bold',stroke:'#000',strokeThickness:3}).setOrigin(.5,0).setDepth(9).setAlpha(.7);
   });
 }
 
@@ -908,11 +1073,10 @@ function bakeTexture(sc,color,alive,frame){
   frame=frame||0;
   var key='au_'+color.replace('#','')+(alive?'a':'d')+'_f'+frame;
   if(sc.textures.exists(key))return key;
-  var W=48,H=60,cv2=document.createElement('canvas');cv2.width=W;cv2.height=H;
+  var W=40,H=50,cv2=document.createElement('canvas');cv2.width=W;cv2.height=H;
   var ctx2=cv2.getContext('2d');
-  // Draw crewmate with leg offset for walk animation
-  var legOffset=[0,2,-1,2][frame]; // subtle bob
-  drawCrewmateAnimated(ctx2,W/2,H/2+6,{scale:0.75,color:color,alive:alive,alpha:1,legOffset:legOffset,frame:frame});
+  var legOffset=[0,2,-1,2][frame];
+  drawCrewmateAnimated(ctx2,W/2,H/2+5,{scale:0.62,color:color,alive:alive,alpha:1,legOffset:legOffset,frame:frame});
   sc.textures.addCanvas(key,cv2);return key;
 }
 
@@ -1042,7 +1206,16 @@ function mkSprite(id,pd){
   var nc=mod.nameColor||pd.nameColor||'#ffffff';
   grp.nm=gsc.add.text(x,y-30,pd.username||'?',{fontSize:'6px',color:nc,fontFamily:'Nunito,sans-serif',fontStyle:'bold',stroke:'#000000',strokeThickness:3}).setOrigin(.5).setDepth(12).setAlpha(alive?1:.3);
 
-  if(pd.isOwner){grp.crown=gsc.add.text(x,y-42,'👑',{fontSize:'9px'}).setOrigin(.5).setDepth(13);gsc.tweens.add({targets:grp.crown,y:y-45,yoyo:true,repeat:-1,duration:800});}
+  if(pd.isOwner){
+    grp.crown=gsc.add.text(x,y-42,'👑',{fontSize:'9px'}).setOrigin(.5).setDepth(13);
+    gsc.tweens.add({targets:grp.crown,y:y-45,yoyo:true,repeat:-1,duration:800});
+    // OWNER tag badge above name
+    grp.ownerTag=gsc.add.text(x,y-50,'OWNER',{
+      fontSize:'5px',color:'#ff4444',fontFamily:'Nunito,sans-serif',fontStyle:'bold',
+      backgroundColor:'#1a0000',padding:{x:3,y:2},
+      stroke:'#000',strokeThickness:2
+    }).setOrigin(.5).setDepth(14);
+  }
   if(mod.godmode){grp.godRing=gsc.add.circle(x,y,28).setStrokeStyle(2.5,0xffd700,.9).setDepth(7);gsc.tweens.add({targets:grp.godRing,alpha:{from:.15,to:1},yoyo:true,repeat:-1,duration:280});}
   if(mod.frozen)grp.frostTxt=gsc.add.text(x,y-42,'❄️',{fontSize:'10px'}).setOrigin(.5).setDepth(14);
 
@@ -1084,6 +1257,7 @@ function movSprite(id,x,y){
   if(g.ring)g.ring.setPosition(x,y+4);
   if(g.aura)g.aura.setPosition(x,y+2);
   if(g.crown)g.crown.setPosition(x,y-42);
+  if(g.ownerTag)g.ownerTag.setPosition(x,y-50);
   if(g.godRing)g.godRing.setPosition(x,y);
   if(g.frostTxt)g.frostTxt.setPosition(x,y-42);
   var tc=(pmods[id]&&pmods[id].trailColor)||(id===myId&&eTrail&&CM[eTrail]?CM[eTrail].tc:null);
@@ -1101,7 +1275,7 @@ function killSpriteVisual(id){
 
 function rmSprite(id){
   var g=pSprites[id];if(!g)return;
-  ['body','nm','ht','sk','ring','aura','crown','godRing','frostTxt'].forEach(function(k){if(g[k]&&g[k].destroy)g[k].destroy();});
+  ['body','nm','ht','sk','ring','aura','crown','ownerTag','godRing','frostTxt'].forEach(function(k){if(g[k]&&g[k].destroy)g[k].destroy();});
   delete pSprites[id];
 }
 
@@ -1490,7 +1664,7 @@ function beginGame(){
       gsc.cameras.main.scrollX=me.x-innerWidth/(2*ZOOM);
       gsc.cameras.main.scrollY=me.y-innerHeight/(2*ZOOM);
     }
-    if(myIsOwner())document.getElementById('opanel-hbtn').style.display='';
+    // Admin button only shown after code entry - not auto-shown
   },1000);
 }
 
@@ -1740,6 +1914,8 @@ var RARITY_ORDER=['common','uncommon','rare','epic','legendary','mythic','owner'
 var RC={common:'#9ca3af',uncommon:'#4ade80',rare:'#60a5fa',epic:'#c084fc',legendary:'#fbbf24',mythic:'#f472b6',owner:'#ef4444'};
 
 function buildShop(){
+  // Tags are owner-only, never purchaseable in shop
+  var OWNER_ONLY_TYPES=['tag'];
   updCred();
   var sfrow=document.getElementById('sfrow');if(!sfrow)return;sfrow.innerHTML='';
   var types=['all','hat','skin','trail','aura','namecolor'];
@@ -1790,16 +1966,52 @@ function closeWard(){document.getElementById('ward-over').style.display='none';}
 
 function buildWardSlots(){
   var cont=document.getElementById('ward-slots');if(!cont)return;cont.innerHTML='';
-  [{key:'hat',label:'Hat',val:eHat},{key:'skin',label:'Skin',val:eSkin},{key:'trail',label:'Trail',val:eTrail},{key:'aura',label:'Aura',val:eAura},{key:'namecolor',label:'Name Color',val:eNC}].forEach(function(slot){
-    var el=document.createElement('div');el.className='ward-slot'+(slot.val?' weq':'');
-    el.innerHTML='<div class="ward-slot-lbl">'+slot.label+'</div>';
-    if(slot.val&&CM[slot.val]){
-      el.innerHTML+='<div class="ward-ico">'+CM[slot.val].icon+'</div><div style="font-size:9px;font-weight:800;color:rgba(255,255,255,.55)">'+CM[slot.val].name+'</div><div style="font-size:8px;color:rgba(255,255,255,.2);margin-top:2px">Click to remove</div>';
-      el.onclick=function(){unequipType(slot.key);redrawPreviews();buildWardSlots();};
-    }else{
-      el.innerHTML+='<div class="ward-ico" style="opacity:.15">✕</div><div style="font-size:8px;color:rgba(255,255,255,.18)">None</div>';
+  var types=[
+    {key:'hat',label:'🎩 Hat',val:eHat},
+    {key:'skin',label:'👕 Skin',val:eSkin},
+    {key:'trail',label:'✨ Trail',val:eTrail},
+    {key:'aura',label:'💫 Aura',val:eAura},
+    {key:'namecolor',label:'🎨 Name Color',val:eNC}
+  ];
+  types.forEach(function(slot){
+    // Section header
+    var sec=document.createElement('div');
+    sec.style.cssText='grid-column:1/-1;font-size:8px;font-weight:900;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:1.5px;margin-top:8px;padding-bottom:4px;border-bottom:1px solid rgba(255,255,255,.06)';
+    sec.textContent=slot.label+(slot.val&&CM[slot.val]?' — '+CM[slot.val].name:' — None');
+    cont.appendChild(sec);
+    // ONLY items in pfOwned (granted by PlayFab server) - no client-side grants
+    var owned=pfOwned.filter(function(id){return CM[id]&&CM[id].type===slot.key;});
+    if(!owned.length){
+      var empty=document.createElement('div');
+      empty.style.cssText='font-size:9px;color:rgba(255,255,255,.2);padding:6px 0;grid-column:1/-1';
+      empty.textContent='No items owned. Visit the shop!';
+      cont.appendChild(empty);
+      return;
     }
-    cont.appendChild(el);
+    owned.forEach(function(itemId){
+      var cm=CM[itemId];if(!cm)return;
+      var isEq=(slot.val===itemId);
+      var el=document.createElement('div');
+      el.style.cssText='background:'+(isEq?'rgba(241,196,15,.12)':' rgba(0,0,0,.35)')+';border:2px solid '+(isEq?'#f1c40f':'rgba(255,255,255,.08)')+';border-radius:10px;padding:8px 6px;text-align:center;cursor:pointer;transition:all .14s';
+      el.innerHTML='<div style="font-size:20px;margin-bottom:2px">'+cm.icon+'</div><div style="font-size:7px;font-weight:800;color:rgba(255,255,255,.7)">'+cm.name+'</div>'+(isEq?'<div style="font-size:6px;color:#f1c40f;margin-top:2px;font-weight:900">✓ EQUIPPED</div>':'');
+      el.onmouseenter=function(){if(!isEq)el.style.borderColor='rgba(255,255,255,.35)';};
+      el.onmouseleave=function(){if(!isEq)el.style.borderColor='rgba(255,255,255,.08)';};
+      el.onclick=function(){
+        if(isEq){unequipType(slot.key);}
+        else{
+          if(slot.key==='hat')eHat=itemId;
+          else if(slot.key==='skin')eSkin=itemId;
+          else if(slot.key==='trail')eTrail=itemId;
+          else if(slot.key==='aura')eAura=itemId;
+          else if(slot.key==='namecolor')eNC=itemId;
+          pfSave(slot.key,itemId);
+          wsSend({type:'update_cosmetics',hat:eHat,skin:eSkin,trail:eTrail?CM[eTrail].tc:null,aura:eAura?CM[eAura].ac:null,nameColor:eNC?CM[eNC].nc:null});
+          saveSess();notify('✅ Equipped '+cm.name,'#f1c40f');
+        }
+        redrawPreviews();buildWardSlots();
+      };
+      cont.appendChild(el);
+    });
   });
 }
 
@@ -1811,7 +2023,43 @@ function updWardTags(){
 
 // ── OWNER PANEL ──
 function myIsOwner(){return gs&&gs.players&&gs.players[myId]&&gs.players[myId].isOwner;}
-function openOwnerPanel(){document.getElementById('opanel-over').style.display='flex';buildOpPanel();}
+
+// ── OWNER PANEL - locked behind secret code ──
+// The admin button (🔒) is always visible but panel only opens with correct code
+// Code is set in OWN_PW constant - never exposed to client
+var _adminUnlocked = false;
+
+function myIsOwner(){return gs&&gs.players&&gs.players[myId]&&gs.players[myId].isOwner;}
+
+function tryUnlockAdmin(){
+  var overlay=document.getElementById('admin-unlock-overlay');
+  if(!overlay)return;
+  overlay.style.display='flex';
+  var inp=document.getElementById('admin-code-inp');
+  if(inp){inp.value='';setTimeout(function(){inp.focus();},80);}
+}
+
+function submitAdminCode(){
+  var inp=document.getElementById('admin-code-inp');
+  var val=inp?inp.value.trim():'';
+  if(val===OWN_PW){
+    _adminUnlocked=true;
+    document.getElementById('admin-unlock-overlay').style.display='none';
+    var btn=document.getElementById('opanel-hbtn');
+    if(btn){btn.style.display='';btn.textContent='⚡ Admin';}
+    notify('⚡ Admin panel unlocked!','#e74c3c');
+  } else {
+    var err=document.getElementById('admin-code-err');
+    if(err){err.textContent='Wrong code.';setTimeout(function(){err.textContent='';},2000);}
+    if(inp){inp.value='';inp.focus();}
+  }
+}
+
+function openOwnerPanel(){
+  if(!_adminUnlocked){notify('🔒 Enter admin code first','#e74c3c');return;}
+  document.getElementById('opanel-over').style.display='flex';
+  buildOpPanel();
+}
 function closeOwnerPanel(){document.getElementById('opanel-over').style.display='none';}
 
 function buildOpPanel(){
@@ -1820,7 +2068,8 @@ function buildOpPanel(){
   Object.values(gs.players).forEach(function(p){
     var row=document.createElement('div');row.className='op-prow'+(opSelId===p.id?' sel':'');
     var dot=document.createElement('div');dot.className='op-dot';dot.style.background=p.color;
-    var nm=document.createElement('div');nm.style.cssText='flex:1;font-weight:900;font-size:11px';nm.textContent=p.username+(p.alive?'':' 💀')+(p.id===myId?' (you)':'');
+    var nm=document.createElement('div');nm.style.cssText='flex:1;font-weight:900;font-size:11px';
+    nm.textContent=p.username+(p.alive?'':' 💀')+(p.id===myId?' (you)':'');
     row.appendChild(dot);row.appendChild(nm);
     row.onclick=function(){opSelId=p.id;document.getElementById('op-sel-name').textContent='Selected: '+p.username;buildOpPanel();};
     plist.appendChild(row);
@@ -1830,8 +2079,21 @@ function buildOpPanel(){
 
 function buildOpCmds(){
   var cmds=document.getElementById('op-cmds');if(!cmds)return;cmds.innerHTML='';
-  [{label:'☠️ Kill',cmd:'kill'},{label:'✨ Respawn',cmd:'respawn'},{label:'❄️ Freeze',cmd:'freeze'},{label:'🔓 Unfreeze',cmd:'unfreeze'},{label:'⭐ Godmode',cmd:'god'},{label:'👟 Speed x2',cmd:'speed'},{label:'😈 Make Imp',cmd:'imp'},{label:'✅ Make Crew',cmd:'crew'},{label:'🚀 Teleport',cmd:'tp'},{label:'💥 Explode',cmd:'boom'},{label:'🚫 Kick',cmd:'kick'},{label:'🔀 Swap Roles',cmd:'swap'}].forEach(function(c){
-    var btn=document.createElement('button');btn.className='op-btn';btn.textContent=c.label;btn.onclick=function(){opCmd(c.cmd);};cmds.appendChild(btn);
+  [
+    {label:'☠️ Kill',cmd:'kill'},{label:'✨ Respawn',cmd:'respawn'},
+    {label:'❄️ Freeze',cmd:'freeze'},{label:'🔓 Unfreeze',cmd:'unfreeze'},
+    {label:'⭐ Godmode',cmd:'god'},{label:'🐌 Slow',cmd:'slow'},
+    {label:'👟 Speed x2',cmd:'speed'},{label:'🚀 Speed x3',cmd:'speed3'},
+    {label:'😈 Make Imp',cmd:'imp'},{label:'✅ Make Crew',cmd:'crew'},
+    {label:'🏠 TP Cafe',cmd:'tp_cafe'},{label:'⚡ TP Reactor',cmd:'tp_reactor'},
+    {label:'💥 Explode',cmd:'boom'},{label:'🚫 Kick',cmd:'kick'},
+    {label:'🔀 Swap Roles',cmd:'swap'},{label:'👑 Give OWNER tag',cmd:'give_owner_tag'},
+    {label:'💰 Give 500 coins',cmd:'give_cred'},{label:'🛡️ Give MOD tag',cmd:'give_mod_tag'},
+  ].forEach(function(c){
+    var btn=document.createElement('button');btn.className='op-btn';
+    btn.textContent=c.label;
+    btn.onclick=function(){opCmd(c.cmd);};
+    cmds.appendChild(btn);
   });
 }
 
@@ -1843,15 +2105,30 @@ function opCmd(cmd){
   if(cmd==='freeze')wsSend(Object.assign({},base,{type:'owner_freeze',frozen:true}));
   if(cmd==='unfreeze')wsSend(Object.assign({},base,{type:'owner_freeze',frozen:false}));
   if(cmd==='god')wsSend(Object.assign({},base,{type:'owner_godmode',enabled:true}));
+  if(cmd==='slow')wsSend(Object.assign({},base,{type:'owner_speed_boost',mult:0.4}));
   if(cmd==='speed')wsSend(Object.assign({},base,{type:'owner_speed_boost',mult:2}));
+  if(cmd==='speed3')wsSend(Object.assign({},base,{type:'owner_speed_boost',mult:3}));
   if(cmd==='imp')wsSend(Object.assign({},base,{type:'owner_set_role',role:'impostor'}));
   if(cmd==='crew')wsSend(Object.assign({},base,{type:'owner_set_role',role:'crewmate'}));
-  if(cmd==='tp')wsSend(Object.assign({},base,{type:'owner_teleport',room:'Cafeteria'}));
+  if(cmd==='tp_cafe')wsSend(Object.assign({},base,{type:'owner_teleport',room:'Cafeteria'}));
+  if(cmd==='tp_reactor')wsSend(Object.assign({},base,{type:'owner_teleport',room:'Reactor'}));
   if(cmd==='boom')wsSend(Object.assign({},base,{type:'owner_explosion'}));
   if(cmd==='kick')wsSend(Object.assign({},base,{type:'owner_kick',reason:'Kicked by admin'}));
   if(cmd==='swap'){
     var others=Object.keys(gs.players||{}).filter(function(id){return id!==opSelId;});
     if(others.length)wsSend(Object.assign({},base,{type:'owner_swap_roles',targetA:opSelId,targetB:others[0]}));
+  }
+  if(cmd==='give_owner_tag'){
+    wsSend(Object.assign({},base,{type:'owner_grant_item',itemId:'tag_owner'}));
+    notify('👑 Granting OWNER tag via server','#e74c3c');
+  }
+  if(cmd==='give_mod_tag'){
+    wsSend(Object.assign({},base,{type:'owner_grant_item',itemId:'tag_mod'}));
+    notify('🛡️ Granting MOD tag via server','#3498db');
+  }
+  if(cmd==='give_cred'){
+    wsSend(Object.assign({},base,{type:'owner_give_credits',amount:500}));
+    notify('💰 Giving 500 credits','#f1c40f');
   }
 }
 
@@ -1866,7 +2143,18 @@ function ownerAll(cmd){
   if(cmd==='shuffle')wsSend({type:'owner_shuffle_roles',password:OWN_PW});
   if(cmd==='reveal')wsSend({type:'owner_reveal_roles',password:OWN_PW});
   if(cmd==='meeting')wsSend({type:'owner_force_meeting',password:OWN_PW,reason:'⚡ Emergency!'});
+  if(cmd==='reset_speed'){
+    if(gs)Object.keys(gs.players).forEach(function(id){wsSend({type:'owner_speed_boost',password:OWN_PW,targetId:id,mult:1});});
+    notify('🔄 Reset all speeds','#27ae60');
+  }
+  if(cmd==='kill_all_imp'){
+    if(gs)Object.values(gs.players).forEach(function(p){
+      if(p.role==='impostor'&&p.alive)wsSend({type:'owner_kill_player',password:OWN_PW,targetId:p.id});
+    });
+    notify('💀 Killed all impostors','#e74c3c');
+  }
 }
+
 
 // ── EFFECTS ──
 function doExplosion(cx,cy,r){
@@ -1933,14 +2221,33 @@ async function onLogin(r,hint){
   var ud=(r.data.InfoResultPayload&&r.data.InfoResultPayload.UserData)||{};
   pfUser=(ud.username&&ud.username.Value)||hint||pfId.slice(0,8);
   selColor=(ud.color&&ud.color.Value)||'#c51111';
-  eHat=(ud.hat&&ud.hat.Value)||null;eSkin=(ud.skin&&ud.skin.Value)||null;eTrail=(ud.trail&&ud.trail.Value)||null;eAura=(ud.aura&&ud.aura.Value)||null;eNC=(ud.namecolor&&ud.namecolor.Value)||null;
-  try{myTags=JSON.parse((ud.tags&&ud.tags.Value)||'[]');}catch(x){myTags=[];}
-  try{var bal=await pfCall('GetUserInventory',{});pfCred=(bal.data.VirtualCurrencyBalance&&bal.data.VirtualCurrencyBalance.GD)||0;pfOwned=(bal.data.Inventory||[]).map(function(i){return i.ItemId;});}catch(x){pfCred=0;}
+  // Load cosmetic equip slots from UserData (just which item is equipped, not ownership)
+  eHat=(ud.hat&&ud.hat.Value)||null;
+  eSkin=(ud.skin&&ud.skin.Value)||null;
+  eTrail=(ud.trail&&ud.trail.Value)||null;
+  eAura=(ud.aura&&ud.aura.Value)||null;
+  eNC=(ud.namecolor&&ud.namecolor.Value)||null;
+  // ── INVENTORY: source of truth for ALL owned items including tags ──
+  // Tags come ONLY from PlayFab inventory, never from UserData
+  try{
+    var bal=await pfCall('GetUserInventory',{});
+    pfCred=(bal.data.VirtualCurrencyBalance&&bal.data.VirtualCurrencyBalance.GD)||0;
+    pfOwned=(bal.data.Inventory||[]).map(function(i){return i.ItemId;});
+    // Tags are derived from inventory - if you don't have it in PlayFab, you don't have it
+    myTags=pfOwned.filter(function(id){return CM[id]&&CM[id].type==='tag';});
+  }catch(x){pfCred=0;pfOwned=[];myTags=[];}
+  // Strip any equipped cosmetics the player no longer owns
+  if(eHat&&!pfOwned.includes(eHat))eHat=null;
+  if(eSkin&&!pfOwned.includes(eSkin))eSkin=null;
+  if(eTrail&&!pfOwned.includes(eTrail))eTrail=null;
+  if(eAura&&!pfOwned.includes(eAura))eAura=null;
+  if(eNC&&!pfOwned.includes(eNC))eNC=null;
   saveSess();await connectWS();showMenu();
 }
 
 function saveSess(){
-  try{localStorage.setItem('st_v5',JSON.stringify({pfId,pfTicket,pfUser,selColor,eHat,eSkin,eTrail,eAura,eNC,myTags,pfCred}));}catch(x){}
+  // Note: myTags NOT saved to localStorage - always re-derived from PlayFab inventory on login
+  try{localStorage.setItem('st_v5',JSON.stringify({pfId,pfTicket,pfUser,selColor,eHat,eSkin,eTrail,eAura,eNC,pfCred}));}catch(x){}
 }
 
 async function autoLogin(){
@@ -1948,10 +2255,26 @@ async function autoLogin(){
   try{sv=localStorage.getItem('st_v5')||localStorage.getItem('st_v4');}catch(x){}
   if(!sv){showScr('auth-scr');return;}
   try{
-    var d=JSON.parse(sv);pfId=d.pfId;pfTicket=d.pfTicket;pfUser=d.pfUser;selColor=d.selColor||'#c51111';
-    eHat=d.eHat||null;eSkin=d.eSkin||null;eTrail=d.eTrail||null;eAura=d.eAura||null;eNC=d.eNC||null;myTags=d.myTags||[];pfCred=d.pfCred||0;
+    var d=JSON.parse(sv);
+    pfId=d.pfId;pfTicket=d.pfTicket;pfUser=d.pfUser;
+    selColor=d.selColor||'#c51111';
+    eHat=d.eHat||null;eSkin=d.eSkin||null;eTrail=d.eTrail||null;eAura=d.eAura||null;eNC=d.eNC||null;
+    // myTags intentionally NOT loaded from cache - always from PlayFab inventory
+    pfCred=d.pfCred||0;
     if(typeof PlayFab!=='undefined')PlayFab._internalSettings.sessionTicket=pfTicket;
-    try{var bal=await pfCall('GetUserInventory',{});pfCred=(bal.data.VirtualCurrencyBalance&&bal.data.VirtualCurrencyBalance.GD)||0;pfOwned=(bal.data.Inventory||[]).map(function(i){return i.ItemId;});}catch(x){pfCred=d.pfCred||0;}
+    try{
+      var bal=await pfCall('GetUserInventory',{});
+      pfCred=(bal.data.VirtualCurrencyBalance&&bal.data.VirtualCurrencyBalance.GD)||0;
+      pfOwned=(bal.data.Inventory||[]).map(function(i){return i.ItemId;});
+      // Tags ONLY from inventory - can't be faked via localStorage
+      myTags=pfOwned.filter(function(id){return CM[id]&&CM[id].type==='tag';});
+      // Strip equipped items player no longer owns
+      if(eHat&&!pfOwned.includes(eHat))eHat=null;
+      if(eSkin&&!pfOwned.includes(eSkin))eSkin=null;
+      if(eTrail&&!pfOwned.includes(eTrail))eTrail=null;
+      if(eAura&&!pfOwned.includes(eAura))eAura=null;
+      if(eNC&&!pfOwned.includes(eNC))eNC=null;
+    }catch(x){pfCred=d.pfCred||0;pfOwned=[];myTags=[];}
     await connectWS();showMenu();
   }catch(x){showScr('auth-scr');}
 }
@@ -2008,5 +2331,22 @@ function dpEnd(dir){window['m'+dir]=false;document.getElementById('dp-'+dir.toLo
 
 window.onload=function(){autoLogin();};
 </script>
+
+<!-- ADMIN UNLOCK OVERLAY -->
+<div id="admin-unlock-overlay" style="display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.85);backdrop-filter:blur(6px);align-items:center;justify-content:center">
+  <div style="background:linear-gradient(160deg,#1a0505,#0d0000);border:2px solid rgba(192,57,43,.4);border-radius:16px;padding:28px 26px;width:320px;max-width:94vw;box-shadow:0 0 60px rgba(192,57,43,.2)">
+    <div style="font-family:'Fredoka One',cursive;font-size:22px;color:#e74c3c;margin-bottom:4px;text-align:center">⚡ Admin Access</div>
+    <div style="font-size:10px;color:rgba(255,255,255,.3);text-align:center;margin-bottom:18px;font-weight:700;letter-spacing:1px">ENTER SECRET CODE</div>
+    <input id="admin-code-inp" type="password" 
+      style="width:100%;background:rgba(0,0,0,.6);border:2px solid rgba(192,57,43,.35);color:#fff;padding:12px 14px;border-radius:8px;font-size:20px;font-family:'Fredoka One',cursive;letter-spacing:6px;text-align:center;outline:none;margin-bottom:8px"
+      placeholder="••••••••"
+      onkeydown="if(event.key==='Enter')submitAdminCode()"
+      onfocus="this.style.borderColor='rgba(231,76,60,.7)'"
+      onblur="this.style.borderColor='rgba(192,57,43,.35)'">
+    <div id="admin-code-err" style="color:#ff6b6b;font-size:10px;text-align:center;min-height:14px;font-weight:800;margin-bottom:8px"></div>
+    <button onclick="submitAdminCode()" style="width:100%;padding:12px;background:linear-gradient(180deg,#c0392b,#7b1a1a);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:900;cursor:pointer;font-family:'Nunito',sans-serif;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Unlock</button>
+    <button onclick="document.getElementById('admin-unlock-overlay').style.display='none'" style="width:100%;padding:9px;background:transparent;color:rgba(255,255,255,.3);border:1.5px solid rgba(255,255,255,.1);border-radius:8px;font-size:11px;font-weight:800;cursor:pointer;font-family:'Nunito',sans-serif">Cancel</button>
+  </div>
+</div>
 </body>
 </html>

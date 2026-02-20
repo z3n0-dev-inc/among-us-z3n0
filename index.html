@@ -228,8 +228,8 @@ body{font-family:'Nunito',sans-serif;user-select:none;color:#fff;touch-action:no
 <div id="red-flash"></div>
 <div id="banner"><div class="banner-txt" id="banner-txt"></div><div class="banner-sub" id="banner-sub"></div></div>
 <div id="notif-wrap"></div>
-<div id="room-name-overlay" id="room-name-overlay"></div>
-<div id="coord-dbg" style="position:fixed;top:50px;left:50%;transform:translateX(-50%);z-index:999;background:rgba(0,0,0,.85);color:#00ff88;font-family:monospace;font-size:13px;font-weight:900;padding:4px 12px;border-radius:6px;border:1px solid #00ff88;pointer-events:none;letter-spacing:1px"></div>
+<div id="room-name-overlay"></div>
+<div id="coord-dbg" style="position:fixed;top:50px;left:50%;transform:translateX(-50%);z-index:999;background:rgba(0,0,0,.85);color:#00ff88;font-family:monospace;font-size:13px;font-weight:900;padding:4px 12px;border-radius:6px;border:1px solid #00ff88;pointer-events:none;letter-spacing:1px;display:block"></div>
 
 <!-- AUTH -->
 <div class="screen" id="auth-scr">
@@ -496,119 +496,79 @@ var COLORS = [
   '#6b2fbb','#71491e','#38fedc','#50ef39'
 ];
 
-// ── WALK ZONES — pixel-perfect match to every drawHallway() + room image ──
-// Rule: drawHallway(rx,ry,rw,rh) → {x:rx, y:ry, w:rw, h:rh}
-// Room images: cx,cy = center, dw,dh = size → x:cx-dw/2, y:cy-dh/2, w:dw, h:dh
-// Every single corridor segment IS listed here — no gaps, no guessing.
+// ── WALK ZONES — mathematically derived from ROOMS array + drawHallway calls ──
+// Rooms: expanded +4px per side. Hallways: expanded +6px per side.
+// All seam junctions verified against live problem coordinates.
 var WALK = [
-  // ══ ROOMS (from ROOMS array: cx,cy,dw,dh → top-left x/y) ══
-  // Upper Engine:  cx170,cy127, 220×160
-  {x:60,   y:47,   w:220,  h:160,  n:'Upper Engine'},
-  // Reactor:       cx172,cy345, 225×290
-  {x:60,   y:200,  w:218,  h:290,  n:'Reactor'},
-  // Lower Engine:  cx170,cy628, 220×180
-  {x:60,   y:538,  w:220,  h:180,  n:'Lower Engine'},
-  // Cafeteria:     cx502,cy172, 320×250
-  {x:342,  y:47,   w:320,  h:250,  n:'Cafeteria'},
-  // Weapons/SecHall: cx904,cy147, 190×200
-  {x:809,  y:47,   w:190,  h:200,  n:'Weapons'},
-  // Navigation:    cx1216,cy152, 248×210
-  {x:1092, y:47,   w:248,  h:210,  n:'Navigation'},
-  // Shields:       cx1210,cy412, 260×200
-  {x:1080, y:312,  w:260,  h:200,  n:'Shields'},
-  // Communications: cx1210,cy677, 260×170
-  {x:1080, y:592,  w:260,  h:170,  n:'Communications'},
-  // Security:      cx451,cy443, 202×170
-  {x:350,  y:358,  w:202,  h:170,  n:'Security'},
-  // MedBay:        cx710,cy362, 186×168
-  {x:617,  y:278,  w:186,  h:168,  n:'MedBay'},
-  // O2:            cx893,cy362, 186×168
-  {x:800,  y:278,  w:186,  h:168,  n:'O2'},
-  // Electrical:    cx452,cy657, 220×170
-  {x:342,  y:572,  w:220,  h:170,  n:'Electrical'},
-  // Storage:       cx800,cy624, 192×252
-  {x:704,  y:498,  w:192,  h:252,  n:'Storage'},
-  // Admin:         cx949,cy590, 190×200
-  {x:854,  y:490,  w:190,  h:200,  n:'Admin'},
+  // ── ROOMS (cx-dw/2-4, cy-dh/2-4, dw+8, dh+8) ──
+  {x: 338, y:  43, w: 328, h: 258, n:'Cafeteria'},
+  {x: 805, y:  43, w: 198, h: 208, n:'Weapons'},
+  {x:1088, y:  43, w: 256, h: 218, n:'Navigation'},
+  {x:1076, y: 308, w: 268, h: 208, n:'Shields'},
+  {x:1076, y: 588, w: 268, h: 178, n:'Communications'},
+  {x: 850, y: 486, w: 198, h: 208, n:'Admin'},
+  {x: 700, y: 494, w: 200, h: 260, n:'Storage'},
+  {x: 338, y: 568, w: 228, h: 178, n:'Electrical'},
+  {x: 796, y: 274, w: 194, h: 176, n:'O2'},
+  {x: 613, y: 274, w: 194, h: 176, n:'MedBay'},
+  {x: 346, y: 354, w: 210, h: 178, n:'Security'},
+  {x:  56, y:  43, w: 228, h: 168, n:'Upper Engine'},
+  {x:  56, y: 534, w: 228, h: 188, n:'Lower Engine'},
+  {x:  56, y: 196, w: 233, h: 298, n:'Reactor'},
 
-  // ══ HALLWAYS — every single drawHallway(rx,ry,rw,rh) call, verbatim ══
-  // Left side
-  {x:278,  y:92,   w:72,   h:50,   n:'Hall'},  // UE → Caf top
-  {x:266,  y:200,  w:64,   h:52,   n:'Hall'},  // UE bottom → left vert
-  {x:266,  y:248,  w:64,   h:244,  n:'Hall'},  // Left vert main
-  {x:266,  y:490,  w:64,   h:52,   n:'Hall'},  // Left vert gap fix
-  {x:266,  y:538,  w:64,   h:56,   n:'Hall'},  // Left vert → LE
+  // ── HALLWAYS (rx-6, ry-6, rw+12, rh+12) matching every drawHallway() call ──
+  {x: 272, y:  86, w:  84, h:  62, n:'Hall'},  // UE → Caf top
+  {x: 260, y: 194, w:  76, h:  64, n:'Hall'},  // UE bottom → left vert
+  {x: 260, y: 242, w:  76, h: 256, n:'Hall'},  // Left vert main
+  {x: 260, y: 484, w:  76, h:  64, n:'Hall'},  // Left vert gap
+  {x: 260, y: 532, w:  76, h:  68, n:'Hall'},  // Left vert → LE
+  {x: 649, y: 134, w: 170, h:  76, n:'Hall'},  // Caf → Weapons
+  {x: 414, y: 284, w:  92, h:  84, n:'Hall'},  // Caf bottom → Sec top
+  {x: 987, y:  43, w: 115, h:  64, n:'Hall'},  // Weapons → Nav
+  {x: 837, y: 234, w: 104, h:  52, n:'Hall'},  // Weapons bottom → right vert
+  {x:1079, y: 244, w:  64, h:  80, n:'Hall'},  // Nav bottom → right vert
+  {x:1066, y: 244, w:  76, h:  80, n:'Hall'},  // Right vert top
+  {x:1066, y: 306, w:  76, h: 214, n:'Hall'},  // Right vert mid
+  {x:1066, y: 504, w:  76, h:  98, n:'Hall'},  // Right vert bottom
+  {x: 388, y: 352, w:  76, h:  76, n:'Hall'},  // Sec top door
+  {x: 542, y: 384, w:  86, h:  68, n:'Hall'},  // Sec right → MedBay
+  {x: 388, y: 516, w:  76, h: 110, n:'Hall'},  // Sec bottom → bottom hall
+  {x: 542, y: 310, w:  86, h:  68, n:'Hall'},  // MedBay left connector
+  {x: 638, y: 238, w:  84, h:  52, n:'Hall'},  // MedBay top → Caf
+  {x: 789, y: 310, w:  24, h:  68, n:'Hall'},  // MedBay/O2 connector
+  {x: 833, y: 436, w:  92, h:  72, n:'Hall'},  // O2 bottom → Storage
+  {x: 256, y: 610, w: 512, h:  68, n:'Hall'},  // Main bottom hall
+  {x: 360, y: 558, w:  74, h:  68, n:'Hall'},  // Elec top
+  {x: 696, y: 522, w:  40, h: 104, n:'Hall'},  // Storage top connector
+  {x: 552, y: 608, w: 160, h:  68, n:'Hall'},  // Elec → Storage bottom
+  {x: 744, y: 434, w:  96, h:  74, n:'Hall'},  // Storage top ↔ O2
+  {x: 886, y: 526, w:  78, h:  72, n:'Hall'},  // Storage → Admin
+  {x: 790, y: 526, w:  74, h:  72, n:'Hall'},  // Admin left connector
+  {x:1034, y: 558, w:  58, h: 118, n:'Hall'},  // Admin → Comms
 
-  // Top
-  {x:655,  y:140,  w:158,  h:64,   n:'Hall'},  // Caf → Weapons
-  {x:420,  y:290,  w:80,   h:72,   n:'Hall'},  // Caf bottom → Sec top
-  {x:993,  y:49,   w:103,  h:52,   n:'Hall'},  // Weapons → Nav
-  {x:843,  y:240,  w:92,   h:40,   n:'Hall'},  // Weapons bottom → right vert
-  {x:1085, y:250,  w:52,   h:68,   n:'Hall'},  // Nav bottom → right vert
-
-  // Right vertical
-  {x:1072, y:250,  w:64,   h:68,   n:'Hall'},  // Nav → Shields top
-  {x:1072, y:312,  w:64,   h:202,  n:'Hall'},  // Right vert mid
-  {x:1072, y:510,  w:64,   h:86,   n:'Hall'},  // Shields → Comms
-
-  // Center
-  {x:394,  y:358,  w:64,   h:64,   n:'Hall'},  // Sec top door
-  {x:548,  y:390,  w:74,   h:56,   n:'Hall'},  // Sec right → MedBay
-  {x:394,  y:522,  w:64,   h:98,   n:'Hall'},  // Sec bottom → bottom hall
-  {x:548,  y:316,  w:74,   h:56,   n:'Hall'},  // MedBay left connector
-  {x:644,  y:244,  w:72,   h:40,   n:'Hall'},  // MedBay top → Caf
-  {x:795,  y:316,  w:12,   h:56,   n:'Hall'},  // MedBay/O2 connector
-  {x:839,  y:442,  w:80,   h:60,   n:'Hall'},  // O2 bottom → Storage
-
-  // Bottom
-  {x:262,  y:616,  w:500,  h:56,   n:'Hall'},  // Main bottom hall
-  {x:366,  y:564,  w:62,   h:56,   n:'Hall'},  // Electrical top
-  {x:702,  y:528,  w:28,   h:92,   n:'Hall'},  // Storage top connector
-  {x:558,  y:614,  w:148,  h:56,   n:'Hall'},  // Elec → Storage bottom
-  {x:750,  y:440,  w:84,   h:62,   n:'Hall'},  // Storage top ↔ O2 bottom
-  {x:892,  y:532,  w:66,   h:60,   n:'Hall'},  // Storage → Admin
-  {x:796,  y:532,  w:62,   h:60,   n:'Hall'},  // Admin left connector
-  {x:1040, y:564,  w:46,   h:106,  n:'Hall'},  // Admin → Comms
-
-  // ══ SEAM FILLERS — tiny patches that close pixel-gap joints between zones ══
-  // Without these, players get snagged at room↔hallway seams
-  {x:278,  y:47,   w:64,   h:50,   n:'Hall'},  // UE top-right corner → top hall join
-  {x:266,  y:142,  w:64,   h:60,   n:'Hall'},  // UE bottom gap filler (y:142–200)
-  {x:330,  y:200,  w:14,   h:52,   n:'Hall'},  // Left vert → Reactor right wall join
-  {x:266,  y:47,   w:14,   h:160,  n:'Hall'},  // Left edge of UE-to-Reactor join
-  {x:394,  y:290,  w:64,   h:72,   n:'Hall'},  // Caf bottom exact center filler
-  {x:813,  y:240,  w:32,   h:40,   n:'Hall'},  // Weapons bottom-left seam
-  {x:617,  y:316,  w:4,    h:56,   n:'Hall'},  // MedBay left wall door edge
-  {x:800,  y:316,  w:4,    h:56,   n:'Hall'},  // O2 left wall door edge
-  {x:704,  y:440,  w:50,   h:60,   n:'Hall'},  // Storage top-left seam
-  {x:894,  y:490,  w:4,    h:44,   n:'Hall'},  // Admin top-left seam
-  {x:1080, y:250,  w:14,   h:64,   n:'Hall'},  // Right vert left-edge seam
-  {x:1136, y:250,  w:4,    h:346,  n:'Hall'},  // Right vert right-edge seam
-  {x:262,  y:572,  w:106,  h:46,   n:'Hall'},  // Elec top-left → bottom hall join
-  {x:342,  y:614,  w:26,   h:58,   n:'Hall'},  // Elec right edge → bottom hall
+  // ── SEAM PATCHES (verified fixes for junction dead-zones) ──
+  {x: 256, y: 558, w: 100, h:  70, n:'Hall'},  // left vert → Elec top-left corner
+  {x: 256, y: 352, w: 102, h: 150, n:'Hall'},  // left vert right edge → Security left
 ];
 
-// Player hitbox half-sizes
-var PHBX = 9;
-var PHBY = 9;
+var PHBX = 9, PHBY = 9;
 
-function walkable(x,y){
-  for(var i=0;i<WALK.length;i++){
-    var z=WALK[i];
-    if(x>=z.x && x<=z.x+z.w && y>=z.y && y<=z.y+z.h) return true;
+function walkable(x, y) {
+  for (var i = 0; i < WALK.length; i++) {
+    var z = WALK[i];
+    if (x >= z.x && x <= z.x + z.w && y >= z.y && y <= z.y + z.h) return true;
   }
   return false;
 }
 
-function walkableBox(px,py){
-  // All 8 points around the player hitbox must be inside WALK zones
-  var hw=PHBX, hh=PHBY;
+function walkableBox(px, py) {
+  var hw = PHBX, hh = PHBY;
   return (
     walkable(px,      py      ) &&
-    walkable(px-hw,   py      ) &&
-    walkable(px+hw,   py      ) &&
-    walkable(px,      py-hh   ) &&
-    walkable(px,      py+hh   ) &&
+    walkable(px - hw, py      ) &&
+    walkable(px + hw, py      ) &&
+    walkable(px,      py - hh ) &&
+    walkable(px,      py + hh ) &&
     walkable(px-hw+2, py-hh+2 ) &&
     walkable(px+hw-2, py-hh+2 ) &&
     walkable(px-hw+2, py+hh-2 ) &&
@@ -616,273 +576,6 @@ function walkableBox(px,py){
   );
 }
 
-var TLOCS = [
-  {x:502,y:150,n:'Cafeteria'},   // Cafeteria - near table
-  {x:172,y:310,n:'Reactor'},     // Reactor
-  {x:1216,y:140,n:'Navigation'}, // Navigation
-  {x:710,y:360,n:'MedBay'},      // MedBay
-  {x:800,y:640,n:'Storage'},     // Storage
-  {x:452,y:660,n:'Electrical'},  // Electrical
-  {x:893,y:360,n:'O2'},          // O2
-  {x:949,y:590,n:'Admin'},       // Admin
-  {x:1210,y:650,n:'Communications'}, // Comms
-  {x:451,y:443,n:'Security'},    // Security
-];
-
-var VENTS = [
-  {x:502,y:95, n:'Cafeteria'},
-  {x:904,y:95, n:'Weapons'},
-  {x:1250,y:95,n:'Navigation'},
-  {x:710,y:295,n:'MedBay'},
-  {x:1240,y:380,n:'Shields'},
-  {x:1240,y:650,n:'Communications'},
-  {x:760,y:660,n:'Storage'},
-  {x:452,y:660,n:'Electrical'},
-  {x:905,y:540,n:'Admin'},
-  {x:170,y:470,n:'Reactor'},
-  {x:450,y:260,n:'Upper Engine'},
-  {x:170,y:610,n:'Lower Engine'},
-  {x:451,y:400,n:'Security'},
-];
-var ventIdx = 0;
-
-// ── COSMETICS ──
-var CM = {
-  hat_cap:{icon:'🧢',name:'Cap',rarity:'common',type:'hat',price:50},
-  hat_cowboy:{icon:'🤠',name:'Cowboy',rarity:'common',type:'hat',price:60},
-  hat_santa:{icon:'🎅',name:'Santa',rarity:'uncommon',type:'hat',price:100},
-  hat_flower:{icon:'🌸',name:'Flower',rarity:'uncommon',type:'hat',price:100},
-  hat_glasses:{icon:'🕶️',name:'Shades',rarity:'uncommon',type:'hat',price:120},
-  hat_party:{icon:'🎉',name:'Party Hat',rarity:'uncommon',type:'hat',price:130},
-  hat_tophat:{icon:'🎩',name:'Top Hat',rarity:'rare',type:'hat',price:200},
-  hat_ninja:{icon:'🥷',name:'Ninja',rarity:'rare',type:'hat',price:200},
-  hat_pirate:{icon:'🏴‍☠️',name:'Pirate',rarity:'rare',type:'hat',price:220},
-  hat_chef:{icon:'👨‍🍳',name:'Chef Hat',rarity:'rare',type:'hat',price:220},
-  hat_wizard:{icon:'🧙',name:'Wizard',rarity:'epic',type:'hat',price:320},
-  hat_halo:{icon:'😇',name:'Halo',rarity:'epic',type:'hat',price:350},
-  hat_horns:{icon:'😈',name:'Horns',rarity:'epic',type:'hat',price:350},
-  hat_crown:{icon:'👑',name:'Crown',rarity:'legendary',type:'hat',price:600},
-  hat_fire:{icon:'🔥',name:'Fire Crown',rarity:'legendary',type:'hat',price:700},
-  hat_galaxy:{icon:'🌌',name:'Galaxy',rarity:'mythic',type:'hat',price:1200},
-  hat_diamond:{icon:'💎',name:'Diamond',rarity:'mythic',type:'hat',price:1500},
-  hat_astronaut:{icon:'👨‍🚀',name:'Astronaut',rarity:'rare',type:'hat',price:250},
-  hat_bomb:{icon:'💣',name:'Bomb',rarity:'epic',type:'hat',price:400},
-  hat_frog:{icon:'🐸',name:'Frog',rarity:'uncommon',type:'hat',price:110},
-  hat_cat:{icon:'🐱',name:'Cat Ears',rarity:'uncommon',type:'hat',price:110},
-  hat_hornsred:{icon:'😡',name:'Rage Horns',rarity:'rare',type:'hat',price:230},
-  hat_alien:{icon:'👽',name:'Alien Head',rarity:'rare',type:'hat',price:240},
-  hat_pumpkin:{icon:'🎃',name:'Pumpkin',rarity:'rare',type:'hat',price:210},
-  hat_snowman:{icon:'⛄',name:'Snowman',rarity:'uncommon',type:'hat',price:120},
-  hat_fedora:{icon:'🪄',name:'Fedora',rarity:'epic',type:'hat',price:360},
-  hat_rainbow:{icon:'🌈',name:'Rainbow Arc',rarity:'legendary',type:'hat',price:800},
-  hat_skull:{icon:'💀',name:'Skull',rarity:'legendary',type:'hat',price:650},
-  skin_ghost:{icon:'👻',name:'Ghost',rarity:'uncommon',type:'skin',price:150},
-  skin_zombie:{icon:'🧟',name:'Zombie',rarity:'rare',type:'skin',price:280},
-  skin_robot:{icon:'🤖',name:'Robot',rarity:'rare',type:'skin',price:300},
-  skin_alien:{icon:'👽',name:'Alien',rarity:'epic',type:'skin',price:400},
-  skin_demon:{icon:'👹',name:'Demon',rarity:'epic',type:'skin',price:420},
-  skin_angel:{icon:'👼',name:'Angel',rarity:'epic',type:'skin',price:420},
-  skin_cyber:{icon:'🦾',name:'Cyborg',rarity:'legendary',type:'skin',price:700},
-  skin_vampire:{icon:'🧛',name:'Vampire',rarity:'legendary',type:'skin',price:650},
-  skin_golden:{icon:'✨',name:'Golden',rarity:'mythic',type:'skin',price:2000},
-  skin_skeleton:{icon:'💀',name:'Skeleton',rarity:'rare',type:'skin',price:320},
-  skin_fire:{icon:'🔥',name:'Fire Skin',rarity:'epic',type:'skin',price:450},
-  skin_ice:{icon:'🧊',name:'Ice Skin',rarity:'epic',type:'skin',price:450},
-  skin_toxic:{icon:'☢️',name:'Toxic',rarity:'legendary',type:'skin',price:720},
-  skin_void:{icon:'🌀',name:'Void',rarity:'mythic',type:'skin',price:1800},
-  trail_fire:{icon:'🔥',name:'Fire Trail',rarity:'rare',type:'trail',price:250,tc:'#ef4444'},
-  trail_ice:{icon:'❄️',name:'Ice Trail',rarity:'rare',type:'trail',price:250,tc:'#7dd3fc'},
-  trail_rainbow:{icon:'🌈',name:'Rainbow',rarity:'epic',type:'trail',price:450,tc:'#f472b6'},
-  trail_gold:{icon:'💛',name:'Gold Trail',rarity:'epic',type:'trail',price:400,tc:'#fbbf24'},
-  trail_purple:{icon:'💜',name:'Purple',rarity:'rare',type:'trail',price:280,tc:'#a78bfa'},
-  trail_green:{icon:'💚',name:'Lime Trail',rarity:'uncommon',type:'trail',price:150,tc:'#4ade80'},
-  trail_galaxy:{icon:'🌌',name:'Galaxy Trail',rarity:'legendary',type:'trail',price:800,tc:'#818cf8'},
-  trail_blood:{icon:'🩸',name:'Blood Trail',rarity:'legendary',type:'trail',price:900,tc:'#dc2626'},
-  trail_electric:{icon:'⚡',name:'Electric',rarity:'epic',type:'trail',price:500,tc:'#facc15'},
-  trail_smoke:{icon:'💨',name:'Smoke',rarity:'uncommon',type:'trail',price:160,tc:'#94a3b8'},
-  trail_confetti:{icon:'🎊',name:'Confetti',rarity:'rare',type:'trail',price:300,tc:'#fb7185'},
-  aura_blue:{icon:'💙',name:'Blue Aura',rarity:'rare',type:'aura',price:300,ac:'#3b82f6'},
-  aura_red:{icon:'❤️',name:'Red Aura',rarity:'rare',type:'aura',price:300,ac:'#ef4444'},
-  aura_purple:{icon:'💜',name:'Purple Aura',rarity:'epic',type:'aura',price:500,ac:'#a78bfa'},
-  aura_gold:{icon:'💛',name:'Gold Aura',rarity:'legendary',type:'aura',price:800,ac:'#fbbf24'},
-  aura_green:{icon:'💚',name:'Nature Aura',rarity:'rare',type:'aura',price:320,ac:'#22c55e'},
-  aura_pink:{icon:'🩷',name:'Pink Aura',rarity:'epic',type:'aura',price:480,ac:'#ec4899'},
-  aura_white:{icon:'🤍',name:'Holy Aura',rarity:'legendary',type:'aura',price:700,ac:'#f1f5f9'},
-  aura_dark:{icon:'🖤',name:'Dark Aura',rarity:'legendary',type:'aura',price:750,ac:'#374151'},
-  aura_rainbow:{icon:'🌈',name:'Rainbow Aura',rarity:'mythic',type:'aura',price:1500,ac:'#f472b6'},
-  nc_gold:{icon:'🟡',name:'Gold Name',rarity:'epic',type:'namecolor',price:400,nc:'#f59e0b'},
-  nc_red:{icon:'🔴',name:'Red Name',rarity:'rare',type:'namecolor',price:250,nc:'#ef4444'},
-  nc_cyan:{icon:'🔵',name:'Cyan Name',rarity:'rare',type:'namecolor',price:250,nc:'#22d3ee'},
-  nc_pink:{icon:'🩷',name:'Pink Name',rarity:'epic',type:'namecolor',price:380,nc:'#ec4899'},
-  nc_green:{icon:'🟢',name:'Green Name',rarity:'uncommon',type:'namecolor',price:180,nc:'#4ade80'},
-  nc_lime:{icon:'🍋',name:'Lime Name',rarity:'uncommon',type:'namecolor',price:200,nc:'#a3e635'},
-  nc_orange:{icon:'🟠',name:'Orange Name',rarity:'rare',type:'namecolor',price:260,nc:'#f97316'},
-  nc_rainbow:{icon:'🌈',name:'Rainbow Name',rarity:'legendary',type:'namecolor',price:900,nc:'#f472b6'},
-  // ── OWNER TAG (shown above name as badge) ──
-  tag_owner:{icon:'👑',name:'OWNER',rarity:'owner',type:'tag',style:'background:linear-gradient(90deg,#c0392b,#922b21);color:#fff;font-weight:900'},
-  tag_z3n0:{icon:'⚡',name:'Z3N0',rarity:'owner',type:'tag',style:'background:linear-gradient(90deg,#6c3483,#ad1457);color:#fff'},
-  tag_mod:{icon:'🛡️',name:'MOD',rarity:'owner',type:'tag',style:'background:#1a5276;color:#fff'},
-  tag_admin:{icon:'🔑',name:'ADMIN',rarity:'owner',type:'tag',style:'background:#7d6608;color:#f9e79f'},
-  tag_dev:{icon:'💻',name:'DEV',rarity:'owner',type:'tag',style:'background:#0e6655;color:#a9dfbf'},
-  tag_vip:{icon:'💎',name:'VIP',rarity:'owner',type:'tag',style:'background:linear-gradient(90deg,#117a65,#6c3483);color:#fff'},
-  tag_pro:{icon:'🏆',name:'PRO',rarity:'owner',type:'tag',style:'background:#6e2f1a;color:#fad7a0'},
-  tag_legend:{icon:'🌟',name:'LEGEND',rarity:'owner',type:'tag',style:'background:linear-gradient(90deg,#d4ac0d,#ca6f1e);color:#000'},
-  tag_og:{icon:'🅾️',name:'OG',rarity:'owner',type:'tag',style:'background:#1c1c2e;color:#d2b4de'},
-  tag_donor:{icon:'💸',name:'DONOR',rarity:'owner',type:'tag',style:'background:#0e6655;color:#76d7c4'},
-  tag_galaxy:{icon:'🌌',name:'GALAXY',rarity:'owner',type:'tag',style:'background:linear-gradient(90deg,#1e1b4b,#4c1d95,#1e1b4b);color:#a5b4fc'},
-  tag_zero:{icon:'0️⃣',name:'ZERO',rarity:'owner',type:'tag',style:'background:#111;color:#fff;border:1px solid #333'},
-  tag_elite:{icon:'💠',name:'ELITE',rarity:'owner',type:'tag',style:'background:linear-gradient(90deg,#0c4a6e,#1e40af);color:#bfdbfe'},
-  tag_traitor:{icon:'🔪',name:'TRAITOR',rarity:'owner',type:'tag',style:'background:linear-gradient(90deg,#7f1d1d,#991b1b);color:#fca5a5'},
-  tag_host:{icon:'🎮',name:'HOST',rarity:'owner',type:'tag',style:'background:linear-gradient(90deg,#1a3a6e,#1e40af);color:#93c5fd'},
-  tag_sus:{icon:'🔴',name:'SUS',rarity:'owner',type:'tag',style:'background:linear-gradient(90deg,#991b1b,#7f1d1d);color:#fca5a5'},
-  tag_boss:{icon:'👹',name:'BOSS',rarity:'owner',type:'tag',style:'background:linear-gradient(90deg,#4a044e,#7f1d1d);color:#f0abfc'},
-};
-
-var ws=null,myId=null,myRole=null,myTasks=[],gs=null,roomCode=null;
-var selColor='#c51111';
-var eHat=null,eSkin=null,eTrail=null,eAura=null,eNC=null,myTags=[];
-var pfId=null,pfTicket=null,pfUser=null,pfCred=0,pfOwned=[];
-var killCDUntil=0;
-var sfilt='all';
-var atask=null;
-var mashCnt=0;
-var patSeq=[],patIn=[],patPhase='watch';
-var wireConns={},wSel=null,wireColors=[],wireLeft=[],wireRight=[];
-var panelTarget=[],panelState=[];
-var pmods={},mySpd=1;
-var trails=[];
-var opSelId=null;
-var sendTick=0;
-var hadVoted=false;
-var meetingStartTime=0,meetingTotalTime=DISC_T;
-var timerInterval=null;
-var meetPhase='disc';
-var pg=null,gsc=null;
-var pSprites={};
-var bodyMarkers=[];
-var trailCanvas=null,trailCtx=null;
-var currentRoomName='';
-
-// ── STARS ──
-(function(){
-  var cv=document.getElementById('stars'),ctx=cv.getContext('2d'),st=[];
-  function rsz(){cv.width=innerWidth;cv.height=innerHeight;st=[];for(var i=0;i<320;i++)st.push({x:Math.random()*cv.width,y:Math.random()*cv.height,r:Math.random()*1.4+.1,a:Math.random()*Math.PI*2,s:Math.random()*.003+.0007});}
-  function dr(){ctx.clearRect(0,0,cv.width,cv.height);for(var i=0;i<st.length;i++){var s=st[i];s.a+=s.s;ctx.globalAlpha=.12+Math.abs(Math.sin(s.a))*.55;ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fill();}ctx.globalAlpha=1;requestAnimationFrame(dr);}
-  window.addEventListener('resize',rsz);rsz();dr();
-})();
-
-function hexToRgb(hex){hex=(hex||'#888').replace('#','');if(hex.length===3)hex=hex[0]+hex[0]+hex[1]+hex[1]+hex[2]+hex[2];var n=parseInt(hex,16);return{r:(n>>16)&255,g:(n>>8)&255,b:n&255};}
-function darken(hex,amt){var c=hexToRgb(hex);return'rgb('+Math.max(0,c.r+amt)+','+Math.max(0,c.g+amt)+','+Math.max(0,c.b+amt)+')';}
-
-function drawCrewmate(ctx,cx,cy,opts){
-  opts=opts||{};
-  var s=opts.scale||1;
-  var col=opts.color||'#c51111';
-  var alive=opts.alive!==false;
-  var alpha=opts.alpha!==undefined?opts.alpha:(alive?1:.28);
-  ctx.save();
-  ctx.globalAlpha=alpha;
-  ctx.translate(cx,cy);
-  if(opts.aura){
-    var ag=ctx.createRadialGradient(0,2*s,1,0,2*s,40*s);
-    ag.addColorStop(0,opts.aura+'66');ag.addColorStop(1,opts.aura+'00');
-    ctx.fillStyle=ag;ctx.beginPath();ctx.arc(0,2*s,40*s,0,Math.PI*2);ctx.fill();
-  }
-  var dark=darken(col,-50);
-  var darker=darken(col,-80);
-  var vDark=darken(col,-100);
-  // Shadow
-  ctx.fillStyle='rgba(0,0,0,0.4)';
-  ctx.beginPath();ctx.ellipse(0,28*s,14*s,4*s,0,0,Math.PI*2);ctx.fill();
-  // Right leg
-  ctx.fillStyle=darker;ctx.beginPath();
-  if(ctx.roundRect){ctx.roundRect(2.5*s,17*s,8*s,13*s,[0,0,4*s,4*s]);}else{ctx.rect(2.5*s,17*s,8*s,13*s);}ctx.fill();
-  ctx.fillStyle=darken(col,-25);ctx.beginPath();
-  if(ctx.roundRect){ctx.roundRect(1*s,16*s,8*s,12*s,[0,0,4*s,4*s]);}else{ctx.rect(1*s,16*s,8*s,12*s);}ctx.fill();
-  // Left leg
-  ctx.fillStyle=darker;ctx.beginPath();
-  if(ctx.roundRect){ctx.roundRect(-9.5*s,15*s,8*s,13*s,[0,0,4*s,4*s]);}else{ctx.rect(-9.5*s,15*s,8*s,13*s);}ctx.fill();
-  ctx.fillStyle=dark;ctx.beginPath();
-  if(ctx.roundRect){ctx.roundRect(-9*s,14*s,8*s,12*s,[0,0,4*s,4*s]);}else{ctx.rect(-9*s,14*s,8*s,12*s);}ctx.fill();
-  // Boots
-  ctx.fillStyle=vDark;ctx.beginPath();
-  if(ctx.roundRect){ctx.roundRect(0*s,25*s,9*s,5*s,[0,0,3*s,3*s]);}else{ctx.rect(0*s,25*s,9*s,5*s);}ctx.fill();
-  ctx.beginPath();
-  if(ctx.roundRect){ctx.roundRect(-10*s,24*s,9*s,5*s,[0,0,3*s,3*s]);}else{ctx.rect(-10*s,24*s,9*s,5*s);}ctx.fill();
-  // Backpack
-  ctx.fillStyle=vDark;ctx.beginPath();
-  if(ctx.roundRect){ctx.roundRect(-22*s,-6*s,11*s,18*s,4*s);}else{ctx.rect(-22*s,-6*s,11*s,18*s);}ctx.fill();
-  ctx.fillStyle='rgba(255,255,255,0.1)';ctx.fillRect(-20*s,-4*s,2.5*s,14*s);
-  // Body shadow
-  ctx.fillStyle=darker;ctx.beginPath();ctx.ellipse(1.5*s,3.5*s,15*s,19.5*s,0,0,Math.PI*2);ctx.fill();
-  // Body
-  ctx.fillStyle=col;ctx.beginPath();ctx.ellipse(0,2*s,14*s,18.5*s,0,0,Math.PI*2);ctx.fill();
-  // Body right shading
-  ctx.fillStyle=dark;ctx.beginPath();ctx.ellipse(5*s,3*s,6*s,16*s,0.15,0,Math.PI*2);ctx.fill();
-  // Body highlight
-  var bg=ctx.createLinearGradient(-8*s,-14*s,4*s,6*s);
-  bg.addColorStop(0,'rgba(255,255,255,0.25)');bg.addColorStop(0.6,'rgba(255,255,255,0.06)');bg.addColorStop(1,'rgba(255,255,255,0)');
-  ctx.fillStyle=bg;ctx.beginPath();ctx.ellipse(-3*s,-1*s,7*s,12*s,-0.2,0,Math.PI*2);ctx.fill();
-  // Head
-  ctx.fillStyle=darker;ctx.beginPath();ctx.arc(1.5*s,-14*s,13.5*s,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle=col;ctx.beginPath();ctx.arc(0,-14.5*s,12.5*s,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle=dark;ctx.beginPath();ctx.arc(4*s,-13*s,7*s,0,Math.PI*2);ctx.fill();
-  var hg=ctx.createRadialGradient(-4*s,-20*s,0,-4*s,-20*s,7*s);
-  hg.addColorStop(0,'rgba(255,255,255,0.28)');hg.addColorStop(1,'rgba(255,255,255,0)');
-  ctx.fillStyle=hg;ctx.beginPath();ctx.arc(-3*s,-19*s,5.5*s,0,Math.PI*2);ctx.fill();
-  // Visor
-  ctx.fillStyle='#071230';ctx.beginPath();ctx.ellipse(3.5*s,-14.5*s,9*s,6*s,-0.1,0,Math.PI*2);ctx.fill();
-  var vg=ctx.createLinearGradient(-2*s,-22*s,11*s,-9*s);
-  vg.addColorStop(0,'#d6f0ff');vg.addColorStop(0.2,'#7ec8ee');vg.addColorStop(0.6,'#2a7bbb');vg.addColorStop(1,'#0a2a5e');
-  ctx.fillStyle=vg;ctx.beginPath();ctx.ellipse(3.5*s,-15*s,8*s,5.5*s,-0.1,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle='rgba(255,255,255,0.85)';ctx.beginPath();ctx.ellipse(-0.5*s,-18.5*s,2.5*s,1.5*s,-0.3,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle='rgba(255,255,255,0.35)';ctx.beginPath();ctx.ellipse(3*s,-11.5*s,1.5*s,0.9*s,0.2,0,Math.PI*2);ctx.fill();
-  ctx.strokeStyle='rgba(0,0,40,0.5)';ctx.lineWidth=0.6*s;
-  ctx.beginPath();ctx.ellipse(3.5*s,-15*s,8*s,5.5*s,-0.1,0,Math.PI*2);ctx.stroke();
-  // Skin
-  if(opts.skin&&CM[opts.skin]){
-    ctx.font=(12*s)+'px serif';ctx.textAlign='center';ctx.textBaseline='middle';
-    ctx.globalAlpha=alive?0.85*alpha:0.35*alpha;ctx.fillText(CM[opts.skin].icon,0,2*s);ctx.globalAlpha=alpha;
-  }
-  if(opts.hat&&CM[opts.hat]){
-    ctx.font=(18*s)+'px serif';ctx.textAlign='center';ctx.textBaseline='bottom';ctx.fillText(CM[opts.hat].icon,1*s,-26*s);
-  }
-  if(!alive){
-    ctx.font=(16*s)+'px serif';ctx.textAlign='center';ctx.textBaseline='middle';
-    ctx.globalAlpha=0.75;ctx.fillText('💀',0,1*s);ctx.globalAlpha=alpha;
-  }
-  ctx.restore();
-}
-
-function redrawPreviews(){
-  [['ward-cv',2.1],['prev-cv',1.6]].forEach(function(info){
-    var cv=document.getElementById(info[0]);if(!cv)return;
-    var ctx=cv.getContext('2d');ctx.clearRect(0,0,cv.width,cv.height);
-    ctx.fillStyle='rgba(0,0,0,.92)';ctx.fillRect(0,0,cv.width,cv.height);
-    drawCrewmate(ctx,cv.width/2,cv.height/2+14,{scale:info[1],color:selColor,hat:eHat,skin:eSkin,aura:eAura&&CM[eAura]?CM[eAura].ac:null});
-  });
-}
-
-function walkable(x,y){
-  // Check a small hitbox around the player's feet (not just center point)
-  var r=5; // collision radius - keep tight for authentic AU feel
-  return WALK.some(function(z){
-    return x>=z.x&&x<=z.x+z.w&&y>=z.y&&y<=z.y+z.h;
-  });
-}
-
-function walkableBox(x,y){
-  // Check all 4 corners of hitbox + center — all must be inside a walk zone
-  var r=6; // slightly larger radius = tighter wall collision
-  var pts=[
-    {x:x,   y:y},
-    {x:x-r, y:y+5},
-    {x:x+r, y:y+5},
-    {x:x-r, y:y-4},
-    {x:x+r, y:y-4},
-  ];
-  return pts.every(function(p){return walkable(p.x,p.y);});
-}
 
 // ── PHASER ──
 function initPhaser(){
@@ -963,13 +656,9 @@ function scUpdate(){
   if(dx&&dy){var d=Math.SQRT2;dx/=d;dy/=d;}
   var nx=Math.max(20,Math.min(MAP_W-20,me.x+dx));
   var ny=Math.max(20,Math.min(MAP_H-20,me.y+dy));
-  if(walkableBox(nx,ny)){
-    me.x=nx; me.y=ny;
-  } else if(walkableBox(nx,me.y)){
-    me.x=nx;
-  } else if(walkableBox(me.x,ny)){
-    me.y=ny;
-  }
+  if(walkableBox(nx,ny)){me.x=nx;me.y=ny;}
+  else if(walkableBox(nx,me.y)){me.x=nx;}
+  else if(walkableBox(me.x,ny)){me.y=ny;}
   movSprite(myId,me.x,me.y);
   gsc.cameras.main.centerOn(me.x,me.y);
   sendTick++;if(sendTick>=2){sendTick=0;wsSend({type:'move',x:me.x,y:me.y});}
@@ -988,16 +677,13 @@ function updRoomLabel(x,y){
   } else {
     el.style.display='none';
   }
-  // Live coordinate display for debugging walk zones
   var cd=document.getElementById('coord-dbg');
-  if(cd){
-    var me2=gs&&gs.players&&gs.players[myId];
-    if(me2) cd.textContent='x:'+Math.round(me2.x)+' y:'+Math.round(me2.y);
+  if(cd&&gs&&gs.players&&gs.players[myId]){
+    var _me=gs.players[myId];
+    cd.style.display='block';
+    cd.textContent='x:'+Math.round(_me.x)+' y:'+Math.round(_me.y);
   }
 }
-
-// ══════════════════════════════════════
-// SKELD MAP — AUTHENTIC AU RECREATION
 // KEY FIX: No strokeArc - use beginPath + arc + stroke
 // ══════════════════════════════════════
 function buildSkeldMap(sc){

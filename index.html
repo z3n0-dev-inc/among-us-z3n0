@@ -229,6 +229,7 @@ body{font-family:'Nunito',sans-serif;user-select:none;color:#fff;touch-action:no
 <div id="banner"><div class="banner-txt" id="banner-txt"></div><div class="banner-sub" id="banner-sub"></div></div>
 <div id="notif-wrap"></div>
 <div id="room-name-overlay" id="room-name-overlay"></div>
+<div id="coord-dbg" style="position:fixed;top:50px;left:50%;transform:translateX(-50%);z-index:999;background:rgba(0,0,0,.85);color:#00ff88;font-family:monospace;font-size:13px;font-weight:900;padding:4px 12px;border-radius:6px;border:1px solid #00ff88;pointer-events:none;letter-spacing:1px"></div>
 
 <!-- AUTH -->
 <div class="screen" id="auth-scr">
@@ -495,131 +496,125 @@ var COLORS = [
   '#6b2fbb','#71491e','#38fedc','#50ef39'
 ];
 
-// ── WALK ZONES ──
-// Zones are derived from actual room image bounds (cx±w/2, cy±h/2).
-// Corridors are narrow strips at doorway openings only — walls block everything else.
-// Room bounds reference:
-//   Upper Engine:  x:60–280,   y:47–207
-//   Reactor:       x:60–285,   y:200–490
-//   Lower Engine:  x:60–280,   y:538–718
-//   Cafeteria:     x:342–662,  y:47–297
-//   Weapons:       x:809–999,  y:47–247
-//   Navigation:    x:1092–1340,y:47–257
-//   Shields:       x:1080–1340,y:312–512
-//   Comms:         x:1080–1340,y:592–762
-//   Security:      x:350–552,  y:358–528
-//   MedBay:        x:617–803,  y:278–446
-//   O2:            x:800–986,  y:278–446
-//   Storage:       x:704–896,  y:498–750
-//   Electrical:    x:342–562,  y:572–742
-//   Admin:         x:854–1044, y:490–690
+// ── WALK ZONES — pixel-perfect match to every drawHallway() + room image ──
+// Rule: drawHallway(rx,ry,rw,rh) → {x:rx, y:ry, w:rw, h:rh}
+// Room images: cx,cy = center, dw,dh = size → x:cx-dw/2, y:cy-dh/2, w:dw, h:dh
+// Every single corridor segment IS listed here — no gaps, no guessing.
 var WALK = [
+  // ══ ROOMS (from ROOMS array: cx,cy,dw,dh → top-left x/y) ══
+  // Upper Engine:  cx170,cy127, 220×160
+  {x:60,   y:47,   w:220,  h:160,  n:'Upper Engine'},
+  // Reactor:       cx172,cy345, 225×290
+  {x:60,   y:200,  w:218,  h:290,  n:'Reactor'},
+  // Lower Engine:  cx170,cy628, 220×180
+  {x:60,   y:538,  w:220,  h:180,  n:'Lower Engine'},
+  // Cafeteria:     cx502,cy172, 320×250
+  {x:342,  y:47,   w:320,  h:250,  n:'Cafeteria'},
+  // Weapons/SecHall: cx904,cy147, 190×200
+  {x:809,  y:47,   w:190,  h:200,  n:'Weapons'},
+  // Navigation:    cx1216,cy152, 248×210
+  {x:1092, y:47,   w:248,  h:210,  n:'Navigation'},
+  // Shields:       cx1210,cy412, 260×200
+  {x:1080, y:312,  w:260,  h:200,  n:'Shields'},
+  // Communications: cx1210,cy677, 260×170
+  {x:1080, y:592,  w:260,  h:170,  n:'Communications'},
+  // Security:      cx451,cy443, 202×170
+  {x:350,  y:358,  w:202,  h:170,  n:'Security'},
+  // MedBay:        cx710,cy362, 186×168
+  {x:617,  y:278,  w:186,  h:168,  n:'MedBay'},
+  // O2:            cx893,cy362, 186×168
+  {x:800,  y:278,  w:186,  h:168,  n:'O2'},
+  // Electrical:    cx452,cy657, 220×170
+  {x:342,  y:572,  w:220,  h:170,  n:'Electrical'},
+  // Storage:       cx800,cy624, 192×252
+  {x:704,  y:498,  w:192,  h:252,  n:'Storage'},
+  // Admin:         cx949,cy590, 190×200
+  {x:854,  y:490,  w:190,  h:200,  n:'Admin'},
 
-  // ── UPPER ENGINE ──
-  {x:62,  y:49,  w:216, h:156, n:'Upper Engine'},
-  // Upper Engine right door → cafeteria top hall (x:278–350, y:92–142)
-  {x:278, y:92,  w:72,  h:50,  n:'Hall'},
-  // Upper Engine bottom door → left vertical junction (x:266–330, y:200–248)
-  {x:266, y:200, w:64,  h:52,  n:'Hall'},
+  // ══ HALLWAYS — every single drawHallway(rx,ry,rw,rh) call, verbatim ══
+  // Left side
+  {x:278,  y:92,   w:72,   h:50,   n:'Hall'},  // UE → Caf top
+  {x:266,  y:200,  w:64,   h:52,   n:'Hall'},  // UE bottom → left vert
+  {x:266,  y:248,  w:64,   h:244,  n:'Hall'},  // Left vert main
+  {x:266,  y:490,  w:64,   h:52,   n:'Hall'},  // Left vert gap fix
+  {x:266,  y:538,  w:64,   h:56,   n:'Hall'},  // Left vert → LE
 
-  // ── REACTOR ──
-  {x:62,  y:202, w:202, h:286, n:'Reactor'},
+  // Top
+  {x:655,  y:140,  w:158,  h:64,   n:'Hall'},  // Caf → Weapons
+  {x:420,  y:290,  w:80,   h:72,   n:'Hall'},  // Caf bottom → Sec top
+  {x:993,  y:49,   w:103,  h:52,   n:'Hall'},  // Weapons → Nav
+  {x:843,  y:240,  w:92,   h:40,   n:'Hall'},  // Weapons bottom → right vert
+  {x:1085, y:250,  w:52,   h:68,   n:'Hall'},  // Nav bottom → right vert
 
-  // ── LOWER ENGINE ──
-  {x:62,  y:540, w:216, h:176, n:'Lower Engine'},
+  // Right vertical
+  {x:1072, y:250,  w:64,   h:68,   n:'Hall'},  // Nav → Shields top
+  {x:1072, y:312,  w:64,   h:202,  n:'Hall'},  // Right vert mid
+  {x:1072, y:510,  w:64,   h:86,   n:'Hall'},  // Shields → Comms
 
-  // ── LEFT VERTICAL CORRIDOR ──
-  // Runs right of Reactor along x:266–330
-  // Top junction (Upper Engine bottom meets Reactor top-right corner)
-  {x:266, y:200, w:64,  h:52,  n:'Hall'},
-  // Main left vert alongside Reactor right wall (y:248–490)
-  {x:266, y:248, w:64,  h:244, n:'Hall'},
-  // CRITICAL: Gap between Reactor bottom(y:490) and Lower Engine top(y:538)
-  {x:266, y:490, w:64,  h:52,  n:'Hall'},
-  // Lower junction into Lower Engine top-right (y:538–592)
-  {x:266, y:538, w:64,  h:56,  n:'Hall'},
+  // Center
+  {x:394,  y:358,  w:64,   h:64,   n:'Hall'},  // Sec top door
+  {x:548,  y:390,  w:74,   h:56,   n:'Hall'},  // Sec right → MedBay
+  {x:394,  y:522,  w:64,   h:98,   n:'Hall'},  // Sec bottom → bottom hall
+  {x:548,  y:316,  w:74,   h:56,   n:'Hall'},  // MedBay left connector
+  {x:644,  y:244,  w:72,   h:40,   n:'Hall'},  // MedBay top → Caf
+  {x:795,  y:316,  w:12,   h:56,   n:'Hall'},  // MedBay/O2 connector
+  {x:839,  y:442,  w:80,   h:60,   n:'Hall'},  // O2 bottom → Storage
 
-  // ── CAFETERIA ──
-  {x:344, y:49,  w:316, h:246, n:'Cafeteria'},
-  // Cafeteria right door → Weapons (x:655–815, y:140–204)
-  {x:655, y:140, w:158, h:64,  n:'Hall'},
-  // Cafeteria bottom door → Security top corridor (x:420–500, y:290–358)
-  {x:420, y:290, w:80,  h:72,  n:'Hall'},
+  // Bottom
+  {x:262,  y:616,  w:500,  h:56,   n:'Hall'},  // Main bottom hall
+  {x:366,  y:564,  w:62,   h:56,   n:'Hall'},  // Electrical top
+  {x:702,  y:528,  w:28,   h:92,   n:'Hall'},  // Storage top connector
+  {x:558,  y:614,  w:148,  h:56,   n:'Hall'},  // Elec → Storage bottom
+  {x:750,  y:440,  w:84,   h:62,   n:'Hall'},  // Storage top ↔ O2 bottom
+  {x:892,  y:532,  w:66,   h:60,   n:'Hall'},  // Storage → Admin
+  {x:796,  y:532,  w:62,   h:60,   n:'Hall'},  // Admin left connector
+  {x:1040, y:564,  w:46,   h:106,  n:'Hall'},  // Admin → Comms
 
-  // ── WEAPONS / SEC-HALL ──
-  {x:811, y:49,  w:186, h:196, n:'Weapons'},
-  // Weapons → Nav top (x:993–1097, y:49–101)
-  {x:993, y:49,  w:103, h:52,  n:'Hall'},
-  // Weapons bottom → right vert junction (x:843–935, y:240–278)
-  {x:843, y:240, w:92,  h:40,  n:'Hall'},
-
-  // ── NAVIGATION ──
-  {x:1094, y:49,  w:244, h:206, n:'Navigation'},
-  // Nav bottom-left door → right vertical (x:1085–1137, y:250–314)
-  {x:1085, y:250, w:52,  h:68,  n:'Hall'},
-
-  // ── RIGHT VERTICAL CORRIDOR ──
-  {x:1072, y:250, w:64,  h:68,  n:'Hall'},  // Nav bottom → Shields top
-  {x:1072, y:312, w:64,  h:202, n:'Hall'},  // Through Shields
-  {x:1072, y:510, w:64,  h:86,  n:'Hall'},  // Shields bottom → Comms top
-
-  // ── SHIELDS ──
-  {x:1082, y:314, w:256, h:196, n:'Shields'},
-
-  // ── COMMUNICATIONS ──
-  {x:1082, y:594, w:256, h:166, n:'Communications'},
-
-  // ── SECURITY ──
-  {x:352, y:360, w:198, h:166, n:'Security'},
-  // Security top door → Cafeteria bottom corridor (x:394–458, y:290–362)
-  // (overlaps with Cafeteria bottom corridor above — they join)
-  {x:394, y:358, w:64,  h:4,   n:'Hall'},
-  // Security right door → MedBay left corridor (x:548–621, y:390–448)
-  {x:548, y:390, w:74,  h:56,  n:'Hall'},
-  // Security bottom door → bottom main hall (x:394–458, y:522–618)
-  {x:394, y:522, w:64,  h:98,  n:'Hall'},
-
-  // ── MEDBAY ──
-  {x:619, y:280, w:182, h:164, n:'MedBay'},
-  // MedBay left door ↔ Security right (x:548–621, y:316–372)
-  {x:548, y:316, w:74,  h:56,  n:'Hall'},
-  // MedBay top door → Cafeteria bottom (x:644–716, y:244–282)
-  {x:644, y:244, w:72,  h:40,  n:'Hall'},
-
-  // ── O2 ──
-  {x:802, y:280, w:182, h:164, n:'O2'},
-  // O2 left door ↔ MedBay right (x:795–809, y:316–372)
-  {x:795, y:316, w:12,  h:56,  n:'Hall'},
-  // O2 bottom door → Storage top (x:839–919, y:442–500)
-  {x:839, y:442, w:80,  h:60,  n:'Hall'},
-
-  // ── BOTTOM MAIN HALL (x:262–762, y:616–672) ──
-  {x:262, y:616, w:500, h:56,  n:'Hall'},
-  // Electrical top connector (x:366–430, y:564–618)
-  {x:366, y:564, w:62,  h:56,  n:'Hall'},
-  // Storage top-left connector (x:702–730, y:528–618)
-  {x:702, y:528, w:28,  h:92,  n:'Hall'},
-
-  // ── ELECTRICAL ──
-  {x:344, y:574, w:216, h:166, n:'Electrical'},
-  // Electrical right → Storage bottom hall (x:558–706, y:614–670)
-  {x:558, y:614, w:148, h:56,  n:'Hall'},
-
-  // ── STORAGE ──
-  {x:706, y:500, w:188, h:248, n:'Storage'},
-  // Storage top door ↔ O2 bottom (x:750–836, y:440–502)
-  {x:750, y:440, w:84,  h:62,  n:'Hall'},
-  // Storage right door → Admin (x:892–858, y:532–594)
-  {x:892, y:532, w:66,  h:60,  n:'Hall'},
-
-  // ── ADMIN ──
-  {x:856, y:492, w:186, h:196, n:'Admin'},
-  // Admin left door ↔ Storage right (x:796–858, y:532–592)
-  {x:796, y:532, w:62,  h:60,  n:'Hall'},
-  // Admin right door → Comms (x:1040–1086, y:564–670)
-  {x:1040, y:564, w:46,  h:106, n:'Hall'},
-
+  // ══ SEAM FILLERS — tiny patches that close pixel-gap joints between zones ══
+  // Without these, players get snagged at room↔hallway seams
+  {x:278,  y:47,   w:64,   h:50,   n:'Hall'},  // UE top-right corner → top hall join
+  {x:266,  y:142,  w:64,   h:60,   n:'Hall'},  // UE bottom gap filler (y:142–200)
+  {x:330,  y:200,  w:14,   h:52,   n:'Hall'},  // Left vert → Reactor right wall join
+  {x:266,  y:47,   w:14,   h:160,  n:'Hall'},  // Left edge of UE-to-Reactor join
+  {x:394,  y:290,  w:64,   h:72,   n:'Hall'},  // Caf bottom exact center filler
+  {x:813,  y:240,  w:32,   h:40,   n:'Hall'},  // Weapons bottom-left seam
+  {x:617,  y:316,  w:4,    h:56,   n:'Hall'},  // MedBay left wall door edge
+  {x:800,  y:316,  w:4,    h:56,   n:'Hall'},  // O2 left wall door edge
+  {x:704,  y:440,  w:50,   h:60,   n:'Hall'},  // Storage top-left seam
+  {x:894,  y:490,  w:4,    h:44,   n:'Hall'},  // Admin top-left seam
+  {x:1080, y:250,  w:14,   h:64,   n:'Hall'},  // Right vert left-edge seam
+  {x:1136, y:250,  w:4,    h:346,  n:'Hall'},  // Right vert right-edge seam
+  {x:262,  y:572,  w:106,  h:46,   n:'Hall'},  // Elec top-left → bottom hall join
+  {x:342,  y:614,  w:26,   h:58,   n:'Hall'},  // Elec right edge → bottom hall
 ];
+
+// Player hitbox half-sizes
+var PHBX = 9;
+var PHBY = 9;
+
+function walkable(x,y){
+  for(var i=0;i<WALK.length;i++){
+    var z=WALK[i];
+    if(x>=z.x && x<=z.x+z.w && y>=z.y && y<=z.y+z.h) return true;
+  }
+  return false;
+}
+
+function walkableBox(px,py){
+  // All 8 points around the player hitbox must be inside WALK zones
+  var hw=PHBX, hh=PHBY;
+  return (
+    walkable(px,      py      ) &&
+    walkable(px-hw,   py      ) &&
+    walkable(px+hw,   py      ) &&
+    walkable(px,      py-hh   ) &&
+    walkable(px,      py+hh   ) &&
+    walkable(px-hw+2, py-hh+2 ) &&
+    walkable(px+hw-2, py-hh+2 ) &&
+    walkable(px-hw+2, py+hh-2 ) &&
+    walkable(px+hw-2, py+hh-2 )
+  );
+}
 
 var TLOCS = [
   {x:502,y:150,n:'Cafeteria'},   // Cafeteria - near table
@@ -889,25 +884,12 @@ function walkableBox(x,y){
   return pts.every(function(p){return walkable(p.x,p.y);});
 }
 
-// ── BARRIER COLLISION (AABB rects, no physics sprites) ──
-var barrierRects=[];
-function addBarrier(cx,cy,w,h){barrierRects.push({x:cx-w/2,y:cy-h/2,w:w,h:h});}
-function playerHitsBarrier(px,py,pr){
-  for(var i=0;i<barrierRects.length;i++){
-    var b=barrierRects[i];
-    if(px+pr>b.x&&px-pr<b.x+b.w&&py+pr>b.y&&py-pr<b.y+b.h)return true;
-  }
-  return false;
-}
-var PLAYER_R=16; // player collision half-size
-
 // ── PHASER ──
 function initPhaser(){
   if(pg)return;
   pg=new Phaser.Game({
     type:Phaser.CANVAS,width:innerWidth,height:innerHeight,
     transparent:true,parent:document.body,
-    physics:{default:'arcade',arcade:{debug:false}},
     scene:{preload:scPreload,create:scCreate,update:scUpdate}
   });
   setTimeout(function(){if(pg&&pg.canvas)pg.canvas.style.cssText='position:fixed;top:0;left:0;z-index:5;pointer-events:none';},200);
@@ -953,30 +935,6 @@ function scCreate(){
     right:Phaser.Input.Keyboard.KeyCodes.D
   });
   setupTrailCanvas();
-
-  // ── BUILD BARRIER RECTS (room walls, blocking walking through solid walls) ──
-  barrierRects=[];
-  // Outer map boundary
-  addBarrier(MAP_W/2,10,MAP_W,20);
-  addBarrier(MAP_W/2,MAP_H-10,MAP_W,20);
-  addBarrier(10,MAP_H/2,20,MAP_H);
-  addBarrier(MAP_W-10,MAP_H/2,20,MAP_H);
-  // Room outer walls (center x, center y, width, height)
-  // Each room gets 4 thin wall strips around its perimeter
-  [
-    // [cx, cy, roomW, roomH]
-    [172,345,225,290],[170,127,220,160],[170,628,220,180],
-    [502,172,320,250],[451,443,202,170],[710,362,186,168],
-    [452,657,220,170],[800,624,192,252],[949,590,190,200],
-    [1210,677,260,170],[1210,412,260,200],[893,362,186,168],
-    [1216,152,248,210],[904,147,190,200],
-  ].forEach(function(r){
-    var cx=r[0],cy=r[1],rw=r[2],rh=r[3],t=14;
-    addBarrier(cx,cy-rh/2,rw,t); // top
-    addBarrier(cx,cy+rh/2,rw,t); // bottom
-    addBarrier(cx-rw/2,cy,t,rh); // left
-    addBarrier(cx+rw/2,cy,t,rh); // right
-  });
   // Build map once images loaded
   var checkReady=setInterval(function(){
     if(gsc._roomImgDone&&gsc._roomImgDone()){
@@ -1003,20 +961,15 @@ function scUpdate(){
   if(k.down.isDown||window.mD)dy+=spd;
   if(!dx&&!dy){updKillBtn();return;}
   if(dx&&dy){var d=Math.SQRT2;dx/=d;dy/=d;}
-  var nx=Math.max(62,Math.min(MAP_W-62,me.x+dx));
-  var ny=Math.max(52,Math.min(MAP_H-52,me.y+dy));
-
-  // Combined collision: WALK zones + barrier rects
-  function blocked(px,py){return playerHitsBarrier(px,py,PLAYER_R)||!walkableBox(px,py);}
-  if(!blocked(nx,ny)){
-    me.x=nx;me.y=ny;
-  } else if(!blocked(nx,me.y)){
+  var nx=Math.max(20,Math.min(MAP_W-20,me.x+dx));
+  var ny=Math.max(20,Math.min(MAP_H-20,me.y+dy));
+  if(walkableBox(nx,ny)){
+    me.x=nx; me.y=ny;
+  } else if(walkableBox(nx,me.y)){
     me.x=nx;
-  } else if(!blocked(me.x,ny)){
+  } else if(walkableBox(me.x,ny)){
     me.y=ny;
   }
-  // else fully blocked, don't move
-  me.x=nx;me.y=ny;
   movSprite(myId,me.x,me.y);
   gsc.cameras.main.centerOn(me.x,me.y);
   sendTick++;if(sendTick>=2){sendTick=0;wsSend({type:'move',x:me.x,y:me.y});}
@@ -1034,6 +987,12 @@ function updRoomLabel(x,y){
     currentRoomName=name;
   } else {
     el.style.display='none';
+  }
+  // Live coordinate display for debugging walk zones
+  var cd=document.getElementById('coord-dbg');
+  if(cd){
+    var me2=gs&&gs.players&&gs.players[myId];
+    if(me2) cd.textContent='x:'+Math.round(me2.x)+' y:'+Math.round(me2.y);
   }
 }
 

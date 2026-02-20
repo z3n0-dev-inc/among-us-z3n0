@@ -413,33 +413,15 @@ body{font-family:'Nunito',sans-serif;user-select:none;color:#fff;touch-action:no
       <button onclick="closeWard()" style="margin-left:auto;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.18);color:#fff;width:28px;height:28px;border-radius:7px;cursor:pointer;font-size:13px;font-weight:900">✕</button>
     </div>
     <div class="ward-layout">
-      <!-- Left: preview + credits + active tags -->
-      <div style="display:flex;flex-direction:column;align-items:center;gap:9px;flex-shrink:0;min-width:136px">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:9px;flex-shrink:0">
         <canvas id="ward-cv" width="136" height="180" style="border-radius:12px;background:rgba(0,0,0,.4);border:2px solid rgba(255,255,255,.1)"></canvas>
         <div class="cred-badge">💰 <span id="ward-cred">0</span></div>
         <div style="width:100%">
-          <div style="font-size:8px;color:rgba(255,255,255,.22);margin-bottom:5px;font-weight:900;text-transform:uppercase;letter-spacing:.8px">🏷️ Active Tags</div>
-          <div id="ward-active-tags" style="display:flex;flex-wrap:wrap;gap:4px;min-height:22px;align-items:center"></div>
+          <div style="font-size:8px;color:rgba(255,255,255,.22);margin-bottom:4px;font-weight:900">🏷️ Tags</div>
+          <div id="ward-tags" style="display:flex;flex-wrap:wrap;gap:3px"></div>
         </div>
       </div>
-      <!-- Right: tab panel -->
-      <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:0">
-        <!-- Tab buttons -->
-        <div style="display:flex;gap:4px;margin-bottom:12px;background:rgba(0,0,0,.3);border:1.5px solid rgba(255,255,255,.1);border-radius:8px;padding:3px">
-          <button id="ward-tab-cosmetics" onclick="switchWardTab('cosmetics')"
-            style="flex:1;padding:8px 6px;border-radius:6px;border:none;font-size:9px;font-weight:900;cursor:pointer;font-family:'Nunito',sans-serif;text-transform:uppercase;letter-spacing:.5px;transition:all .14s;background:rgba(255,255,255,.1);color:#fff">
-            👗 Cosmetics
-          </button>
-          <button id="ward-tab-tags" onclick="switchWardTab('tags')"
-            style="flex:1;padding:8px 6px;border-radius:6px;border:none;font-size:9px;font-weight:900;cursor:pointer;font-family:'Nunito',sans-serif;text-transform:uppercase;letter-spacing:.5px;transition:all .14s;background:transparent;color:rgba(255,255,255,.4)">
-            🏷️ Tags
-          </button>
-        </div>
-        <!-- Cosmetics panel -->
-        <div id="ward-cosmetics-panel" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;align-content:start;max-height:62vh;overflow-y:auto;padding-right:4px"></div>
-        <!-- Tags panel -->
-        <div id="ward-tags-panel" style="display:none;flex-direction:column;gap:0;max-height:62vh;overflow-y:auto;padding-right:4px"></div>
-      </div>
+      <div id="ward-slots" style="flex:1;display:grid;grid-template-columns:repeat(3,1fr);gap:6px;align-content:start;max-height:70vh;overflow-y:auto;padding-right:4px"></div>
     </div>
   </div>
 </div>
@@ -513,150 +495,129 @@ var COLORS = [
   '#6b2fbb','#71491e','#38fedc','#50ef39'
 ];
 
-// ── WALK ZONES (Skeld-accurate, fully connected, no gaps) ──
-// All zones overlap at entrances so there are zero dead-ends or floating rooms.
-// Room interiors are generous (players can move freely inside).
-// Corridors are wide enough to walk through comfortably.
+// ── WALK ZONES ──
+// Zones are derived from actual room image bounds (cx±w/2, cy±h/2).
+// Corridors are narrow strips at doorway openings only — walls block everything else.
+// Room bounds reference:
+//   Upper Engine:  x:60–280,   y:47–207
+//   Reactor:       x:60–285,   y:200–490
+//   Lower Engine:  x:60–280,   y:538–718
+//   Cafeteria:     x:342–662,  y:47–297
+//   Weapons:       x:809–999,  y:47–247
+//   Navigation:    x:1092–1340,y:47–257
+//   Shields:       x:1080–1340,y:312–512
+//   Comms:         x:1080–1340,y:592–762
+//   Security:      x:350–552,  y:358–528
+//   MedBay:        x:617–803,  y:278–446
+//   O2:            x:800–986,  y:278–446
+//   Storage:       x:704–896,  y:498–750
+//   Electrical:    x:342–562,  y:572–742
+//   Admin:         x:854–1044, y:490–690
 var WALK = [
 
-  // ══════════════════════════════════════
-  //  CAFETERIA  (top-center)
-  // ══════════════════════════════════════
-  {x:342, y:47,  w:320, h:250, n:'Cafeteria'},
-  // Cafeteria → Weapons hall (top horizontal corridor)
-  {x:650, y:180, w:180, h:68,  n:'Cafeteria'},
-  // Cafeteria bottom → MedBay corridor
-  {x:420, y:268, w:140, h:42,  n:'Cafeteria'},
+  // ── UPPER ENGINE ──
+  {x:62,  y:49,  w:216, h:156, n:'Upper Engine'},
+  // Upper Engine right door → cafeteria top hall (x:278–350, y:92–142)
+  {x:278, y:92,  w:72,  h:50,  n:'Hall'},
+  // Upper Engine bottom door → left vertical junction (x:266–330, y:200–248)
+  {x:266, y:200, w:64,  h:52,  n:'Hall'},
 
-  // ══════════════════════════════════════
-  //  WEAPONS / SEC-HALL  (top-right of caf)
-  // ══════════════════════════════════════
-  {x:809, y:47,  w:190, h:200, n:'Weapons'},
-  // Weapons → Nav top hall
-  {x:989, y:47,  w:115, h:56,  n:'Hall'},
-  // Weapons bottom → nav lower corridor
-  {x:840, y:240, w:100, h:40,  n:'Hall'},
+  // ── REACTOR ──
+  {x:62,  y:202, w:202, h:286, n:'Reactor'},
 
-  // ══════════════════════════════════════
-  //  NAVIGATION  (top-right)
-  // ══════════════════════════════════════
-  {x:1092, y:47, w:248, h:210, n:'Navigation'},
-  // Nav → right vertical corridor
-  {x:1082, y:230, w:52, h:80,  n:'Hall'},
+  // ── LOWER ENGINE ──
+  {x:62,  y:540, w:216, h:176, n:'Lower Engine'},
 
-  // ══════════════════════════════════════
-  //  RIGHT VERTICAL CORRIDOR
-  //  Navigation-bottom → Shields-top → Comms-top
-  // ══════════════════════════════════════
-  {x:1068, y:246, w:72, h:100, n:'Hall'},
-  {x:1068, y:310, w:72, h:80,  n:'Hall'},
-  {x:1068, y:490, w:72, h:110, n:'Hall'},
+  // ── LEFT VERTICAL CORRIDOR ──
+  // Runs right of Reactor along x:266–330
+  // Top junction (Upper Engine bottom meets Reactor top-right corner)
+  {x:266, y:200, w:64,  h:52,  n:'Hall'},
+  // Main left vert alongside Reactor right wall (y:248–490)
+  {x:266, y:248, w:64,  h:244, n:'Hall'},
+  // CRITICAL: Gap between Reactor bottom(y:490) and Lower Engine top(y:538)
+  {x:266, y:490, w:64,  h:52,  n:'Hall'},
+  // Lower junction into Lower Engine top-right (y:538–592)
+  {x:266, y:538, w:64,  h:56,  n:'Hall'},
 
-  // ══════════════════════════════════════
-  //  SHIELDS  (right side, mid)
-  // ══════════════════════════════════════
-  {x:1080, y:312, w:260, h:200, n:'Shields'},
+  // ── CAFETERIA ──
+  {x:344, y:49,  w:316, h:246, n:'Cafeteria'},
+  // Cafeteria right door → Weapons (x:655–815, y:140–204)
+  {x:655, y:140, w:158, h:64,  n:'Hall'},
+  // Cafeteria bottom door → Security top corridor (x:420–500, y:290–358)
+  {x:420, y:290, w:80,  h:72,  n:'Hall'},
 
-  // ══════════════════════════════════════
-  //  COMMUNICATIONS  (right side, lower)
-  // ══════════════════════════════════════
-  {x:1080, y:592, w:260, h:170, n:'Communications'},
+  // ── WEAPONS / SEC-HALL ──
+  {x:811, y:49,  w:186, h:196, n:'Weapons'},
+  // Weapons → Nav top (x:993–1097, y:49–101)
+  {x:993, y:49,  w:103, h:52,  n:'Hall'},
+  // Weapons bottom → right vert junction (x:843–935, y:240–278)
+  {x:843, y:240, w:92,  h:40,  n:'Hall'},
 
-  // ══════════════════════════════════════
-  //  LEFT VERTICAL CORRIDOR
-  //  Upper Engine ↔ Reactor ↔ Lower Engine
-  // ══════════════════════════════════════
-  // Upper engine right → top of left vert
-  {x:252, y:165, w:108, h:76,  n:'Hall'},
-  // Left vert main (Reactor side)
-  {x:260, y:238, w:76,  h:200, n:'Hall'},
-  // Left vert lower (connects to Lower Engine)
-  {x:260, y:438, w:76,  h:200, n:'Hall'},
+  // ── NAVIGATION ──
+  {x:1094, y:49,  w:244, h:206, n:'Navigation'},
+  // Nav bottom-left door → right vertical (x:1085–1137, y:250–314)
+  {x:1085, y:250, w:52,  h:68,  n:'Hall'},
 
-  // ══════════════════════════════════════
-  //  UPPER ENGINE  (top-left)
-  // ══════════════════════════════════════
-  {x:60,  y:47,  w:220, h:160, n:'Upper Engine'},
-  // Upper Engine → cafeteria top hall
-  {x:264, y:90,  w:88,  h:55,  n:'Hall'},
+  // ── RIGHT VERTICAL CORRIDOR ──
+  {x:1072, y:250, w:64,  h:68,  n:'Hall'},  // Nav bottom → Shields top
+  {x:1072, y:312, w:64,  h:202, n:'Hall'},  // Through Shields
+  {x:1072, y:510, w:64,  h:86,  n:'Hall'},  // Shields bottom → Comms top
 
-  // ══════════════════════════════════════
-  //  LOWER ENGINE  (bottom-left)
-  // ══════════════════════════════════════
-  {x:60,  y:538, w:220, h:180, n:'Lower Engine'},
+  // ── SHIELDS ──
+  {x:1082, y:314, w:256, h:196, n:'Shields'},
 
-  // ══════════════════════════════════════
-  //  REACTOR  (left side, center)
-  // ══════════════════════════════════════
-  {x:60,  y:200, w:225, h:290, n:'Reactor'},
+  // ── COMMUNICATIONS ──
+  {x:1082, y:594, w:256, h:166, n:'Communications'},
 
-  // ══════════════════════════════════════
-  //  TOP HORIZONTAL CORRIDORS
-  //  (Cafeteria → Weapons area)
-  // ══════════════════════════════════════
-  // Already handled above via cafeteria overlap
+  // ── SECURITY ──
+  {x:352, y:360, w:198, h:166, n:'Security'},
+  // Security top door → Cafeteria bottom corridor (x:394–458, y:290–362)
+  // (overlaps with Cafeteria bottom corridor above — they join)
+  {x:394, y:358, w:64,  h:4,   n:'Hall'},
+  // Security right door → MedBay left corridor (x:548–621, y:390–448)
+  {x:548, y:390, w:74,  h:56,  n:'Hall'},
+  // Security bottom door → bottom main hall (x:394–458, y:522–618)
+  {x:394, y:522, w:64,  h:98,  n:'Hall'},
 
-  // ══════════════════════════════════════
-  //  SECURITY  (center-left)
-  // ══════════════════════════════════════
-  {x:350, y:358, w:202, h:170, n:'Security'},
-  // Security top → left vert
-  {x:390, y:286, w:70,  h:76,  n:'Hall'},
-  // Security right → MedBay/O2 corridor
-  {x:548, y:378, w:80,  h:70,  n:'Hall'},
+  // ── MEDBAY ──
+  {x:619, y:280, w:182, h:164, n:'MedBay'},
+  // MedBay left door ↔ Security right (x:548–621, y:316–372)
+  {x:548, y:316, w:74,  h:56,  n:'Hall'},
+  // MedBay top door → Cafeteria bottom (x:644–716, y:244–282)
+  {x:644, y:244, w:72,  h:40,  n:'Hall'},
 
-  // ══════════════════════════════════════
-  //  MEDBAY  (center)
-  // ══════════════════════════════════════
-  {x:622, y:290, w:176, h:150, n:'MedBay'},
-  // MedBay left → Security corridor
-  {x:548, y:316, w:80,  h:54,  n:'Hall'},
-  // MedBay top → Cafeteria
-  {x:645, y:250, w:70,  h:44,  n:'Hall'},
+  // ── O2 ──
+  {x:802, y:280, w:182, h:164, n:'O2'},
+  // O2 left door ↔ MedBay right (x:795–809, y:316–372)
+  {x:795, y:316, w:12,  h:56,  n:'Hall'},
+  // O2 bottom door → Storage top (x:839–919, y:442–500)
+  {x:839, y:442, w:80,  h:60,  n:'Hall'},
 
-  // ══════════════════════════════════════
-  //  O2  (center-right of MedBay)
-  // ══════════════════════════════════════
-  {x:804, y:290, w:178, h:150, n:'O2'},
-  // O2 left → MedBay/main connector
-  {x:796, y:316, w:14,  h:54,  n:'Hall'},
-  // O2 bottom → Admin corridor
-  {x:838, y:434, w:88,  h:64,  n:'Hall'},
+  // ── BOTTOM MAIN HALL (x:262–762, y:616–672) ──
+  {x:262, y:616, w:500, h:56,  n:'Hall'},
+  // Electrical top connector (x:366–430, y:564–618)
+  {x:366, y:564, w:62,  h:56,  n:'Hall'},
+  // Storage top-left connector (x:702–730, y:528–618)
+  {x:702, y:528, w:28,  h:92,  n:'Hall'},
 
-  // ══════════════════════════════════════
-  //  BOTTOM HORIZONTAL CORRIDOR
-  //  Lower Engine → Electrical → Storage → Admin
-  // ══════════════════════════════════════
-  {x:260, y:614, w:500, h:58,  n:'Hall'},
-  // Connector from bottom hall up to Electrical
-  {x:360, y:560, w:68,  h:60,  n:'Hall'},
-  // Connector from bottom hall up to Storage
-  {x:698, y:524, w:32,  h:100, n:'Hall'},
+  // ── ELECTRICAL ──
+  {x:344, y:574, w:216, h:166, n:'Electrical'},
+  // Electrical right → Storage bottom hall (x:558–706, y:614–670)
+  {x:558, y:614, w:148, h:56,  n:'Hall'},
 
-  // ══════════════════════════════════════
-  //  ELECTRICAL  (bottom-center-left)
-  // ══════════════════════════════════════
-  {x:342, y:572, w:220, h:170, n:'Electrical'},
-  // Electrical right → Storage corridor
-  {x:558, y:610, w:150, h:60,  n:'Hall'},
+  // ── STORAGE ──
+  {x:706, y:500, w:188, h:248, n:'Storage'},
+  // Storage top door ↔ O2 bottom (x:750–836, y:440–502)
+  {x:750, y:440, w:84,  h:62,  n:'Hall'},
+  // Storage right door → Admin (x:892–858, y:532–594)
+  {x:892, y:532, w:66,  h:60,  n:'Hall'},
 
-  // ══════════════════════════════════════
-  //  STORAGE  (bottom-center)
-  // ══════════════════════════════════════
-  {x:703, y:498, w:195, h:252, n:'Storage'},
-  // Storage top → O2 bottom corridor
-  {x:748, y:436, w:90,  h:68,  n:'Hall'},
-  // Storage right → Admin left corridor
-  {x:893, y:528, w:72,  h:70,  n:'Hall'},
-
-  // ══════════════════════════════════════
-  //  ADMIN  (bottom-right)
-  // ══════════════════════════════════════
-  {x:854, y:490, w:190, h:200, n:'Admin'},
-  // Admin left → Storage
-  {x:793, y:528, w:68,  h:60,  n:'Hall'},
-  // Admin right → Comms bottom
-  {x:1040, y:560, w:48, h:110, n:'Hall'},
+  // ── ADMIN ──
+  {x:856, y:492, w:186, h:196, n:'Admin'},
+  // Admin left door ↔ Storage right (x:796–858, y:532–592)
+  {x:796, y:532, w:62,  h:60,  n:'Hall'},
+  // Admin right door → Comms (x:1040–1086, y:564–670)
+  {x:1040, y:564, w:46,  h:106, n:'Hall'},
 
 ];
 
@@ -916,16 +877,15 @@ function walkable(x,y){
 }
 
 function walkableBox(x,y){
-  // Check all 4 corners of a small hitbox + center
-  var r=4;
+  // Check all 4 corners of hitbox + center — all must be inside a walk zone
+  var r=6; // slightly larger radius = tighter wall collision
   var pts=[
     {x:x,   y:y},
-    {x:x-r, y:y+4},
-    {x:x+r, y:y+4},
+    {x:x-r, y:y+5},
+    {x:x+r, y:y+5},
     {x:x-r, y:y-4},
     {x:x+r, y:y-4},
   ];
-  // All points must be walkable for move to be valid
   return pts.every(function(p){return walkable(p.x,p.y);});
 }
 
@@ -1109,41 +1069,44 @@ function buildSkeldMap(sc){
     g.lineStyle(3,0x080c0e,1); g.strokeRect(rx,ry,rw,rh);
   }
 
-  // Draw corridors matching WALK zones exactly
-  // ── TOP AREA ──
-  drawHallway(650, 180, 180, 68);   // Cafeteria → Weapons
-  drawHallway(989, 47,  115, 56);   // Weapons → Nav top
-  drawHallway(840, 240, 100, 40);   // Weapons bottom
-  drawHallway(1082,230,  52, 80);   // Nav → right vertical
+  // Draw corridors — exactly matching WALK corridor zones above
+  // ── LEFT SIDE ──
+  drawHallway(278, 92,   72, 50);   // Upper Eng → caf top hall
+  drawHallway(266, 200,  64, 52);   // Upper Eng bottom → left vert top
+  drawHallway(266, 248,  64,244);   // Left vert main (alongside Reactor)
+  drawHallway(266, 490,  64, 52);   // LEFT VERT GAP FIX: Reactor bottom → Lower Eng top
+  drawHallway(266, 538,  64, 56);   // Left vert → Lower Eng junction
+
+  // ── TOP ──
+  drawHallway(655, 140, 158, 64);   // Cafeteria → Weapons
+  drawHallway(420, 290,  80, 72);   // Cafeteria bottom → Security top
+  drawHallway(993,  49, 103, 52);   // Weapons → Nav top
+  drawHallway(843, 240,  92, 40);   // Weapons bottom → right vert
+  drawHallway(1085,250,  52, 68);   // Nav bottom → right vert
 
   // ── RIGHT VERTICAL ──
-  drawHallway(1068,246,  72,100);   // Right vert upper
-  drawHallway(1068,310,  72, 80);   // Right vert mid
-  drawHallway(1068,490,  72,110);   // Right vert lower
+  drawHallway(1072,250,  64, 68);   // Nav → Shields top
+  drawHallway(1072,312,  64,202);   // Right vert mid
+  drawHallway(1072,510,  64, 86);   // Shields bottom → Comms
 
-  // ── LEFT SIDE ──
-  drawHallway(252, 165, 108, 76);   // Upper eng → left vert top
-  drawHallway(260, 238,  76,200);   // Left vert upper
-  drawHallway(260, 438,  76,200);   // Left vert lower
-  drawHallway(264,  90,  88, 55);   // Upper eng → caf top
-
-  // ── CENTER HORIZONTAL ──
-  drawHallway(390, 286,  70, 76);   // Security top ↔ left vert
-  drawHallway(548, 378,  80, 70);   // Security right → MedBay
-  drawHallway(548, 316,  80, 54);   // MedBay left
-  drawHallway(645, 250,  70, 44);   // MedBay top → Cafeteria
-  drawHallway(796, 316,  14, 54);   // MedBay/O2 connector
-  drawHallway(838, 434,  88, 64);   // O2 bottom → Admin/Storage
+  // ── CENTER ──
+  drawHallway(394, 358,  64, 64);   // Security top door
+  drawHallway(548, 390,  74, 56);   // Security right → MedBay
+  drawHallway(394, 522,  64, 98);   // Security bottom → bottom hall
+  drawHallway(548, 316,  74, 56);   // MedBay left connector
+  drawHallway(644, 244,  72, 40);   // MedBay top → Cafeteria
+  drawHallway(795, 316,  12, 56);   // MedBay/O2 connector
+  drawHallway(839, 442,  80, 60);   // O2 bottom → Storage
 
   // ── BOTTOM ──
-  drawHallway(260, 614, 500, 58);   // Main bottom hall
-  drawHallway(360, 560,  68, 60);   // Electrical top connector
-  drawHallway(558, 610, 150, 60);   // Electrical → Storage
-  drawHallway(698, 524,  32,100);   // Storage top connector
-  drawHallway(748, 436,  90, 68);   // Storage ↔ O2
-  drawHallway(893, 528,  72, 70);   // Storage → Admin
-  drawHallway(793, 528,  68, 60);   // Admin left
-  drawHallway(1040,560,  48,110);   // Admin → Comms
+  drawHallway(262, 616, 500, 56);   // Main bottom hall
+  drawHallway(366, 564,  62, 56);   // Electrical top connector
+  drawHallway(702, 528,  28, 92);   // Storage top connector
+  drawHallway(558, 614, 148, 56);   // Electrical → Storage bottom
+  drawHallway(750, 440,  84, 62);   // Storage top ↔ O2 bottom
+  drawHallway(892, 532,  66, 60);   // Storage → Admin
+  drawHallway(796, 532,  62, 60);   // Admin left connector
+  drawHallway(1040,564,  46,106);   // Admin → Comms
 
 
   // ── PLACE REAL ROOM IMAGES ──
@@ -1456,11 +1419,14 @@ function mkSprite(id,pd){
   // ── TAGS (canvas-drawn, beautiful badges) ──
   var tagsToShow=(pd.tags||[]).filter(function(t){return CM[t];});
   grp.tagObjs=[];
-  var tagYStart=y-54;
+  var tagYStart=y-44;
   tagsToShow.forEach(function(tagId,ti){
     var td=CM[tagId];if(!td)return;
-    var tKey='tag_'+tagId+'_tex2';
+    var tKey='tag_'+tagId+'_tex';
     if(!gsc.textures.exists(tKey)){
+      var tcv=document.createElement('canvas');tcv.width=80;tcv.height=20;
+      var tctx=tcv.getContext('2d');
+      // Parse bg color from td.style
       var bgColor='#1a0000';
       var fgColor='#ffffff';
       if(tagId==='tag_owner'){bgColor='#7a4800';fgColor='#FFD700';}
@@ -1481,42 +1447,39 @@ function mkSprite(id,pd){
       else if(tagId==='tag_sus'){bgColor='#3a0a0a';fgColor='#ff7675';}
       else if(tagId==='tag_boss'){bgColor='#220a28';fgColor='#fd79a8';}
       
+      // Special OWNER tag — gold badge
       var isOwnerTag=(tagId==='tag_owner');
-      var W=isOwnerTag?96:84,H=22;
-      var tcv=document.createElement('canvas');tcv.width=W;tcv.height=H;
-      var tctx=tcv.getContext('2d');
+      var W=isOwnerTag?76:70,H=18;
+      tcv.width=W;tcv.height=H;
       
-      // Rounded rect background with shadow
-      tctx.shadowColor='rgba(0,0,0,0.9)';
-      tctx.shadowBlur=6;
-      tctx.shadowOffsetY=2;
+      // Rounded rect background
       tctx.beginPath();
-      var br=5;
+      var br=4;
       tctx.moveTo(br,0);tctx.lineTo(W-br,0);tctx.arcTo(W,0,W,br,br);tctx.lineTo(W,H-br);tctx.arcTo(W,H,W-br,H,br);tctx.lineTo(br,H);tctx.arcTo(0,H,0,H-br,br);tctx.lineTo(0,br);tctx.arcTo(0,0,br,0,br);tctx.closePath();
       tctx.fillStyle=bgColor;tctx.fill();
-      tctx.shadowColor='transparent';
       
       if(isOwnerTag){
+        // Gold gradient border
         var grad=tctx.createLinearGradient(0,0,W,0);
         grad.addColorStop(0,'#b8860b');grad.addColorStop(0.5,'#FFD700');grad.addColorStop(1,'#b8860b');
         tctx.strokeStyle=grad;tctx.lineWidth=1.5;tctx.stroke();
+        // Gold gradient text
         var tgrad=tctx.createLinearGradient(0,0,W,H);
         tgrad.addColorStop(0,'#fff9c4');tgrad.addColorStop(0.4,'#FFD700');tgrad.addColorStop(1,'#b8860b');
-        tctx.font='bold 12px "Nunito",sans-serif';tctx.textAlign='center';tctx.textBaseline='middle';
+        tctx.font='bold 10px "Nunito",sans-serif';tctx.textAlign='center';tctx.textBaseline='middle';
         tctx.fillStyle=tgrad;
-        tctx.shadowColor='rgba(255,200,0,0.8)';tctx.shadowBlur=5;
-        tctx.fillText('👑 OWNER',W/2,H/2+1);
+        tctx.shadowColor='rgba(255,200,0,0.6)';tctx.shadowBlur=4;
+        tctx.fillText('👑 OWNER',W/2,H/2);
       } else {
-        tctx.strokeStyle='rgba(255,255,255,0.2)';tctx.lineWidth=1;tctx.stroke();
-        tctx.font='bold 11px "Nunito",sans-serif';tctx.textAlign='center';tctx.textBaseline='middle';
+        tctx.strokeStyle='rgba(255,255,255,0.15)';tctx.lineWidth=1;tctx.stroke();
+        tctx.font='bold 9px "Nunito",sans-serif';tctx.textAlign='center';tctx.textBaseline='middle';
         tctx.fillStyle=fgColor;
-        tctx.shadowColor='rgba(0,0,0,0.9)';tctx.shadowBlur=3;
-        tctx.fillText(td.icon+' '+td.name,W/2,H/2+1);
+        tctx.shadowColor='rgba(0,0,0,0.8)';tctx.shadowBlur=2;
+        tctx.fillText(td.icon+' '+td.name,W/2,H/2);
       }
       gsc.textures.addCanvas(tKey,tcv);
     }
-    // Scale 0.65 so tags appear at a good readable size
-    var tagObj=gsc.add.image(x,tagYStart-ti*18,tKey).setOrigin(.5).setDepth(15).setScale(0.65);
+    var tagObj=gsc.add.image(x,tagYStart-ti*14,tKey).setOrigin(.5).setDepth(15).setScale(0.55);
     grp.tagObjs.push(tagObj);
   });
 
@@ -1537,7 +1500,7 @@ function mkSprite(id,pd){
       tctx2.fillText('👑 OWNER',W/2,H/2);
       gsc.textures.addCanvas(tKey,tcv2);
     }
-    grp.ownerTag=gsc.add.image(x,tagYStart,tKey).setOrigin(.5).setDepth(15).setScale(0.65);
+    grp.ownerTag=gsc.add.image(x,tagYStart,tKey).setOrigin(.5).setDepth(15).setScale(0.55);
     gsc.tweens.add({targets:grp.ownerTag,alpha:{from:.8,to:1},yoyo:true,repeat:-1,duration:1200});
   }
   if(mod.godmode){grp.godRing=gsc.add.circle(x,y,28).setStrokeStyle(2.5,0xffd700,.9).setDepth(7);gsc.tweens.add({targets:grp.godRing,alpha:{from:.15,to:1},yoyo:true,repeat:-1,duration:280});}
@@ -1580,11 +1543,11 @@ function movSprite(id,x,y){
   if(g.sk)g.sk.setPosition(x,y+2);
   if(g.ring)g.ring.setPosition(x,y+4);
   if(g.aura)g.aura.setPosition(x,y+2);
-  if(g.ownerTag)g.ownerTag.setPosition(x,y-54);
+  if(g.ownerTag)g.ownerTag.setPosition(x,y-44);
   if(g.godRing)g.godRing.setPosition(x,y);
-  if(g.frostTxt)g.frostTxt.setPosition(x,y-58);
+  if(g.frostTxt)g.frostTxt.setPosition(x,y-48);
   // Move tag badges
-  if(g.tagObjs){var tagYStart=y-54;g.tagObjs.forEach(function(t,ti){if(t&&t.setPosition)t.setPosition(x,tagYStart-ti*18);});}
+  if(g.tagObjs){var tagYStart=y-44;g.tagObjs.forEach(function(t,ti){if(t&&t.setPosition)t.setPosition(x,tagYStart-ti*14);});}
   var tc=(pmods[id]&&pmods[id].trailColor)||(id===myId&&eTrail&&CM[eTrail]?CM[eTrail].tc:null);
   if(tc){
     for(var i=0;i<2;i++)trails.push({x:x+(Math.random()-.5)*8,y:y+7+(Math.random()-.5)*5,c:tc,a:.65,r:Math.random()*2.5+1.5,vx:(Math.random()-.5)*.35,vy:(Math.random()-.5)*.35});
@@ -2473,7 +2436,11 @@ function buildWardSlots(){
 }
 
 
-
+function updWardActiveTags(){
+  var el=document.getElementById('ward-tags');if(!el)return;el.innerHTML='';
+  (myTags||[]).forEach(function(tagId){var td=CM[tagId];if(!td)return;var span=document.createElement('span');span.style.cssText=td.style+';padding:2px 8px;border-radius:4px;font-size:8px;font-weight:900;display:inline-flex;align-items:center;gap:3px';span.textContent=td.icon+' '+td.name;el.appendChild(span);});
+  if(!myTags||!myTags.length)el.innerHTML='<span style="font-size:9px;color:rgba(255,255,255,.18)">No tags</span>';
+}
 
 // ── OWNER PANEL ──
 function myIsOwner(){return gs&&gs.players&&gs.players[myId]&&gs.players[myId].isOwner;}

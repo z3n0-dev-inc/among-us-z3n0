@@ -485,7 +485,7 @@ var OWN_PW = 'Zeno2026';
 var DISC_T = 25000, VOTE_T = 60000;
 
 var MAP_W = 1400, MAP_H = 800;
-var SPEED = 2.0;
+var SPEED = 2.2;
 var MASH_GOAL = 22;
 var ZOOM = 3.2;
 
@@ -495,163 +495,180 @@ var COLORS = [
   '#6b2fbb','#71491e','#38fedc','#50ef39'
 ];
 
-// ── WALK ZONES (Skeld-accurate) ──
-// ── WALK ZONES: precisely matched to room image pixel bounds ──
-// Each room has its interior + entrance gap(s) connecting to corridors
-// Corridors have their own zones; rooms are isolated except at entrances
+// ── WALK ZONES (Skeld-accurate, fully connected, no gaps) ──
+// All zones overlap at entrances so there are zero dead-ends or floating rooms.
+// Room interiors are generous (players can move freely inside).
+// Corridors are wide enough to walk through comfortably.
 var WALK = [
 
   // ══════════════════════════════════════
-  // CORRIDORS
+  //  CAFETERIA  (top-center)
   // ══════════════════════════════════════
-
-  // Main top corridor: cafeteria-right → sec_hall-left (y aligned with caf bottom)
-  {x:657, y:248, w:152, h:41, n:'Hall'},
-
-  // Top right corridor: sec_hall-right → navigation-left
-  {x:991, y:48,  w:101, h:38, n:'Hall'},
-
-  // Left arm: upper_engine-bottom → left vertical
-  {x:274, y:175, w:86,  h:75, n:'Hall'},
-
-  // Left vertical: connects upper area down to security top
-  {x:284, y:248, w:76,  h:120, n:'Hall'},
-
-  // Left vertical lower: security-bottom → lower_engine area
-  {x:284, y:520, w:76,  h:38,  n:'Hall'},
-
-  // Lower left connector: left vertical → lower_engine
-  {x:274, y:556, w:86,  h:80,  n:'Hall'},
-
-  // Right vertical: navigation-bottom through shields to comms
-  {x:1075, y:246, w:66, h:80,  n:'Hall'},
-  {x:1075, y:508, w:66, h:84,  n:'Hall'},
-
-  // Bottom hall: lower_engine-right → storage-left
-  {x:274, y:624, w:441, h:46, n:'Hall'},
-
-  // MedBay/O2 mid corridor connecting to main
-  {x:544, y:286, w:73,  h:80,  n:'Hall'},
-  {x:801, y:286, w:76,  h:80,  n:'Hall'},
-
-  // Admin/Storage connector
-  {x:843, y:499, w:76,  h:44,  n:'Hall'},
-
-  // Electrical connector from bottom hall
-  {x:351, y:581, w:58,  h:44,  n:'Hall'},
+  {x:342, y:47,  w:320, h:250, n:'Cafeteria'},
+  // Cafeteria → Weapons hall (top horizontal corridor)
+  {x:650, y:180, w:180, h:68,  n:'Cafeteria'},
+  // Cafeteria bottom → MedBay corridor
+  {x:420, y:268, w:140, h:42,  n:'Cafeteria'},
 
   // ══════════════════════════════════════
-  // ROOMS — interior + entrance gaps
+  //  WEAPONS / SEC-HALL  (top-right of caf)
   // ══════════════════════════════════════
+  {x:809, y:47,  w:190, h:200, n:'Weapons'},
+  // Weapons → Nav top hall
+  {x:989, y:47,  w:115, h:56,  n:'Hall'},
+  // Weapons bottom → nav lower corridor
+  {x:840, y:240, w:100, h:40,  n:'Hall'},
 
-  // CAFETERIA: x:342-657 y:47-289
-  // Interior (inset from walls a bit)
-  {x:352, y:57,  w:295, h:222, n:'Cafeteria'},
-  // Bottom entrance: connects to main hall at y:248
-  {x:432, y:269, w:100, h:22,  n:'Cafeteria'},
+  // ══════════════════════════════════════
+  //  NAVIGATION  (top-right)
+  // ══════════════════════════════════════
+  {x:1092, y:47, w:248, h:210, n:'Navigation'},
+  // Nav → right vertical corridor
+  {x:1082, y:230, w:52, h:80,  n:'Hall'},
 
-  // WEAPONS/SEC-HALL: x:809-991 y:45-238
-  {x:819, y:55,  w:162, h:173, n:'Weapons'},
-  // Left entrance to main top hall
-  {x:809, y:100, w:22,  h:60,  n:'Weapons'},
-  // Bottom entrance to top-right corridor
-  {x:849, y:228, w:80,  h:22,  n:'Weapons'},
+  // ══════════════════════════════════════
+  //  RIGHT VERTICAL CORRIDOR
+  //  Navigation-bottom → Shields-top → Comms-top
+  // ══════════════════════════════════════
+  {x:1068, y:246, w:72, h:100, n:'Hall'},
+  {x:1068, y:310, w:72, h:80,  n:'Hall'},
+  {x:1068, y:490, w:72, h:110, n:'Hall'},
 
-  // NAVIGATION: x:1092-1332 y:50-246
-  {x:1102, y:60, w:220, h:176, n:'Navigation'},
-  // Left entrance (from top right corridor)
-  {x:1081, y:90, w:22,  h:60,  n:'Navigation'},
-  // Bottom entrance to right vertical
-  {x:1122, y:236, w:70, h:22,  n:'Navigation'},
+  // ══════════════════════════════════════
+  //  SHIELDS  (right side, mid)
+  // ══════════════════════════════════════
+  {x:1080, y:312, w:260, h:200, n:'Shields'},
 
-  // SHIELDS: x:1074-1329 y:312-508
-  {x:1084, y:322, w:235, h:176, n:'Shields'},
-  // Left entrance (from right vertical)
-  {x:1063, y:360, w:22,  h:60,  n:'Shields'},
+  // ══════════════════════════════════════
+  //  COMMUNICATIONS  (right side, lower)
+  // ══════════════════════════════════════
+  {x:1080, y:592, w:260, h:170, n:'Communications'},
 
-  // COMMUNICATIONS: x:1074-1329 y:590-754
-  {x:1084, y:600, w:235, h:144, n:'Communications'},
-  // Left/top entrance (from right vertical bottom)
-  {x:1063, y:610, w:22,  h:60,  n:'Communications'},
+  // ══════════════════════════════════════
+  //  LEFT VERTICAL CORRIDOR
+  //  Upper Engine ↔ Reactor ↔ Lower Engine
+  // ══════════════════════════════════════
+  // Upper engine right → top of left vert
+  {x:252, y:165, w:108, h:76,  n:'Hall'},
+  // Left vert main (Reactor side)
+  {x:260, y:238, w:76,  h:200, n:'Hall'},
+  // Left vert lower (connects to Lower Engine)
+  {x:260, y:438, w:76,  h:200, n:'Hall'},
 
-  // O2: x:800-984 y:286-430
-  {x:810, y:296, w:164, h:124, n:'O2'},
-  // Left entrance (from O2 hall connector)
-  {x:790, y:320, w:22,  h:50,  n:'O2'},
-  // Bottom entrance (to admin corridor)
-  {x:840, y:420, w:70,  h:22,  n:'O2'},
+  // ══════════════════════════════════════
+  //  UPPER ENGINE  (top-left)
+  // ══════════════════════════════════════
+  {x:60,  y:47,  w:220, h:160, n:'Upper Engine'},
+  // Upper Engine → cafeteria top hall
+  {x:264, y:90,  w:88,  h:55,  n:'Hall'},
 
-  // MEDBAY: x:617-801 y:286-430
-  {x:627, y:296, w:164, h:124, n:'MedBay'},
-  // Right entrance (from MedBay hall connector)
-  {x:791, y:320, w:22,  h:50,  n:'MedBay'},
-  // Bottom entrance
-  {x:657, y:420, w:70,  h:22,  n:'MedBay'},
+  // ══════════════════════════════════════
+  //  LOWER ENGINE  (bottom-left)
+  // ══════════════════════════════════════
+  {x:60,  y:538, w:220, h:180, n:'Lower Engine'},
 
-  // ADMIN: x:842-1033 y:496-688
-  {x:852, y:506, w:171, h:172, n:'Admin'},
-  // Top-left entrance (from admin/storage hall)
-  {x:870, y:485, w:70,  h:22,  n:'Admin'},
+  // ══════════════════════════════════════
+  //  REACTOR  (left side, center)
+  // ══════════════════════════════════════
+  {x:60,  y:200, w:225, h:290, n:'Reactor'},
 
-  // STORAGE: x:715-909 y:499-737
-  {x:725, y:509, w:174, h:218, n:'Storage'},
-  // Top entrance (from bottom hall area)
-  {x:755, y:488, w:60,  h:22,  n:'Storage'},
-  // Left entrance
-  {x:704, y:540, w:22,  h:60,  n:'Storage'},
+  // ══════════════════════════════════════
+  //  TOP HORIZONTAL CORRIDORS
+  //  (Cafeteria → Weapons area)
+  // ══════════════════════════════════════
+  // Already handled above via cafeteria overlap
 
-  // ELECTRICAL: x:351-555 y:581-735
-  {x:361, y:591, w:184, h:134, n:'Electrical'},
-  // Top entrance (from bottom-hall connector)
-  {x:391, y:570, w:60,  h:22,  n:'Electrical'},
-  // Right entrance
-  {x:545, y:610, w:22,  h:60,  n:'Electrical'},
+  // ══════════════════════════════════════
+  //  SECURITY  (center-left)
+  // ══════════════════════════════════════
+  {x:350, y:358, w:202, h:170, n:'Security'},
+  // Security top → left vert
+  {x:390, y:286, w:70,  h:76,  n:'Hall'},
+  // Security right → MedBay/O2 corridor
+  {x:548, y:378, w:80,  h:70,  n:'Hall'},
 
-  // SECURITY: x:360-544 y:366-520
-  {x:370, y:376, w:164, h:134, n:'Security'},
-  // Top entrance (from left vertical)
-  {x:400, y:355, w:60,  h:22,  n:'Security'},
-  // Right entrance (to MedBay/O2 area)
-  {x:534, y:400, w:22,  h:60,  n:'Security'},
+  // ══════════════════════════════════════
+  //  MEDBAY  (center)
+  // ══════════════════════════════════════
+  {x:617, y:278, w:186, h:168, n:'MedBay'},
+  // MedBay left → Security corridor
+  {x:545, y:310, w:80,  h:60,  n:'Hall'},
+  // MedBay top → Cafeteria
+  {x:640, y:240, w:80,  h:46,  n:'Hall'},
 
-  // UPPER ENGINE: x:74-274 y:51-175
-  {x:84,  y:61,  w:180, h:104, n:'Upper Engine'},
-  // Bottom entrance (to left arm corridor)
-  {x:124, y:165, w:60,  h:22,  n:'Upper Engine'},
-  // Right entrance
-  {x:264, y:81,  w:22,  h:60,  n:'Upper Engine'},
+  // ══════════════════════════════════════
+  //  O2  (center-right of MedBay)
+  // ══════════════════════════════════════
+  {x:800, y:278, w:186, h:168, n:'O2'},
+  // O2 left → MedBay/main connector
+  {x:793, y:310, w:18,  h:60,  n:'Hall'},
+  // O2 bottom → Admin corridor
+  {x:835, y:440, w:90,  h:68,  n:'Hall'},
 
-  // LOWER ENGINE: x:74-274 y:556-710
-  {x:84,  y:566, w:180, h:134, n:'Lower Engine'},
-  // Top entrance
-  {x:124, y:545, w:60,  h:22,  n:'Lower Engine'},
-  // Right entrance
-  {x:264, y:596, w:22,  h:60,  n:'Lower Engine'},
+  // ══════════════════════════════════════
+  //  BOTTOM HORIZONTAL CORRIDOR
+  //  Lower Engine → Electrical → Storage → Admin
+  // ══════════════════════════════════════
+  {x:260, y:614, w:500, h:58,  n:'Hall'},
+  // Connector from bottom hall up to Electrical
+  {x:360, y:560, w:68,  h:60,  n:'Hall'},
+  // Connector from bottom hall up to Storage
+  {x:698, y:524, w:32,  h:100, n:'Hall'},
 
-  // REACTOR: x:64-284 y:204-468
-  {x:74,  y:214, w:200, h:244, n:'Reactor'},
-  // Right top entrance
-  {x:264, y:240, w:22,  h:60,  n:'Reactor'},
-  // Right bottom entrance
-  {x:264, y:420, w:22,  h:50,  n:'Reactor'},
+  // ══════════════════════════════════════
+  //  ELECTRICAL  (bottom-center-left)
+  // ══════════════════════════════════════
+  {x:342, y:572, w:220, h:170, n:'Electrical'},
+  // Electrical right → Storage corridor
+  {x:558, y:610, w:150, h:60,  n:'Hall'},
+
+  // ══════════════════════════════════════
+  //  STORAGE  (bottom-center)
+  // ══════════════════════════════════════
+  {x:703, y:498, w:195, h:252, n:'Storage'},
+  // Storage top → O2 bottom corridor
+  {x:748, y:436, w:90,  h:68,  n:'Hall'},
+  // Storage right → Admin left corridor
+  {x:893, y:528, w:72,  h:70,  n:'Hall'},
+
+  // ══════════════════════════════════════
+  //  ADMIN  (bottom-right)
+  // ══════════════════════════════════════
+  {x:854, y:490, w:190, h:200, n:'Admin'},
+  // Admin left → Storage
+  {x:793, y:528, w:68,  h:60,  n:'Hall'},
+  // Admin right → Comms bottom
+  {x:1040, y:560, w:48, h:110, n:'Hall'},
+
 ];
 
 var TLOCS = [
-  {x:500,y:160,n:'Cafeteria'},{x:180,y:330,n:'Reactor'},
-  {x:1210,y:140,n:'Navigation'},{x:710,y:350,n:'MedBay'},
-  {x:810,y:620,n:'Storage'},{x:455,y:660,n:'Electrical'},
-  {x:900,y:370,n:'O2'},{x:940,y:580,n:'Admin'},
-  {x:1190,y:590,n:'Communications'},{x:455,y:440,n:'Security'},
+  {x:502,y:150,n:'Cafeteria'},   // Cafeteria - near table
+  {x:172,y:310,n:'Reactor'},     // Reactor
+  {x:1216,y:140,n:'Navigation'}, // Navigation
+  {x:710,y:360,n:'MedBay'},      // MedBay
+  {x:800,y:640,n:'Storage'},     // Storage
+  {x:452,y:660,n:'Electrical'},  // Electrical
+  {x:893,y:360,n:'O2'},          // O2
+  {x:949,y:590,n:'Admin'},       // Admin
+  {x:1210,y:650,n:'Communications'}, // Comms
+  {x:451,y:443,n:'Security'},    // Security
 ];
 
 var VENTS = [
-  {x:500,y:110,n:'Cafeteria'},{x:945,y:115,n:'Weapons'},
-  {x:1230,y:115,n:'Navigation'},{x:710,y:310,n:'MedBay'},
-  {x:1200,y:380,n:'Shields'},{x:1195,y:660,n:'Communications'},
-  {x:750,y:660,n:'Storage'},{x:455,y:660,n:'Electrical'},
-  {x:905,y:530,n:'Admin'},{x:175,y:480,n:'Reactor'},
-  {x:455,y:270,n:'Upper Engine'},{x:175,y:605,n:'Lower Engine'},
-  {x:455,y:440,n:'Security'},
+  {x:502,y:95, n:'Cafeteria'},
+  {x:904,y:95, n:'Weapons'},
+  {x:1250,y:95,n:'Navigation'},
+  {x:710,y:295,n:'MedBay'},
+  {x:1240,y:380,n:'Shields'},
+  {x:1240,y:650,n:'Communications'},
+  {x:760,y:660,n:'Storage'},
+  {x:452,y:660,n:'Electrical'},
+  {x:905,y:540,n:'Admin'},
+  {x:170,y:470,n:'Reactor'},
+  {x:450,y:260,n:'Upper Engine'},
+  {x:170,y:610,n:'Lower Engine'},
+  {x:451,y:400,n:'Security'},
 ];
 var ventIdx = 0;
 
@@ -797,53 +814,68 @@ function drawCrewmate(ctx,cx,cy,opts){
     ag.addColorStop(0,opts.aura+'66');ag.addColorStop(1,opts.aura+'00');
     ctx.fillStyle=ag;ctx.beginPath();ctx.arc(0,2*s,40*s,0,Math.PI*2);ctx.fill();
   }
-  var dark=darken(col,-60);
-  var vDark=darken(col,-90);
+  var dark=darken(col,-50);
+  var darker=darken(col,-80);
+  var vDark=darken(col,-100);
+  // Shadow
   ctx.fillStyle='rgba(0,0,0,0.4)';
   ctx.beginPath();ctx.ellipse(0,28*s,14*s,4*s,0,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle=darken(col,-30);
+  // Right leg
+  ctx.fillStyle=darker;ctx.beginPath();
+  if(ctx.roundRect){ctx.roundRect(2.5*s,17*s,8*s,13*s,[0,0,4*s,4*s]);}else{ctx.rect(2.5*s,17*s,8*s,13*s);}ctx.fill();
+  ctx.fillStyle=darken(col,-25);ctx.beginPath();
+  if(ctx.roundRect){ctx.roundRect(1*s,16*s,8*s,12*s,[0,0,4*s,4*s]);}else{ctx.rect(1*s,16*s,8*s,12*s);}ctx.fill();
+  // Left leg
+  ctx.fillStyle=darker;ctx.beginPath();
+  if(ctx.roundRect){ctx.roundRect(-9.5*s,15*s,8*s,13*s,[0,0,4*s,4*s]);}else{ctx.rect(-9.5*s,15*s,8*s,13*s);}ctx.fill();
+  ctx.fillStyle=dark;ctx.beginPath();
+  if(ctx.roundRect){ctx.roundRect(-9*s,14*s,8*s,12*s,[0,0,4*s,4*s]);}else{ctx.rect(-9*s,14*s,8*s,12*s);}ctx.fill();
+  // Boots
+  ctx.fillStyle=vDark;ctx.beginPath();
+  if(ctx.roundRect){ctx.roundRect(0*s,25*s,9*s,5*s,[0,0,3*s,3*s]);}else{ctx.rect(0*s,25*s,9*s,5*s);}ctx.fill();
   ctx.beginPath();
-  if(ctx.roundRect){ctx.roundRect(1*s,16*s,8*s,13*s,[0,0,4*s,4*s]);}else{ctx.rect(1*s,16*s,8*s,13*s);}
-  ctx.fill();
-  ctx.fillStyle=dark;
-  ctx.beginPath();
-  if(ctx.roundRect){ctx.roundRect(-9*s,14*s,8*s,12*s,[0,0,4*s,4*s]);}else{ctx.rect(-9*s,14*s,8*s,12*s);}
-  ctx.fill();
-  ctx.fillStyle=vDark;
-  ctx.beginPath();
-  if(ctx.roundRect){ctx.roundRect(-22*s,-6*s,11*s,18*s,4*s);}else{ctx.rect(-22*s,-6*s,11*s,18*s);}
-  ctx.fill();
-  ctx.fillStyle='rgba(255,255,255,0.08)';ctx.fillRect(-20*s,-4*s,2*s,14*s);
-  ctx.fillStyle=dark;
-  ctx.beginPath();ctx.ellipse(1*s,3*s,15*s,19*s,0,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle=col;
-  ctx.beginPath();ctx.ellipse(0,2*s,14*s,18*s,0,0,Math.PI*2);ctx.fill();
-  var bg=ctx.createLinearGradient(-7*s,-14*s,3*s,6*s);
-  bg.addColorStop(0,'rgba(255,255,255,0.2)');bg.addColorStop(1,'rgba(255,255,255,0)');
-  ctx.fillStyle=bg;ctx.beginPath();ctx.ellipse(-4*s,-2*s,7*s,11*s,-0.15,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle=dark;ctx.beginPath();ctx.arc(1*s,-14*s,14*s,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle=col;ctx.beginPath();ctx.arc(0,-15*s,13*s,0,Math.PI*2);ctx.fill();
+  if(ctx.roundRect){ctx.roundRect(-10*s,24*s,9*s,5*s,[0,0,3*s,3*s]);}else{ctx.rect(-10*s,24*s,9*s,5*s);}ctx.fill();
+  // Backpack
+  ctx.fillStyle=vDark;ctx.beginPath();
+  if(ctx.roundRect){ctx.roundRect(-22*s,-6*s,11*s,18*s,4*s);}else{ctx.rect(-22*s,-6*s,11*s,18*s);}ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,0.1)';ctx.fillRect(-20*s,-4*s,2.5*s,14*s);
+  // Body shadow
+  ctx.fillStyle=darker;ctx.beginPath();ctx.ellipse(1.5*s,3.5*s,15*s,19.5*s,0,0,Math.PI*2);ctx.fill();
+  // Body
+  ctx.fillStyle=col;ctx.beginPath();ctx.ellipse(0,2*s,14*s,18.5*s,0,0,Math.PI*2);ctx.fill();
+  // Body right shading
+  ctx.fillStyle=dark;ctx.beginPath();ctx.ellipse(5*s,3*s,6*s,16*s,0.15,0,Math.PI*2);ctx.fill();
+  // Body highlight
+  var bg=ctx.createLinearGradient(-8*s,-14*s,4*s,6*s);
+  bg.addColorStop(0,'rgba(255,255,255,0.25)');bg.addColorStop(0.6,'rgba(255,255,255,0.06)');bg.addColorStop(1,'rgba(255,255,255,0)');
+  ctx.fillStyle=bg;ctx.beginPath();ctx.ellipse(-3*s,-1*s,7*s,12*s,-0.2,0,Math.PI*2);ctx.fill();
+  // Head
+  ctx.fillStyle=darker;ctx.beginPath();ctx.arc(1.5*s,-14*s,13.5*s,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle=col;ctx.beginPath();ctx.arc(0,-14.5*s,12.5*s,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle=dark;ctx.beginPath();ctx.arc(4*s,-13*s,7*s,0,Math.PI*2);ctx.fill();
   var hg=ctx.createRadialGradient(-4*s,-20*s,0,-4*s,-20*s,7*s);
-  hg.addColorStop(0,'rgba(255,255,255,0.22)');hg.addColorStop(1,'rgba(255,255,255,0)');
-  ctx.fillStyle=hg;ctx.beginPath();ctx.arc(-3*s,-19*s,5*s,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle='#0a1a4a';ctx.beginPath();ctx.ellipse(4*s,-15*s,9*s,6*s,-0.1,0,Math.PI*2);ctx.fill();
-  var vg=ctx.createLinearGradient(-3*s,-22*s,10*s,-10*s);
-  vg.addColorStop(0,'#b8e4ff');vg.addColorStop(0.3,'#5ba8d4');vg.addColorStop(1,'#0d3a6e');
-  ctx.fillStyle=vg;ctx.beginPath();ctx.ellipse(4*s,-15.5*s,8*s,5.5*s,-0.1,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle='rgba(255,255,255,0.7)';ctx.beginPath();ctx.ellipse(-0.5*s,-19*s,2.5*s,1.5*s,-0.25,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle='rgba(255,255,255,0.28)';ctx.beginPath();ctx.ellipse(3*s,-12*s,1.3*s,0.8*s,0.2,0,Math.PI*2);ctx.fill();
-  ctx.strokeStyle='rgba(0,0,0,0.3)';ctx.lineWidth=0.5*s;
-  ctx.beginPath();ctx.ellipse(4*s,-15.5*s,8*s,5.5*s,-0.1,0,Math.PI*2);ctx.stroke();
+  hg.addColorStop(0,'rgba(255,255,255,0.28)');hg.addColorStop(1,'rgba(255,255,255,0)');
+  ctx.fillStyle=hg;ctx.beginPath();ctx.arc(-3*s,-19*s,5.5*s,0,Math.PI*2);ctx.fill();
+  // Visor
+  ctx.fillStyle='#071230';ctx.beginPath();ctx.ellipse(3.5*s,-14.5*s,9*s,6*s,-0.1,0,Math.PI*2);ctx.fill();
+  var vg=ctx.createLinearGradient(-2*s,-22*s,11*s,-9*s);
+  vg.addColorStop(0,'#d6f0ff');vg.addColorStop(0.2,'#7ec8ee');vg.addColorStop(0.6,'#2a7bbb');vg.addColorStop(1,'#0a2a5e');
+  ctx.fillStyle=vg;ctx.beginPath();ctx.ellipse(3.5*s,-15*s,8*s,5.5*s,-0.1,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,0.85)';ctx.beginPath();ctx.ellipse(-0.5*s,-18.5*s,2.5*s,1.5*s,-0.3,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,0.35)';ctx.beginPath();ctx.ellipse(3*s,-11.5*s,1.5*s,0.9*s,0.2,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='rgba(0,0,40,0.5)';ctx.lineWidth=0.6*s;
+  ctx.beginPath();ctx.ellipse(3.5*s,-15*s,8*s,5.5*s,-0.1,0,Math.PI*2);ctx.stroke();
+  // Skin
   if(opts.skin&&CM[opts.skin]){
     ctx.font=(12*s)+'px serif';ctx.textAlign='center';ctx.textBaseline='middle';
-    ctx.globalAlpha=alive?0.8*alpha:0.35*alpha;ctx.fillText(CM[opts.skin].icon,0,2*s);ctx.globalAlpha=alpha;
+    ctx.globalAlpha=alive?0.85*alpha:0.35*alpha;ctx.fillText(CM[opts.skin].icon,0,2*s);ctx.globalAlpha=alpha;
   }
   if(opts.hat&&CM[opts.hat]){
     ctx.font=(18*s)+'px serif';ctx.textAlign='center';ctx.textBaseline='bottom';ctx.fillText(CM[opts.hat].icon,1*s,-26*s);
   }
   if(!alive){
     ctx.font=(16*s)+'px serif';ctx.textAlign='center';ctx.textBaseline='middle';
-    ctx.globalAlpha=0.7;ctx.fillText('💀',0,1*s);ctx.globalAlpha=alpha;
+    ctx.globalAlpha=0.75;ctx.fillText('💀',0,1*s);ctx.globalAlpha=alpha;
   }
   ctx.restore();
 }
@@ -953,6 +985,15 @@ function scUpdate(){
 
 function updRoomLabel(x,y){
   var zone=WALK.find(function(z){return x>=z.x&&x<=z.x+z.w&&y>=z.y&&y<=z.y+z.h;});
+  var el=document.getElementById('room-name-overlay');
+  if(!el)return;
+  var name=zone?zone.n:'';
+  if(name&&name!=='Hall'){
+    el.textContent=name;el.style.display='block';
+    currentRoomName=name;
+  } else {
+    el.style.display='none';
+  }
 }
 
 // ══════════════════════════════════════
@@ -1031,38 +1072,59 @@ function buildSkeldMap(sc){
   }
 
   // Draw corridors matching WALK zones exactly
-  drawHallway(657, 248, 152, 41);   // Main top: caf→sec_hall
-  drawHallway(991, 48,  101, 38);   // Top right: sec_hall→nav
-  drawHallway(274, 175, 86,  75);   // Left arm: upper_eng→left vertical
-  drawHallway(284, 248, 76,  120);  // Left vertical upper
-  drawHallway(284, 520, 76,  38);   // Left vertical lower
-  drawHallway(274, 556, 86,  80);   // Lower left connector
-  drawHallway(1075,246, 66,  80);   // Right vertical upper
-  drawHallway(1075,508, 66,  84);   // Right vertical lower
-  drawHallway(274, 624, 441, 46);   // Bottom hall
-  drawHallway(544, 286, 73,  80);   // MedBay connector
-  drawHallway(801, 286, 76,  80);   // O2 connector
-  drawHallway(843, 499, 76,  44);   // Admin/Storage connector
-  drawHallway(351, 581, 58,  44);   // Electrical connector
+  // ── TOP AREA ──
+  drawHallway(650, 180, 180, 68);   // Cafeteria → Weapons
+  drawHallway(989, 47,  115, 56);   // Weapons → Nav top
+  drawHallway(840, 240, 100, 40);   // Weapons bottom
+  drawHallway(1082,230,  52, 80);   // Nav → right vertical
+
+  // ── RIGHT VERTICAL ──
+  drawHallway(1068,246,  72,100);   // Right vert upper
+  drawHallway(1068,310,  72, 80);   // Right vert mid
+  drawHallway(1068,490,  72,110);   // Right vert lower
+
+  // ── LEFT SIDE ──
+  drawHallway(252, 165, 108, 76);   // Upper eng → left vert top
+  drawHallway(260, 238,  76,200);   // Left vert upper
+  drawHallway(260, 438,  76,200);   // Left vert lower
+  drawHallway(264,  90,  88, 55);   // Upper eng → caf top
+
+  // ── CENTER HORIZONTAL ──
+  drawHallway(390, 286,  70, 76);   // Security top ↔ left vert
+  drawHallway(548, 378,  80, 70);   // Security right → MedBay
+  drawHallway(545, 310,  80, 60);   // MedBay left
+  drawHallway(640, 240,  80, 46);   // MedBay top → Cafeteria
+  drawHallway(793, 310,  18, 60);   // MedBay/O2 connector
+  drawHallway(835, 440,  90, 68);   // O2 bottom → Admin/Storage
+
+  // ── BOTTOM ──
+  drawHallway(260, 614, 500, 58);   // Main bottom hall
+  drawHallway(360, 560,  68, 60);   // Electrical top connector
+  drawHallway(558, 610, 150, 60);   // Electrical → Storage
+  drawHallway(698, 524,  32,100);   // Storage top connector
+  drawHallway(748, 436,  90, 68);   // Storage ↔ O2
+  drawHallway(893, 528,  72, 70);   // Storage → Admin
+  drawHallway(793, 528,  68, 60);   // Admin left
+  drawHallway(1040,560,  48,110);   // Admin → Comms
 
 
   // ── PLACE REAL ROOM IMAGES ──
   // [textureKey, centerX, centerY, displayW, displayH]
   var ROOMS=[
-    ['rm_cafeteria',      500, 168, 315, 242],
-    ['rm_sec_hall',       900, 142, 182, 193],
-    ['rm_navigation',    1212, 148, 240, 196],
-    ['rm_shields',       1202, 410, 255, 196],
-    ['rm_communications',1202, 672, 255, 164],
-    ['rm_admin',          938, 592, 191, 192],
-    ['rm_storage',        812, 618, 194, 238],
-    ['rm_electrical',     453, 658, 204, 154],
-    ['rm_o2',             892, 358, 184, 144],
-    ['rm_medbay',         709, 358, 184, 144],
-    ['rm_security',       452, 443, 184, 154],
-    ['rm_upper_engine',   174, 113, 200, 124],
-    ['rm_lower_engine',   174, 633, 200, 154],
-    ['rm_reactor',        174, 336, 220, 264],
+    ['rm_cafeteria',      502, 172, 320, 250],
+    ['rm_sec_hall',       904, 147, 190, 200],
+    ['rm_navigation',    1216, 152, 248, 210],
+    ['rm_shields',       1210, 412, 260, 200],
+    ['rm_communications',1210, 677, 260, 170],
+    ['rm_admin',          949, 590, 190, 200],
+    ['rm_storage',        800, 624, 192, 252],
+    ['rm_electrical',     452, 657, 220, 170],
+    ['rm_o2',             893, 362, 186, 168],
+    ['rm_medbay',         710, 362, 186, 168],
+    ['rm_security',       451, 443, 202, 170],
+    ['rm_upper_engine',   170, 127, 220, 160],
+    ['rm_lower_engine',   170, 628, 220, 180],
+    ['rm_reactor',        172, 345, 225, 290],
   ];
 
   ROOMS.forEach(function(r){
@@ -1093,16 +1155,16 @@ function buildSkeldMap(sc){
 
   // ── EMERGENCY BUTTON ──
   var eb=sc.add.graphics().setDepth(7);
-  eb.fillStyle(0x111122,1);eb.fillEllipse(500,236,98,40);
-  eb.fillStyle(0x7b0000,1);eb.fillEllipse(500,231,80,30);
-  eb.fillStyle(0xaa1111,1);eb.fillEllipse(500,229,72,26);
-  eb.fillStyle(0xee2222,1);eb.fillEllipse(500,227,62,20);
-  eb.lineStyle(1.5,0xff6666,.4);eb.strokeEllipse(500,229,72,26);
+  eb.fillStyle(0x111122,1);eb.fillEllipse(502,228,108,44);
+  eb.fillStyle(0x7b0000,1);eb.fillEllipse(502,224,90,34);
+  eb.fillStyle(0xaa1111,1);eb.fillEllipse(502,222,80,28);
+  eb.fillStyle(0xee2222,1);eb.fillEllipse(502,220,68,22);
+  eb.lineStyle(2,0xff6666,.5);eb.strokeEllipse(502,222,80,28);
   var ebGlow=sc.add.graphics().setDepth(6);
-  ebGlow.fillStyle(0xff0000,.06);ebGlow.fillCircle(500,227,52);
+  ebGlow.fillStyle(0xff0000,.06);ebGlow.fillCircle(502,220,56);
   sc.tweens.add({targets:ebGlow,alpha:{from:.3,to:1},yoyo:true,repeat:-1,duration:1400});
-  sc.add.text(500,227,'EMERGENCY',{fontSize:'5px',color:'#ffbbbb',fontFamily:'Nunito',fontStyle:'bold'}).setOrigin(.5).setDepth(9);
-  var eHit=sc.add.rectangle(500,229,88,32).setInteractive().setDepth(10).setAlpha(.001);
+  sc.add.text(502,220,'EMERGENCY',{fontSize:'5px',color:'#ffbbbb',fontFamily:'Nunito',fontStyle:'bold'}).setOrigin(.5).setDepth(9);
+  var eHit=sc.add.rectangle(502,222,96,34).setInteractive().setDepth(10).setAlpha(.001);
   eHit.on('pointerdown',callEmerg);
   eHit.on('pointerover',function(){document.body.style.cursor='pointer';});
   eHit.on('pointerout',function(){document.body.style.cursor='default';});
@@ -1139,12 +1201,12 @@ function bakeTexture(sc,color,alive,frame){
   frame=frame||0;
   var key='au_'+color.replace('#','')+(alive?'a':'d')+'_f'+frame;
   if(sc.textures.exists(key))return key;
-  // 2x resolution canvas for crisp rendering, displayed at half size via Phaser scale
-  var W=80,H=100,cv2=document.createElement('canvas');cv2.width=W;cv2.height=H;
+  // 4x resolution canvas for ultra-crisp rendering at 0.25 scale
+  var W=160,H=200,cv2=document.createElement('canvas');cv2.width=W;cv2.height=H;
   var ctx2=cv2.getContext('2d');
   ctx2.imageSmoothingEnabled=true;ctx2.imageSmoothingQuality='high';
-  var legOffset=[0,3,-2,3][frame];
-  drawCrewmateAnimated(ctx2,W/2,H/2+8,{scale:1.1,color:color,alive:alive,alpha:1,legOffset:legOffset,frame:frame});
+  var legOffset=[0,5,-4,5][frame];
+  drawCrewmateAnimated(ctx2,W/2,H/2+10,{scale:2.2,color:color,alive:alive,alpha:1,legOffset:legOffset,frame:frame});
   sc.textures.addCanvas(key,cv2);return key;
 }
 
@@ -1160,83 +1222,136 @@ function drawCrewmateAnimated(ctx,cx,cy,opts){
   ctx.globalAlpha=alpha;
   ctx.translate(cx,cy);
 
-  var dark=darken(col,-60);
-  var vDark=darken(col,-90);
+  var dark=darken(col,-50);
+  var darker=darken(col,-80);
+  var vDark=darken(col,-100);
+  var light=darken(col,30);
 
-  // Shadow
-  ctx.fillStyle='rgba(0,0,0,0.35)';
-  ctx.beginPath();ctx.ellipse(0,28*s,12*s,3*s,0,0,Math.PI*2);ctx.fill();
+  // ── SHADOW ──
+  ctx.fillStyle='rgba(0,0,0,0.4)';
+  ctx.beginPath();ctx.ellipse(0,28*s,13*s,3.5*s,0,0,Math.PI*2);ctx.fill();
 
-  // RIGHT LEG (animated)
+  // ── RIGHT LEG (animated) ──
   var rLegY = alive ? legOff : 0;
-  ctx.fillStyle=darken(col,-30);
+  // Leg shadow
+  ctx.fillStyle=darker;
   ctx.beginPath();
-  ctx.roundRect ? ctx.roundRect(1*s,(16+rLegY)*s,7*s,12*s,[0,0,3*s,3*s]) : ctx.rect(1*s,(16+rLegY)*s,7*s,12*s);
+  ctx.roundRect ? ctx.roundRect(2.5*s,(17+rLegY)*s,8*s,13*s,[0,0,4*s,4*s]) : ctx.rect(2.5*s,(17+rLegY)*s,8*s,13*s);
   ctx.fill();
-
-  // LEFT LEG (animated, opposite phase)
-  var lLegY = alive ? -legOff : 0;
-  ctx.fillStyle=dark;
+  // Leg main
+  ctx.fillStyle=darken(col,-25);
   ctx.beginPath();
-  ctx.roundRect ? ctx.roundRect(-8*s,(14+lLegY)*s,7*s,11*s,[0,0,3*s,3*s]) : ctx.rect(-8*s,(14+lLegY)*s,7*s,11*s);
+  ctx.roundRect ? ctx.roundRect(1*s,(16+rLegY)*s,8*s,12*s,[0,0,4*s,4*s]) : ctx.rect(1*s,(16+rLegY)*s,8*s,12*s);
   ctx.fill();
-
-  // Backpack
+  // Boot
   ctx.fillStyle=vDark;
   ctx.beginPath();
-  ctx.roundRect ? ctx.roundRect(-20*s,-5*s,10*s,16*s,3*s) : ctx.rect(-20*s,-5*s,10*s,16*s);
+  ctx.roundRect ? ctx.roundRect(0*s,(25+rLegY)*s,9*s,5*s,[0,0,3*s,3*s]) : ctx.rect(0*s,(25+rLegY)*s,9*s,5*s);
   ctx.fill();
-  ctx.fillStyle='rgba(255,255,255,0.07)';ctx.fillRect(-19*s,-3*s,2*s,12*s);
 
-  // Body shadow
+  // ── LEFT LEG (animated, opposite phase) ──
+  var lLegY = alive ? -legOff : 0;
+  ctx.fillStyle=darker;
+  ctx.beginPath();
+  ctx.roundRect ? ctx.roundRect(-9.5*s,(15+lLegY)*s,8*s,13*s,[0,0,4*s,4*s]) : ctx.rect(-9.5*s,(15+lLegY)*s,8*s,13*s);
+  ctx.fill();
   ctx.fillStyle=dark;
-  ctx.beginPath();ctx.ellipse(1*s,3*s,14*s,18*s,0,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();
+  ctx.roundRect ? ctx.roundRect(-9*s,(14+lLegY)*s,8*s,12*s,[0,0,4*s,4*s]) : ctx.rect(-9*s,(14+lLegY)*s,8*s,12*s);
+  ctx.fill();
+  // Boot
+  ctx.fillStyle=vDark;
+  ctx.beginPath();
+  ctx.roundRect ? ctx.roundRect(-10*s,(24+lLegY)*s,9*s,5*s,[0,0,3*s,3*s]) : ctx.rect(-10*s,(24+lLegY)*s,9*s,5*s);
+  ctx.fill();
 
-  // Body
+  // ── BACKPACK ──
+  ctx.fillStyle=vDark;
+  ctx.beginPath();
+  ctx.roundRect ? ctx.roundRect(-22*s,-5*s,11*s,18*s,3*s) : ctx.rect(-22*s,-5*s,11*s,18*s);
+  ctx.fill();
+  // Backpack strap
+  ctx.fillStyle='rgba(255,255,255,0.1)';ctx.fillRect(-21*s,-3*s,2.5*s,14*s);
+  // Backpack panel detail
+  ctx.fillStyle='rgba(255,255,255,0.05)';ctx.fillRect(-20*s,2*s,8*s,4*s);
+
+  // ── BODY SHADOW (slightly offset) ──
+  ctx.fillStyle=darker;
+  ctx.beginPath();ctx.ellipse(1.5*s,3.5*s,15*s,19.5*s,0,0,Math.PI*2);ctx.fill();
+
+  // ── BODY MAIN ──
   ctx.fillStyle=col;
-  ctx.beginPath();ctx.ellipse(0,2*s,13*s,17*s,0,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.ellipse(0,2*s,14*s,18.5*s,0,0,Math.PI*2);ctx.fill();
 
-  // Body shine
-  var bg=ctx.createLinearGradient(-6*s,-13*s,3*s,5*s);
-  bg.addColorStop(0,'rgba(255,255,255,0.2)');bg.addColorStop(1,'rgba(255,255,255,0)');
-  ctx.fillStyle=bg;ctx.beginPath();ctx.ellipse(-3*s,-2*s,6*s,10*s,-0.15,0,Math.PI*2);ctx.fill();
+  // ── BODY SHADING (left side darker) ──
+  ctx.fillStyle=dark;
+  ctx.beginPath();ctx.ellipse(5*s,3*s,6*s,16*s,0.15,0,Math.PI*2);ctx.fill();
 
-  // Head shadow
-  ctx.fillStyle=dark;ctx.beginPath();ctx.arc(1*s,-13*s,13*s,0,Math.PI*2);ctx.fill();
+  // ── BODY HIGHLIGHT GRADIENT ──
+  var bg=ctx.createLinearGradient(-8*s,-14*s,4*s,6*s);
+  bg.addColorStop(0,'rgba(255,255,255,0.25)');bg.addColorStop(0.6,'rgba(255,255,255,0.06)');bg.addColorStop(1,'rgba(255,255,255,0)');
+  ctx.fillStyle=bg;ctx.beginPath();ctx.ellipse(-3*s,-1*s,7*s,12*s,-0.2,0,Math.PI*2);ctx.fill();
 
-  // Head
-  ctx.fillStyle=col;ctx.beginPath();ctx.arc(0,-14*s,12*s,0,Math.PI*2);ctx.fill();
+  // ── NECK ──
+  ctx.fillStyle=dark;
+  ctx.fillRect(-3*s,-4*s,6*s,5*s);
 
-  // Head shine
-  var hg=ctx.createRadialGradient(-3*s,-19*s,0,-3*s,-19*s,6*s);
-  hg.addColorStop(0,'rgba(255,255,255,0.22)');hg.addColorStop(1,'rgba(255,255,255,0)');
-  ctx.fillStyle=hg;ctx.beginPath();ctx.arc(-3*s,-18*s,5*s,0,Math.PI*2);ctx.fill();
+  // ── HEAD SHADOW ──
+  ctx.fillStyle=darker;ctx.beginPath();ctx.arc(1.5*s,-14*s,13.5*s,0,Math.PI*2);ctx.fill();
 
-  // Visor bg
-  ctx.fillStyle='#0a1a4a';ctx.beginPath();ctx.ellipse(3*s,-14*s,8*s,5.5*s,-0.1,0,Math.PI*2);ctx.fill();
+  // ── HEAD MAIN ──
+  ctx.fillStyle=col;ctx.beginPath();ctx.arc(0,-14.5*s,12.5*s,0,Math.PI*2);ctx.fill();
 
-  // Visor
-  var vg=ctx.createLinearGradient(-2*s,-20*s,9*s,-9*s);
-  vg.addColorStop(0,'#b8e4ff');vg.addColorStop(0.3,'#5ba8d4');vg.addColorStop(1,'#0d3a6e');
-  ctx.fillStyle=vg;ctx.beginPath();ctx.ellipse(3*s,-14.5*s,7*s,5*s,-0.1,0,Math.PI*2);ctx.fill();
+  // ── HEAD RIGHT SHADING ──
+  ctx.fillStyle=dark;
+  ctx.beginPath();ctx.arc(4*s,-13*s,7*s,0,Math.PI*2);ctx.fill();
 
-  // Visor glare
-  ctx.fillStyle='rgba(255,255,255,0.7)';ctx.beginPath();ctx.ellipse(-0.5*s,-18*s,2*s,1.2*s,-0.25,0,Math.PI*2);ctx.fill();
+  // ── HEAD HIGHLIGHT ──
+  var hg=ctx.createRadialGradient(-4*s,-20*s,0,-4*s,-20*s,7*s);
+  hg.addColorStop(0,'rgba(255,255,255,0.28)');hg.addColorStop(1,'rgba(255,255,255,0)');
+  ctx.fillStyle=hg;ctx.beginPath();ctx.arc(-3*s,-19*s,5.5*s,0,Math.PI*2);ctx.fill();
 
-  // Visor outline
-  ctx.strokeStyle='rgba(0,0,0,0.3)';ctx.lineWidth=0.4*s;
-  ctx.beginPath();ctx.ellipse(3*s,-14.5*s,7*s,5*s,-0.1,0,Math.PI*2);ctx.stroke();
+  // ── VISOR BACKGROUND (dark navy) ──
+  ctx.fillStyle='#071230';ctx.beginPath();ctx.ellipse(3.5*s,-14.5*s,9*s,6*s,-0.1,0,Math.PI*2);ctx.fill();
 
+  // ── VISOR GRADIENT ──
+  var vg=ctx.createLinearGradient(-2*s,-22*s,11*s,-9*s);
+  vg.addColorStop(0,'#d6f0ff');vg.addColorStop(0.2,'#7ec8ee');vg.addColorStop(0.6,'#2a7bbb');vg.addColorStop(1,'#0a2a5e');
+  ctx.fillStyle=vg;ctx.beginPath();ctx.ellipse(3.5*s,-15*s,8*s,5.5*s,-0.1,0,Math.PI*2);ctx.fill();
+
+  // ── VISOR BRIGHT GLARE (top-left) ──
+  ctx.fillStyle='rgba(255,255,255,0.85)';
+  ctx.beginPath();ctx.ellipse(-0.5*s,-18.5*s,2.5*s,1.5*s,-0.3,0,Math.PI*2);ctx.fill();
+
+  // ── VISOR SECONDARY GLARE ──
+  ctx.fillStyle='rgba(255,255,255,0.35)';
+  ctx.beginPath();ctx.ellipse(3*s,-11.5*s,1.5*s,0.9*s,0.2,0,Math.PI*2);ctx.fill();
+
+  // ── VISOR OUTLINE ──
+  ctx.strokeStyle='rgba(0,0,40,0.5)';ctx.lineWidth=0.6*s;
+  ctx.beginPath();ctx.ellipse(3.5*s,-15*s,8*s,5.5*s,-0.1,0,Math.PI*2);ctx.stroke();
+
+  // ── VISOR INNER DETAIL (reflection lines) ──
+  ctx.strokeStyle='rgba(180,230,255,0.2)';ctx.lineWidth=0.5*s;
+  ctx.beginPath();ctx.moveTo(0*s,-19*s);ctx.bezierCurveTo(2*s,-20*s,5*s,-18*s,7*s,-16*s);ctx.stroke();
+
+  // ── SKIN OVERLAY ──
   if(opts.skin&&CM[opts.skin]){
-    ctx.font=(10*s)+'px serif';ctx.textAlign='center';ctx.textBaseline='middle';
-    ctx.globalAlpha=alive?0.8*alpha:0.35*alpha;ctx.fillText(CM[opts.skin].icon,0,2*s);ctx.globalAlpha=alpha;
+    ctx.font=(11*s)+'px serif';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.globalAlpha=alive?0.85*alpha:0.35*alpha;ctx.fillText(CM[opts.skin].icon,0,2*s);ctx.globalAlpha=alpha;
   }
+  // ── HAT ──
   if(opts.hat&&CM[opts.hat]){
-    ctx.font=(14*s)+'px serif';ctx.textAlign='center';ctx.textBaseline='bottom';ctx.fillText(CM[opts.hat].icon,1*s,-24*s);
+    ctx.font=(17*s)+'px serif';ctx.textAlign='center';ctx.textBaseline='bottom';ctx.fillText(CM[opts.hat].icon,1*s,-26*s);
   }
+  // ── GHOST / DEAD ──
   if(!alive){
-    ctx.font=(13*s)+'px serif';ctx.textAlign='center';ctx.textBaseline='middle';
-    ctx.globalAlpha=0.7;ctx.fillText('💀',0,1*s);ctx.globalAlpha=alpha;
+    // Ghost semi-transparent overlay
+    ctx.globalAlpha=0.5;
+    ctx.fillStyle='rgba(180,200,255,0.2)';
+    ctx.beginPath();ctx.ellipse(0,-5*s,15*s,20*s,0,0,Math.PI*2);ctx.fill();
+    ctx.font=(14*s)+'px serif';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.globalAlpha=0.75;ctx.fillText('💀',0,1*s);ctx.globalAlpha=alpha;
   }
   ctx.restore();
 }
@@ -1260,7 +1375,7 @@ function mkSprite(id,pd){
   // Pre-bake all 4 walk frames
   [0,1,2,3].forEach(function(f){bakeTexture(gsc,col,alive,f);});
   var tkey=bakeTexture(gsc,col,alive,0);
-  grp.body=gsc.add.image(x,y,tkey).setOrigin(.5,.65).setDepth(8).setScale(0.5);
+  grp.body=gsc.add.image(x,y,tkey).setOrigin(.5,.65).setDepth(8).setScale(0.25);
   grp._walkFrame=0;grp._walkTick=0;grp._moving=false;grp._alive=alive;grp._col=col;
 
   if(id===myId){

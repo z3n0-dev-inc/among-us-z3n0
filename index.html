@@ -889,7 +889,27 @@ function redrawPreviews(){
   });
 }
 
-function walkable(x,y){return WALK.some(function(z){return x>=z.x&&x<=z.x+z.w&&y>=z.y&&y<=z.y+z.h;});}
+function walkable(x,y){
+  // Check a small hitbox around the player's feet (not just center point)
+  var r=5; // collision radius - keep tight for authentic AU feel
+  return WALK.some(function(z){
+    return x>=z.x&&x<=z.x+z.w&&y>=z.y&&y<=z.y+z.h;
+  });
+}
+
+function walkableBox(x,y){
+  // Check all 4 corners of a small hitbox + center
+  var r=4;
+  var pts=[
+    {x:x,   y:y},
+    {x:x-r, y:y+4},
+    {x:x+r, y:y+4},
+    {x:x-r, y:y-4},
+    {x:x+r, y:y-4},
+  ];
+  // All points must be walkable for move to be valid
+  return pts.every(function(p){return walkable(p.x,p.y);});
+}
 
 // ── PHASER ──
 function initPhaser(){
@@ -970,9 +990,9 @@ function scUpdate(){
   if(dx&&dy){var d=Math.SQRT2;dx/=d;dy/=d;}
   var nx=Math.max(62,Math.min(MAP_W-62,me.x+dx));
   var ny=Math.max(52,Math.min(MAP_H-52,me.y+dy));
-  if(!walkable(nx,ny)){
-    if(walkable(nx,me.y))ny=me.y;
-    else if(walkable(me.x,ny))nx=me.x;
+  if(!walkableBox(nx,ny)){
+    if(walkableBox(nx,me.y))ny=me.y;
+    else if(walkableBox(me.x,ny))nx=me.x;
     else{nx=me.x;ny=me.y;}
   }
   me.x=nx;me.y=ny;
@@ -1384,20 +1404,123 @@ function mkSprite(id,pd){
   }
 
   if(skin&&CM[skin])grp.sk=gsc.add.text(x,y+2,CM[skin].icon,{fontSize:'10px',fontFamily:'serif'}).setOrigin(.5).setDepth(10).setAlpha(alive?.82:.22);
-  if(hat&&CM[hat])grp.ht=gsc.add.text(x,y-26,CM[hat].icon,{fontSize:'14px',fontFamily:'serif'}).setOrigin(.5).setDepth(11);
+  
+  // ── HIGH-QUALITY HAT (canvas texture, not emoji text) ──
+  if(hat&&CM[hat]){
+    var hatKey='hat_tex_'+hat;
+    if(!gsc.textures.exists(hatKey)){
+      var hcv=document.createElement('canvas');hcv.width=48;hcv.height=48;
+      var hctx=hcv.getContext('2d');
+      hctx.font='36px serif';hctx.textAlign='center';hctx.textBaseline='middle';
+      // Shadow
+      hctx.shadowColor='rgba(0,0,0,0.7)';hctx.shadowBlur=4;hctx.shadowOffsetX=1;hctx.shadowOffsetY=2;
+      hctx.fillText(CM[hat].icon,24,24);
+      gsc.textures.addCanvas(hatKey,hcv);
+    }
+    grp.ht=gsc.add.image(x,y-22,hatKey).setOrigin(.5).setDepth(11).setScale(0.55);
+  }
 
+  // ── HIGH-QUALITY NAME LABEL (canvas texture) ──
   var nc=mod.nameColor||pd.nameColor||'#ffffff';
-  grp.nm=gsc.add.text(x,y-38,pd.username||'?',{fontSize:'7px',color:nc,fontFamily:'Nunito,sans-serif',fontStyle:'bold',stroke:'#000000',strokeThickness:4}).setOrigin(.5).setDepth(12).setAlpha(alive?1:.3);
+  var nmKey='nm_'+id+'_'+Date.now();
+  var nameStr=pd.username||'?';
+  var nmcv=document.createElement('canvas');nmcv.width=140;nmcv.height=22;
+  var nmctx=nmcv.getContext('2d');
+  nmctx.font='bold 14px "Nunito",sans-serif';
+  nmctx.textAlign='center';nmctx.textBaseline='middle';
+  // Stroke
+  nmctx.strokeStyle='rgba(0,0,0,0.9)';nmctx.lineWidth=4;nmctx.strokeText(nameStr,70,11);
+  // Fill
+  nmctx.fillStyle=nc;nmctx.fillText(nameStr,70,11);
+  gsc.textures.addCanvas(nmKey,nmcv);
+  grp.nm=gsc.add.image(x,y-32,nmKey).setOrigin(.5).setDepth(12).setScale(0.5).setAlpha(alive?1:.3);
 
-  if(pd.isOwner){
-    grp.crown=gsc.add.text(x,y-42,'👑',{fontSize:'9px'}).setOrigin(.5).setDepth(13);
-    gsc.tweens.add({targets:grp.crown,y:y-45,yoyo:true,repeat:-1,duration:800});
-    // OWNER tag badge above name
-    grp.ownerTag=gsc.add.text(x,y-56,'OWNER',{
-      fontSize:'6px',color:'#ff6666',fontFamily:'Nunito,sans-serif',fontStyle:'bold',
-      backgroundColor:'#1a0000',padding:{x:4,y:2},
-      stroke:'#000',strokeThickness:3
-    }).setOrigin(.5).setDepth(14);
+  // ── TAGS (canvas-drawn, beautiful badges) ──
+  var tagsToShow=(pd.tags||[]).filter(function(t){return CM[t];});
+  grp.tagObjs=[];
+  var tagYStart=y-44;
+  tagsToShow.forEach(function(tagId,ti){
+    var td=CM[tagId];if(!td)return;
+    var tKey='tag_'+tagId+'_tex';
+    if(!gsc.textures.exists(tKey)){
+      var tcv=document.createElement('canvas');tcv.width=80;tcv.height=20;
+      var tctx=tcv.getContext('2d');
+      // Parse bg color from td.style
+      var bgColor='#1a0000';
+      var fgColor='#ffffff';
+      if(tagId==='tag_owner'){bgColor='#7a4800';fgColor='#FFD700';}
+      else if(tagId==='tag_z3n0'){bgColor='#3d0d5c';fgColor='#e8a0ff';}
+      else if(tagId==='tag_mod'){bgColor='#0a2a4a';fgColor='#5dade2';}
+      else if(tagId==='tag_admin'){bgColor='#4a3800';fgColor='#f9d94e';}
+      else if(tagId==='tag_dev'){bgColor='#0a2e1a';fgColor='#58d68d';}
+      else if(tagId==='tag_vip'){bgColor='#0d3320';fgColor='#1abc9c';}
+      else if(tagId==='tag_pro'){bgColor='#3e1a08';fgColor='#f0b27a';}
+      else if(tagId==='tag_legend'){bgColor='#4a3200';fgColor='#f1c40f';}
+      else if(tagId==='tag_og'){bgColor='#0d0d22';fgColor='#c39bd3';}
+      else if(tagId==='tag_donor'){bgColor='#0a2a1e';fgColor='#52be80';}
+      else if(tagId==='tag_galaxy'){bgColor='#0d0825';fgColor='#a29bfe';}
+      else if(tagId==='tag_zero'){bgColor='#111';fgColor='#ffffff';}
+      else if(tagId==='tag_elite'){bgColor='#041830';fgColor='#74b9ff';}
+      else if(tagId==='tag_traitor'){bgColor='#3a0a0a';fgColor='#ff7675';}
+      else if(tagId==='tag_host'){bgColor='#061428';fgColor='#74b9ff';}
+      else if(tagId==='tag_sus'){bgColor='#3a0a0a';fgColor='#ff7675';}
+      else if(tagId==='tag_boss'){bgColor='#220a28';fgColor='#fd79a8';}
+      
+      // Special OWNER tag — gold badge
+      var isOwnerTag=(tagId==='tag_owner');
+      var W=isOwnerTag?76:70,H=18;
+      tcv.width=W;tcv.height=H;
+      
+      // Rounded rect background
+      tctx.beginPath();
+      var br=4;
+      tctx.moveTo(br,0);tctx.lineTo(W-br,0);tctx.arcTo(W,0,W,br,br);tctx.lineTo(W,H-br);tctx.arcTo(W,H,W-br,H,br);tctx.lineTo(br,H);tctx.arcTo(0,H,0,H-br,br);tctx.lineTo(0,br);tctx.arcTo(0,0,br,0,br);tctx.closePath();
+      tctx.fillStyle=bgColor;tctx.fill();
+      
+      if(isOwnerTag){
+        // Gold gradient border
+        var grad=tctx.createLinearGradient(0,0,W,0);
+        grad.addColorStop(0,'#b8860b');grad.addColorStop(0.5,'#FFD700');grad.addColorStop(1,'#b8860b');
+        tctx.strokeStyle=grad;tctx.lineWidth=1.5;tctx.stroke();
+        // Gold gradient text
+        var tgrad=tctx.createLinearGradient(0,0,W,H);
+        tgrad.addColorStop(0,'#fff9c4');tgrad.addColorStop(0.4,'#FFD700');tgrad.addColorStop(1,'#b8860b');
+        tctx.font='bold 10px "Nunito",sans-serif';tctx.textAlign='center';tctx.textBaseline='middle';
+        tctx.fillStyle=tgrad;
+        tctx.shadowColor='rgba(255,200,0,0.6)';tctx.shadowBlur=4;
+        tctx.fillText('👑 OWNER',W/2,H/2);
+      } else {
+        tctx.strokeStyle='rgba(255,255,255,0.15)';tctx.lineWidth=1;tctx.stroke();
+        tctx.font='bold 9px "Nunito",sans-serif';tctx.textAlign='center';tctx.textBaseline='middle';
+        tctx.fillStyle=fgColor;
+        tctx.shadowColor='rgba(0,0,0,0.8)';tctx.shadowBlur=2;
+        tctx.fillText(td.icon+' '+td.name,W/2,H/2);
+      }
+      gsc.textures.addCanvas(tKey,tcv);
+    }
+    var tagObj=gsc.add.image(x,tagYStart-ti*14,tKey).setOrigin(.5).setDepth(15).setScale(0.55);
+    grp.tagObjs.push(tagObj);
+  });
+
+  if(pd.isOwner&&!tagsToShow.includes('tag_owner')){
+    // Auto-show OWNER badge even if not in tags array
+    var tKey='tag_owner_tex';
+    if(!gsc.textures.exists(tKey)){
+      var tcv2=document.createElement('canvas');tcv2.width=76;tcv2.height=18;
+      var tctx2=tcv2.getContext('2d');
+      tctx2.beginPath();var br=4,W=76,H=18;
+      tctx2.moveTo(br,0);tctx2.lineTo(W-br,0);tctx2.arcTo(W,0,W,br,br);tctx2.lineTo(W,H-br);tctx2.arcTo(W,H,W-br,H,br);tctx2.lineTo(br,H);tctx2.arcTo(0,H,0,H-br,br);tctx2.lineTo(0,br);tctx2.arcTo(0,0,br,0,br);tctx2.closePath();
+      tctx2.fillStyle='#7a4800';tctx2.fill();
+      var grad2=tctx2.createLinearGradient(0,0,W,0);grad2.addColorStop(0,'#b8860b');grad2.addColorStop(0.5,'#FFD700');grad2.addColorStop(1,'#b8860b');
+      tctx2.strokeStyle=grad2;tctx2.lineWidth=1.5;tctx2.stroke();
+      var tgrad2=tctx2.createLinearGradient(0,0,W,H);tgrad2.addColorStop(0,'#fff9c4');tgrad2.addColorStop(0.4,'#FFD700');tgrad2.addColorStop(1,'#b8860b');
+      tctx2.font='bold 10px "Nunito",sans-serif';tctx2.textAlign='center';tctx2.textBaseline='middle';
+      tctx2.fillStyle=tgrad2;tctx2.shadowColor='rgba(255,200,0,0.6)';tctx2.shadowBlur=4;
+      tctx2.fillText('👑 OWNER',W/2,H/2);
+      gsc.textures.addCanvas(tKey,tcv2);
+    }
+    grp.ownerTag=gsc.add.image(x,tagYStart,tKey).setOrigin(.5).setDepth(15).setScale(0.55);
+    gsc.tweens.add({targets:grp.ownerTag,alpha:{from:.8,to:1},yoyo:true,repeat:-1,duration:1200});
   }
   if(mod.godmode){grp.godRing=gsc.add.circle(x,y,28).setStrokeStyle(2.5,0xffd700,.9).setDepth(7);gsc.tweens.add({targets:grp.godRing,alpha:{from:.15,to:1},yoyo:true,repeat:-1,duration:280});}
   if(mod.frozen)grp.frostTxt=gsc.add.text(x,y-48,'❄️',{fontSize:'12px'}).setOrigin(.5).setDepth(14);
@@ -1434,15 +1557,16 @@ function movSprite(id,x,y){
       }
     }
   }
-  if(g.nm)g.nm.setPosition(x,y-38);
-  if(g.ht)g.ht.setPosition(x,y-26);
+  if(g.nm)g.nm.setPosition(x,y-32);
+  if(g.ht)g.ht.setPosition(x,y-22);
   if(g.sk)g.sk.setPosition(x,y+2);
   if(g.ring)g.ring.setPosition(x,y+4);
   if(g.aura)g.aura.setPosition(x,y+2);
-  if(g.crown)g.crown.setPosition(x,y-48);
-  if(g.ownerTag)g.ownerTag.setPosition(x,y-56);
+  if(g.ownerTag)g.ownerTag.setPosition(x,y-44);
   if(g.godRing)g.godRing.setPosition(x,y);
   if(g.frostTxt)g.frostTxt.setPosition(x,y-48);
+  // Move tag badges
+  if(g.tagObjs){var tagYStart=y-44;g.tagObjs.forEach(function(t,ti){if(t&&t.setPosition)t.setPosition(x,tagYStart-ti*14);});}
   var tc=(pmods[id]&&pmods[id].trailColor)||(id===myId&&eTrail&&CM[eTrail]?CM[eTrail].tc:null);
   if(tc){
     for(var i=0;i<2;i++)trails.push({x:x+(Math.random()-.5)*8,y:y+7+(Math.random()-.5)*5,c:tc,a:.65,r:Math.random()*2.5+1.5,vx:(Math.random()-.5)*.35,vy:(Math.random()-.5)*.35});
@@ -1459,6 +1583,7 @@ function killSpriteVisual(id){
 function rmSprite(id){
   var g=pSprites[id];if(!g)return;
   ['body','nm','ht','sk','ring','aura','crown','ownerTag','godRing','frostTxt'].forEach(function(k){if(g[k]&&g[k].destroy)g[k].destroy();});
+  if(g.tagObjs){g.tagObjs.forEach(function(t){if(t&&t.destroy)t.destroy();});}
   delete pSprites[id];
 }
 
@@ -1998,7 +2123,7 @@ function updLobby(){
     name.style.cssText='flex:1;font-weight:900;font-size:13px'+(p.nameColor?';color:'+p.nameColor:'');
     name.textContent=p.username+(p.id===gs.hostId?' 👑':'')+(p.isOwner?' ⚡':'');
     row.appendChild(name);
-    if(p.tags&&p.tags.length){p.tags.forEach(function(tagId){var td=CM[tagId];if(!td)return;var tg=document.createElement('span');tg.style.cssText=td.style+';padding:2px 6px;border-radius:4px;font-size:8px;font-weight:900';tg.textContent=td.icon+' '+td.name;row.appendChild(tg);});}
+    if(p.tags&&p.tags.length){p.tags.forEach(function(tagId){var td=CM[tagId];if(!td)return;var tg=renderTagBadge(tagId,false);row.appendChild(tg);});}
     plist.appendChild(row);
   });
   var sb2=document.getElementById('start-btn');
@@ -2067,11 +2192,6 @@ function showMenu(){
   updCred();redrawPreviews();buildProfile();buildColorGrid('prof-cols',true);renderMenuTags();
 }
 
-function renderMenuTags(){
-  var el=document.getElementById('menu-tags');if(!el)return;el.innerHTML='';
-  (myTags||[]).forEach(function(tagId){var td=CM[tagId];if(!td)return;var span=document.createElement('span');span.style.cssText=td.style+';padding:2px 7px;border-radius:4px;font-size:8px;font-weight:900';span.textContent=td.icon+' '+td.name;el.appendChild(span);});
-}
-
 function buildColorGrid(containerId,live){
   var el=document.getElementById(containerId);if(!el)return;el.innerHTML='';
   COLORS.forEach(function(c){
@@ -2091,6 +2211,45 @@ function buildProfile(){
     if(t.val&&CM[t.val]){val.textContent=CM[t.val].icon+' '+CM[t.val].name;}else{val.textContent='None';val.style.opacity='.25';}
     row.appendChild(lbl);row.appendChild(val);peq.appendChild(row);
   });
+}
+
+var TAG_STYLES = {
+  tag_owner:  {bg:'linear-gradient(135deg,#7a4800,#b8860b)',border:'#FFD700',color:'#FFD700',glow:'rgba(255,215,0,0.3)'},
+  tag_z3n0:   {bg:'linear-gradient(135deg,#3d0d5c,#6c1d8e)',border:'#c084fc',color:'#e9b4ff',glow:'rgba(192,132,252,0.2)'},
+  tag_mod:    {bg:'linear-gradient(135deg,#0a2a4a,#1a4a7a)',border:'#5dade2',color:'#7fc8ff',glow:'rgba(93,173,226,0.2)'},
+  tag_admin:  {bg:'linear-gradient(135deg,#4a3800,#7a6000)',border:'#f9d94e',color:'#ffe680',glow:'rgba(249,217,78,0.2)'},
+  tag_dev:    {bg:'linear-gradient(135deg,#0a2e1a,#1a5e2a)',border:'#58d68d',color:'#a9dfbf',glow:'rgba(88,214,141,0.2)'},
+  tag_vip:    {bg:'linear-gradient(135deg,#0d3320,#1a5c4a)',border:'#1abc9c',color:'#76d7c4',glow:'rgba(26,188,156,0.2)'},
+  tag_pro:    {bg:'linear-gradient(135deg,#3e1a08,#6e3a18)',border:'#f0b27a',color:'#fad7a0',glow:'rgba(240,178,122,0.2)'},
+  tag_legend: {bg:'linear-gradient(135deg,#4a3200,#8a6000)',border:'#f1c40f',color:'#f9e79f',glow:'rgba(241,196,15,0.25)'},
+  tag_og:     {bg:'linear-gradient(135deg,#0d0d22,#1e1e3a)',border:'#9b59b6',color:'#d7bde2',glow:'rgba(155,89,182,0.15)'},
+  tag_donor:  {bg:'linear-gradient(135deg,#0a2a1e,#1a5040)',border:'#52be80',color:'#a9dfbf',glow:'rgba(82,190,128,0.2)'},
+  tag_galaxy: {bg:'linear-gradient(135deg,#0d0825,#1e1045)',border:'#a29bfe',color:'#d2c8ff',glow:'rgba(162,155,254,0.2)'},
+  tag_zero:   {bg:'linear-gradient(135deg,#111,#222)',border:'rgba(255,255,255,0.3)',color:'#ffffff',glow:'rgba(255,255,255,0.05)'},
+  tag_elite:  {bg:'linear-gradient(135deg,#041830,#0a3060)',border:'#74b9ff',color:'#bfdbfe',glow:'rgba(116,185,255,0.2)'},
+  tag_traitor:{bg:'linear-gradient(135deg,#3a0a0a,#6a1010)',border:'#ff7675',color:'#fca5a5',glow:'rgba(255,118,117,0.2)'},
+  tag_host:   {bg:'linear-gradient(135deg,#061428,#0c2850)',border:'#74b9ff',color:'#93c5fd',glow:'rgba(116,185,255,0.2)'},
+  tag_sus:    {bg:'linear-gradient(135deg,#3a0a0a,#6a1010)',border:'#ff7675',color:'#fca5a5',glow:'rgba(255,118,117,0.2)'},
+  tag_boss:   {bg:'linear-gradient(135deg,#220a28,#420a58)',border:'#fd79a8',color:'#f9a8d4',glow:'rgba(253,121,168,0.2)'},
+};
+function getTagStyle(tagId){return TAG_STYLES[tagId]||{bg:'#1a1a2e',border:'rgba(255,255,255,0.2)',color:'#fff',glow:'transparent'};}
+function renderTagBadge(tagId,large){
+  var td=CM[tagId];if(!td)return document.createElement('span');
+  var ts=getTagStyle(tagId);
+  var isOwner=(tagId==='tag_owner');
+  var el=document.createElement('div');
+  var pad=large?'5px 12px':'3px 9px';
+  var fs=large?'11px':'9px';
+  el.style.cssText='display:inline-flex;align-items:center;gap:4px;padding:'+pad+';border-radius:6px;font-size:'+fs+';font-weight:900;font-family:"Nunito",sans-serif;background:'+ts.bg+';color:'+ts.color+';border:1.5px solid '+ts.border+';box-shadow:0 0 8px '+ts.glow+',inset 0 1px 0 rgba(255,255,255,0.1);letter-spacing:.5px;text-shadow:0 1px 3px rgba(0,0,0,0.8);white-space:nowrap;text-transform:uppercase';
+  if(isOwner){
+    el.style.background='linear-gradient(135deg,#6b3600,#a06800)';
+    el.style.border='1.5px solid #FFD700';
+    el.style.color='#FFD700';
+    el.style.boxShadow='0 0 12px rgba(255,215,0,0.35),inset 0 1px 0 rgba(255,255,255,0.15)';
+    el.style.textShadow='0 0 8px rgba(255,200,0,0.6)';
+  }
+  el.textContent=td.icon+' '+td.name;
+  return el;
 }
 
 var RARITY_ORDER=['common','uncommon','rare','epic','legendary','mythic','owner'];
@@ -2176,39 +2335,38 @@ function buildWardTagsPanel(){
     cont.appendChild(empty);
     return;
   }
-  // Header
   var hdr=document.createElement('div');
-  hdr.style.cssText='font-size:9px;font-weight:900;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:4px;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,.08)';
-  hdr.textContent='Your Tags — click to equip/unequip';
+  hdr.style.cssText='font-size:9px;font-weight:900;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,.08)';
+  hdr.textContent='Your Tags — click to equip / unequip';
   cont.appendChild(hdr);
-  // Active tags (currently equipped = in myTags)
   ownedTags.forEach(function(tagId){
     var td=CM[tagId];if(!td)return;
     var isActive=myTags.includes(tagId);
+    var ts=getTagStyle(tagId);
     var row=document.createElement('div');
-    row.style.cssText='display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:all .14s;border:2px solid '+(isActive?'rgba(255,255,255,.3)':'rgba(255,255,255,.07)')+';background:'+(isActive?'rgba(255,255,255,.07)':'rgba(0,0,0,.3)');
-    var badge=document.createElement('div');
-    badge.style.cssText=td.style+';padding:4px 10px;border-radius:5px;font-size:10px;font-weight:900;display:inline-flex;align-items:center;gap:4px;flex-shrink:0';
-    badge.textContent=td.icon+' '+td.name;
+    row.style.cssText='display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:all .14s;border:2px solid '+(isActive?ts.border:'rgba(255,255,255,.08)')+';background:'+(isActive?'rgba(255,255,255,.05)':'rgba(0,0,0,.35)')+';margin-bottom:5px';
+    var badge=renderTagBadge(tagId,true);
     var info=document.createElement('div');
     info.style.cssText='flex:1;min-width:0';
-    info.innerHTML='<div style="font-size:8px;font-weight:900;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.5px">'+td.rarity.toUpperCase()+' TAG</div>'
-      +(isActive?'<div style="font-size:8px;color:#4ade80;font-weight:800;margin-top:2px">✓ Active — click to remove</div>':'<div style="font-size:8px;color:rgba(255,255,255,.3);margin-top:2px">Click to equip</div>');
-    row.appendChild(badge);row.appendChild(info);
-    row.onmouseenter=function(){row.style.borderColor=isActive?'rgba(255,255,255,.5)':'rgba(255,255,255,.2)';};
-    row.onmouseleave=function(){row.style.borderColor=isActive?'rgba(255,255,255,.3)':'rgba(255,255,255,.07)';};
+    info.innerHTML='<div style="font-size:8px;font-weight:900;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.5px">'+td.rarity.toUpperCase()+' TAG</div>'
+      +(isActive?'<div style="font-size:8px;color:#4ade80;font-weight:800;margin-top:2px">✓ Equipped — click to remove</div>':'<div style="font-size:8px;color:rgba(255,255,255,.3);margin-top:2px">Click to equip</div>');
+    var checkmark=document.createElement('div');
+    checkmark.style.cssText='font-size:16px;opacity:'+(isActive?'1':'.1');
+    checkmark.textContent='✓';
+    row.appendChild(badge);row.appendChild(info);row.appendChild(checkmark);
+    row.onmouseenter=function(){row.style.background='rgba(255,255,255,.08)';};
+    row.onmouseleave=function(){row.style.background=isActive?'rgba(255,255,255,.05)':'rgba(0,0,0,.35)';};
     row.onclick=function(){
       if(isActive){
         myTags=myTags.filter(function(t){return t!==tagId;});
+        notify('🏷️ Removed '+td.name,'rgba(255,255,255,.5)');
       } else {
-        myTags=myTags.filter(function(t){return t!==tagId;});
-        myTags.push(tagId);
+        if(!myTags.includes(tagId))myTags.push(tagId);
+        notify('🏷️ Equipped '+td.name,'#f1c40f');
       }
-      // Sync tags to server (display only — source of truth is always PlayFab inventory)
       wsSend({type:'update_tags',tags:myTags});
       buildWardTagsPanel();
       updWardActiveTags();
-      notify((isActive?'🏷️ Removed ':'🏷️ Equipped ')+td.name,'#f1c40f');
     };
     cont.appendChild(row);
   });
@@ -2216,16 +2374,23 @@ function buildWardTagsPanel(){
 
 function updWardActiveTags(){
   var el=document.getElementById('ward-active-tags');if(!el)return;el.innerHTML='';
+  el.style.cssText='display:flex;flex-wrap:wrap;gap:5px;min-height:24px;align-items:center';
   myTags.forEach(function(tagId){
     var td=CM[tagId];if(!td)return;
-    var span=document.createElement('div');
-    span.style.cssText=td.style+';padding:3px 8px;border-radius:5px;font-size:8px;font-weight:900;display:inline-flex;align-items:center;gap:3px';
-    span.textContent=td.icon+' '+td.name;
-    el.appendChild(span);
+    el.appendChild(renderTagBadge(tagId,false));
   });
   if(!myTags.length){
-    el.innerHTML='<div style="font-size:8px;color:rgba(255,255,255,.18);text-align:center">No tags equipped</div>';
+    el.innerHTML='<div style="font-size:8px;color:rgba(255,255,255,.18)">No tags equipped</div>';
   }
+}
+
+function renderMenuTags(){
+  var el=document.getElementById('menu-tags');if(!el)return;el.innerHTML='';
+  el.style.cssText='display:flex;flex-wrap:wrap;gap:4px;margin-top:4px';
+  (myTags||[]).forEach(function(tagId){
+    var td=CM[tagId];if(!td)return;
+    el.appendChild(renderTagBadge(tagId,false));
+  });
 }
 
 function buildWardSlots(){

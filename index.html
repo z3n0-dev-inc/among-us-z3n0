@@ -518,229 +518,90 @@ var COLORS = [
 //   Storage:       x:704–896,  y:498–750
 //   Electrical:    x:342–562,  y:572–742
 //   Admin:         x:854–1044, y:490–690
-// ── WALK ZONES v2 ──
-// Each room is split into multiple rectangles to closely follow the
-// actual angled/notched wall geometry of The Skeld.
-// Corridors are tight — only the real doorway opening width is walkable.
-// Corner notches are removed so players can't clip through diagonal walls.
+// ── WALK ZONES v4 — Matching polygon room geometry ──
 var WALK = [
-
-  // ══════════════════════════════
-  // UPPER ENGINE  (image: 220×160 centred at 170,127)
-  // Raw outer box ~62–278, 49–205
-  // Top-right corner is cut (diagonal wall going to the right hall)
-  // Left side fully open, right side tapers into hallway
-  // ══════════════════════════════
-  {x:68,  y:55,  w:190, h:40,  n:'Upper Engine'},   // top band (full width)
-  {x:68,  y:95,  w:190, h:40,  n:'Upper Engine'},   // mid band
-  {x:68,  y:135, w:168, h:62,  n:'Upper Engine'},   // bottom band (right corner cut 22px)
-
-  // Upper Engine → left vertical corridor connector (narrow slot at bottom-right)
-  {x:236, y:155, w:44,  h:50,  n:'Hall'},            // bottom-right exit slot
-  // Upper Engine → cafeteria top hall (right exit, only as wide as the door ~50px)
-  {x:256, y:95,  w:94,  h:50,  n:'Hall'},            // right door extends east
-
-  // ══════════════════════════════
-  // REACTOR  (image: 225×290 centred at 172,345  → ~60–285, 200–490)
-  // The room has angled top-right and bottom-right corners
-  // ══════════════════════════════
-  {x:64,  y:208, w:192, h:44,  n:'Reactor'},         // top strip (right corner cut)
-  {x:64,  y:252, w:210, h:180, n:'Reactor'},         // main body
-  {x:64,  y:432, w:192, h:52,  n:'Reactor'},         // bottom strip (right corner cut)
-
-  // ══════════════════════════════
-  // LOWER ENGINE  (image: 220×180 centred at 170,628  → ~60–280, 538–718)
-  // Top-right corner cut (matches upper engine mirror)
-  // ══════════════════════════════
-  {x:68,  y:544, w:168, h:62,  n:'Lower Engine'},    // top band (right corner cut)
-  {x:68,  y:606, w:190, h:40,  n:'Lower Engine'},    // mid band
-  {x:68,  y:646, w:190, h:62,  n:'Lower Engine'},    // bottom band
-
-  // Lower Engine → left vertical corridor connector
-  {x:236, y:538, w:44,  h:50,  n:'Hall'},
-
-  // ══════════════════════════════
-  // LEFT VERTICAL CORRIDOR  (x:280–330, runs y:198–590)
-  // This is the narrow hall alongside Reactor.
-  // Width exactly matches the real hallway (~50px).
-  // Top connects to Upper Engine exit, bottom to Lower Engine.
-  // ══════════════════════════════
-  {x:280, y:198, w:50,  h:400, n:'Hall'},   // full left vert — tight 50px wide
-
-  // ══════════════════════════════
-  // CAFETERIA  (image: 320×250 centred at 502,172  → ~342–662, 47–297)
-  // Bottom-left corner cut (wall angles where hall exits down to Security)
-  // Bottom-right corner cut (wall angles toward Weapons hall)
-  // ══════════════════════════════
-  {x:348, y:53,  w:308, h:194, n:'Cafeteria'},       // main body (top)
-  {x:348, y:247, w:80,  h:44,  n:'Cafeteria'},       // bottom-left slice
-  {x:428, y:247, w:148, h:44,  n:'Cafeteria'},       // bottom-center slice
-  {x:576, y:247, w:80,  h:44,  n:'Cafeteria'},       // bottom-right slice
-
-  // Cafeteria → right hall to Weapons (door width ~60px centred ~y:156–216)
-  {x:656, y:152, w:162, h:60,  n:'Hall'},
-
-  // Cafeteria → Security top (door width ~52px centred ~x:426–478)
-  {x:426, y:291, w:52,  h:70,  n:'Hall'},
-
-  // Cafeteria → MedBay top connector (door at ~x:648–714)
-  {x:648, y:247, w:66,  h:40,  n:'Hall'},
-
-  // ══════════════════════════════
-  // WEAPONS / SEC-HALL  (~811–997, 49–245)
-  // Bottom-left corner and bottom-right corner cut diagonally
-  // ══════════════════════════════
-  {x:817, y:55,  w:176, h:140, n:'Weapons'},         // main top body
-  {x:837, y:195, w:136, h:46,  n:'Weapons'},         // bottom narrowed (corners cut ~20px each side)
-
-  // Weapons → Navigation top hall (door ~52px wide centred x:993–1095)
-  {x:993, y:55,  w:104, h:46,  n:'Hall'},
-
-  // Weapons bottom → right vertical junction (door ~80px wide)
-  {x:849, y:241, w:80,  h:38,  n:'Hall'},
-
-  // ══════════════════════════════
-  // NAVIGATION  (~1094–1338, 49–255)
-  // Bottom-left corner cut, bottom-right corner cut
-  // ══════════════════════════════
-  {x:1100,y:55,  w:232, h:148, n:'Navigation'},      // main body
-  {x:1116,y:203, w:196, h:48,  n:'Navigation'},      // bottom strip (corners cut ~16px)
-
-  // Navigation bottom-left door → right vertical (door ~52px wide)
-  {x:1092,y:251, w:52,  h:66,  n:'Hall'},
-
-  // ══════════════════════════════
-  // RIGHT VERTICAL CORRIDOR  (x:1086–1140, y:249–598)
-  // Tight 54px wide corridor
-  // ══════════════════════════════
-  {x:1088,y:249, w:52,  h:350, n:'Hall'},
-
-  // ══════════════════════════════
-  // SHIELDS  (~1082–1338, 314–510)
-  // Left side open to corridor, right extends further
-  // ══════════════════════════════
-  {x:1088,y:320, w:248, h:184, n:'Shields'},
-
-  // ══════════════════════════════
-  // COMMUNICATIONS  (~1082–1338, 594–762)
-  // ══════════════════════════════
-  {x:1088,y:600, w:248, h:158, n:'Communications'},
-
-  // Comms ← Admin right connector
-  {x:1042,y:568, w:50,  h:100, n:'Hall'},
-
-  // ══════════════════════════════
-  // SECURITY  (~352–550, 360–526)
-  // Top-left and bottom-left corners slightly cut by the angled walls
-  // ══════════════════════════════
-  {x:358, y:366, w:52,  h:154, n:'Security'},        // left strip
-  {x:410, y:360, w:134, h:164, n:'Security'},        // main body
-
-  // Security top door → Cafeteria bottom (door ~52px wide at x:426–478)
-  {x:428, y:291, w:50,  h:72,  n:'Hall'},            // connects up to cafeteria bottom
-
-  // Security right door → MedBay (door ~52px tall at y:392–444)
-  {x:548, y:396, w:76,  h:48,  n:'Hall'},
-
-  // Security bottom door → bottom main hall (door ~52px wide at x:428–480)
-  {x:430, y:524, w:48,  h:96,  n:'Hall'},
-
-  // ══════════════════════════════
-  // MEDBAY  (~619–801, 280–444)
-  // Corners slightly cut
-  // ══════════════════════════════
-  {x:625, y:286, w:170, h:152, n:'MedBay'},
-
-  // MedBay left door ↔ Security right (door at y:396–444)
-  {x:549, y:398, w:78,  h:46,  n:'Hall'},
-
-  // ══════════════════════════════
-  // O2  (~802–984, 280–444)
-  // ══════════════════════════════
-  {x:808, y:286, w:170, h:152, n:'O2'},
-
-  // O2 ↔ MedBay connector (tight 10px door)
-  {x:797, y:318, w:14,  h:52,  n:'Hall'},
-
-  // O2 bottom → Storage top (door ~60px wide at x:839–899)
-  {x:843, y:444, w:60,  h:58,  n:'Hall'},
-
-  // ══════════════════════════════
-  // BOTTOM MAIN HALL  (x:280–762, y:618–670)
-  // Runs the full bottom of the ship — tight 50px tall
-  // ══════════════════════════════
-  {x:280, y:620, w:484, h:48,  n:'Hall'},
-
-  // Electrical top connector (x:370–424)
-  {x:372, y:566, w:50,  h:56,  n:'Hall'},
-
-  // Storage top-left connector (x:706–730)
-  {x:707, y:530, w:26,  h:92,  n:'Hall'},
-
-  // ══════════════════════════════
-  // ELECTRICAL  (~344–560, 574–740)
-  // Top-right corner cut, bottom corners slightly cut
-  // ══════════════════════════════
-  {x:350, y:576, w:90,  h:158, n:'Electrical'},      // left block
-  {x:440, y:590, w:110, h:144, n:'Electrical'},      // center block
-  {x:550, y:618, w:8,   h:116, n:'Electrical'},      // right edge
-
-  // Electrical → Storage bottom (hall x:556–706, y:616–668)
-  {x:556, y:618, w:152, h:50,  n:'Hall'},
-
-  // ══════════════════════════════
-  // STORAGE  (~706–894, 500–748)
-  // Top-right corner cut (O2 bottom hall), top-left corner cut
-  // ══════════════════════════════
-  {x:712, y:506, w:56,  h:236, n:'Storage'},         // left strip
-  {x:768, y:506, w:120, h:42,  n:'Storage'},         // top strip (right of O2 hall)
-  {x:768, y:548, w:120, h:194, n:'Storage'},         // main body
-
-  // Storage → O2 bottom (already covered in O2 section above)
-
-  // Storage right → Admin (door ~56px tall at y:534–590)
-  {x:892, y:538, w:60,  h:52,  n:'Hall'},
-
-  // ══════════════════════════════
-  // ADMIN  (~856–1042, 492–688)
-  // Corners cut on all 4 corners (octagonal-ish room)
-  // ══════════════════════════════
-  {x:872, y:498, w:154, h:24,  n:'Admin'},           // top strip
-  {x:862, y:522, w:174, h:140, n:'Admin'},           // main body
-  {x:872, y:662, w:154, h:22,  n:'Admin'},           // bottom strip
-
-  // Admin left ↔ Storage right (door y:538–590)
-  {x:800, y:540, w:60,  h:50,  n:'Hall'},
-
+  // UPPER ENGINE
+  {x:72,  y:55,  w:180, h:93,  n:'Upper Engine'},
+  {x:72,  y:104, w:180, h:44,  n:'Upper Engine'},
+  {x:252, y:104, w:52,  h:44,  n:'Hall'},
+  // REACTOR
+  {x:66,  y:208, w:238, h:282, n:'Reactor'},
+  // LOWER ENGINE
+  {x:72,  y:562, w:180, h:44,  n:'Lower Engine'},
+  {x:72,  y:606, w:180, h:98,  n:'Lower Engine'},
+  {x:252, y:562, w:52,  h:44,  n:'Hall'},
+  // LEFT VERTICAL CORRIDOR
+  {x:304, y:126, w:48,  h:496, n:'Hall'},
+  // CAFETERIA
+  {x:350, y:50,  w:308, h:236, n:'Cafeteria'},
+  {x:658, y:118, w:162, h:52,  n:'Hall'},
+  {x:428, y:286, w:48,  h:78,  n:'Hall'},
+  // WEAPONS
+  {x:818, y:50,  w:226, h:188, n:'Weapons'},
+  {x:998, y:68,  w:100, h:46,  n:'Hall'},
+  {x:856, y:238, w:56,  h:64,  n:'Hall'},
+  // NAVIGATION
+  {x:1044,y:50,  w:294, h:200, n:'Navigation'},
+  {x:1092,y:250, w:48,  h:64,  n:'Hall'},
+  // RIGHT VERTICAL CORRIDOR
+  {x:1092,y:250, w:48,  h:356, n:'Hall'},
+  // SHIELDS
+  {x:1092,y:312, w:246, h:194, n:'Shields'},
+  // COMMS
+  {x:1040,y:566, w:298, h:196, n:'Communications'},
+  // SECURITY
+  {x:354, y:364, w:192, h:160, n:'Security'},
+  {x:546, y:394, w:78,  h:44,  n:'Hall'},
+  {x:430, y:520, w:44,  h:100, n:'Hall'},
+  // MEDBAY
+  {x:624, y:280, w:192, h:158, n:'MedBay'},
+  {x:796, y:314, w:20,  h:44,  n:'Hall'},
+  // O2
+  {x:816, y:280, w:168, h:158, n:'O2'},
+  {x:856, y:438, w:52,  h:68,  n:'Hall'},
+  // STORAGE
+  {x:712, y:438, w:248, h:226, n:'Storage'},
+  {x:890, y:538, w:66,  h:50,  n:'Hall'},
+  // ADMIN
+  {x:856, y:494, w:184, h:194, n:'Admin'},
+  {x:1040,y:568, w:56,  h:96,  n:'Hall'},
+  // ELECTRICAL
+  {x:350, y:568, w:70,  h:96,  n:'Electrical'},
+  {x:374, y:568, w:46,  h:52,  n:'Hall'},
+  {x:420, y:620, w:140, h:44,  n:'Electrical'},
+  // BOTTOM MAIN HALL
+  {x:306, y:616, w:456, h:48,  n:'Hall'},
+  {x:558, y:616, w:156, h:48,  n:'Hall'},
+  {x:712, y:504, w:32,  h:116, n:'Hall'},
 ];
 
 var TLOCS = [
-  {x:502,y:150,n:'Cafeteria'},   // Cafeteria - near table
-  {x:172,y:310,n:'Reactor'},     // Reactor
-  {x:1216,y:140,n:'Navigation'}, // Navigation
-  {x:710,y:360,n:'MedBay'},      // MedBay
-  {x:800,y:640,n:'Storage'},     // Storage
-  {x:452,y:660,n:'Electrical'},  // Electrical
-  {x:893,y:360,n:'O2'},          // O2
-  {x:949,y:590,n:'Admin'},       // Admin
-  {x:1210,y:650,n:'Communications'}, // Comms
-  {x:451,y:443,n:'Security'},    // Security
+  {x:502,y:155,n:'Cafeteria'},
+  {x:169,y:346,n:'Reactor'},
+  {x:1218,y:149,n:'Navigation'},
+  {x:711,y:359,n:'MedBay'},
+  {x:804,y:623,n:'Storage'},
+  {x:453,y:659,n:'Electrical'},
+  {x:900,y:359,n:'O2'},
+  {x:951,y:589,n:'Admin'},
+  {x:1218,y:679,n:'Communications'},
+  {x:449,y:441,n:'Security'},
 ];
 
 var VENTS = [
-  {x:502,y:95, n:'Cafeteria'},
-  {x:904,y:95, n:'Weapons'},
-  {x:1250,y:95,n:'Navigation'},
-  {x:710,y:295,n:'MedBay'},
-  {x:1240,y:380,n:'Shields'},
-  {x:1240,y:650,n:'Communications'},
-  {x:760,y:660,n:'Storage'},
-  {x:452,y:660,n:'Electrical'},
-  {x:905,y:540,n:'Admin'},
-  {x:170,y:470,n:'Reactor'},
-  {x:450,y:260,n:'Upper Engine'},
-  {x:170,y:610,n:'Lower Engine'},
-  {x:451,y:400,n:'Security'},
+  {x:502,y:68, n:'Cafeteria'},
+  {x:908,y:68, n:'Weapons'},
+  {x:1218,y:68,n:'Navigation'},
+  {x:711,y:295,n:'MedBay'},
+  {x:1218,y:370,n:'Shields'},
+  {x:1218,y:640,n:'Communications'},
+  {x:804,y:620,n:'Storage'},
+  {x:453,y:636,n:'Electrical'},
+  {x:951,y:560,n:'Admin'},
+  {x:169,y:400,n:'Reactor'},
+  {x:164,y:80, n:'Upper Engine'},
+  {x:164,y:600,n:'Lower Engine'},
+  {x:449,y:410,n:'Security'},
 ];
 var ventIdx = 0;
 
@@ -1088,198 +949,475 @@ function updRoomLabel(x,y){
 }
 
 // ══════════════════════════════════════
-// SKELD MAP — AUTHENTIC AU RECREATION
-// KEY FIX: No strokeArc - use beginPath + arc + stroke
+// SKELD MAP — AUTHENTIC v3
+// ══════════════════════════════════════
+// SKELD MAP v4 — AUTHENTIC POLYGON ROOMS
+// All rooms drawn as proper polygons matching real Skeld shapes
 // ══════════════════════════════════════
 function buildSkeldMap(sc){
   var g=sc.add.graphics();
+  var wg=sc.add.graphics().setDepth(5); // wall graphics layer
 
-  // Deep space background
-  g.fillStyle(0x010108,1);g.fillRect(0,0,MAP_W,MAP_H);
-  // Stars
-  var rng=new Phaser.Math.RandomDataGenerator(['skeld']);
-  g.fillStyle(0xffffff,1);
-  for(var si=0;si<200;si++){
-    var bri=rng.frac();
-    g.fillStyle(0xffffff,0.1+bri*0.6);
-    g.fillRect(Math.floor(rng.frac()*MAP_W),Math.floor(rng.frac()*MAP_H),bri<0.08?2:1,bri<0.08?2:1);
-  }
-
-  // ── HALLWAY FLOORS (connecting rooms) ──
-  function tileFloor(rx,ry,rw,rh,col1,col2){
-    g.fillStyle(col1,1);g.fillRect(rx,ry,rw,rh);
-    var ts=16;g.fillStyle(col2,1);
-    for(var ty=ry;ty<ry+rh;ty+=ts)
-      for(var tx=rx;tx<rx+rw;tx+=ts)
-        if(((Math.floor((tx-rx)/ts)+(Math.floor((ty-ry)/ts)))%2)===0)
-          g.fillRect(tx,ty,ts,ts);
-  }
-
-  // ── AU-AUTHENTIC HALLWAY TEXTURE ──
-  // Matches WALK zone corridors exactly for visual accuracy
-  function drawHallway(rx,ry,rw,rh){
-    // Base — dark steel
-    g.fillStyle(0x1c2226,1); g.fillRect(rx,ry,rw,rh);
-    // Checker tiles (AU style)
-    var ts=18;
-    for(var ty=ry;ty<ry+rh;ty+=ts){
-      for(var tx=rx;tx<rx+rw;tx+=ts){
-        if(((Math.floor((tx-rx)/ts)+(Math.floor((ty-ry)/ts)))%2)===0){
-          g.fillStyle(0x242b30,1);
-          var cx2=Math.max(tx,rx), cy2=Math.max(ty,ry);
-          var cw=Math.min(tx+ts,rx+rw)-cx2, ch=Math.min(ty+ts,ry+rh)-cy2;
-          if(cw>0&&ch>0) g.fillRect(cx2,cy2,cw,ch);
+  // ── Fill a polygon (array of {x,y}) with a floor color + checker tiles ──
+  function fillPoly(pts,floorCol,tileCol){
+    g.fillStyle(floorCol,1);
+    g.fillPoints(pts,true);
+    // checker tile overlay using small rects clipped by the polygon
+    // We use a simple approach: draw alternating tiles and mask with the polygon path
+    // Since Phaser doesn't clip, we just draw the base + a slightly lighter overlay
+    g.fillStyle(tileCol,0.45);
+    // Draw tile pattern as tiny rects; visually fine at zoom 3.2
+    var minX=pts.reduce(function(m,p){return Math.min(m,p.x);},9999);
+    var maxX=pts.reduce(function(m,p){return Math.max(m,p.x);},0);
+    var minY=pts.reduce(function(m,p){return Math.min(m,p.y);},9999);
+    var maxY=pts.reduce(function(m,p){return Math.max(m,p.y);},0);
+    var ts=22;
+    for(var ty=minY;ty<maxY;ty+=ts){
+      for(var tx=minX;tx<maxX;tx+=ts){
+        if(((Math.floor((tx-minX)/ts)+(Math.floor((ty-minY)/ts)))%2)===0){
+          if(pointInPoly({x:tx+ts/2,y:ty+ts/2},pts)){
+            g.fillRect(tx,ty,ts,ts);
+          }
         }
       }
     }
-    // Center highlight stripe
-    if(rw>=rh){
-      var sp=Math.floor(rh*.25);
-      g.fillStyle(0x2a3338,.7); g.fillRect(rx,ry+sp,rw,rh-sp*2);
-      g.lineStyle(1,0x3d5060,.45); g.lineBetween(rx,ry+Math.floor(rh/2),rx+rw,ry+Math.floor(rh/2));
-      g.lineStyle(2,0x0a1014,1);
-      g.lineBetween(rx,ry,rx+rw,ry); g.lineBetween(rx,ry+rh,rx+rw,ry+rh);
-      g.lineStyle(1,0x3a5060,.5);
-      g.lineBetween(rx,ry+1,rx+rw,ry+1); g.lineBetween(rx,ry+rh-1,rx+rw,ry+rh-1);
-      // Rivets
-      g.fillStyle(0x3a4a52,1);
-      for(var bx=rx+14;bx<rx+rw-8;bx+=36){
-        g.fillRect(bx,ry+2,3,3); g.fillRect(bx,ry+rh-5,3,3);
-      }
-    } else {
-      var sp=Math.floor(rw*.25);
-      g.fillStyle(0x2a3338,.7); g.fillRect(rx+sp,ry,rw-sp*2,rh);
-      g.lineStyle(1,0x3d5060,.45); g.lineBetween(rx+Math.floor(rw/2),ry,rx+Math.floor(rw/2),ry+rh);
-      g.lineStyle(2,0x0a1014,1);
-      g.lineBetween(rx,ry,rx,ry+rh); g.lineBetween(rx+rw,ry,rx+rw,ry+rh);
-      g.lineStyle(1,0x3a5060,.5);
-      g.lineBetween(rx+1,ry,rx+1,ry+rh); g.lineBetween(rx+rw-1,ry,rx+rw-1,ry+rh);
-      g.fillStyle(0x3a4a52,1);
-      for(var by=ry+14;by<ry+rh-8;by+=36){
-        g.fillRect(rx+2,by,3,3); g.fillRect(rx+rw-5,by,3,3);
-      }
-    }
-    g.lineStyle(3,0x080c0e,1); g.strokeRect(rx,ry,rw,rh);
   }
 
-  // Draw corridors — matching tight WALK zones v2
-  // ── LEFT SIDE ──
-  drawHallway(256,  95,  94, 50);   // Upper Eng → Cafeteria top hall
-  drawHallway(280, 198,  50,400);   // Left vertical corridor (tight 50px)
+  // ── Point-in-polygon test ──
+  function pointInPoly(pt,poly){
+    var x=pt.x,y=pt.y,inside=false;
+    for(var i=0,j=poly.length-1;i<poly.length;j=i++){
+      var xi=poly[i].x,yi=poly[i].y,xj=poly[j].x,yj=poly[j].y;
+      if(((yi>y)!==(yj>y))&&(x<(xj-xi)*(y-yi)/(yj-yi)+xi))inside=!inside;
+    }
+    return inside;
+  }
 
-  // ── TOP ──
-  drawHallway(656, 152, 162, 60);   // Cafeteria → Weapons hall
-  drawHallway(426, 291,  52, 70);   // Cafeteria bottom → Security top
-  drawHallway(648, 247,  66, 40);   // Cafeteria → MedBay top
-  drawHallway(993,  55, 104, 46);   // Weapons → Navigation top
-  drawHallway(849, 241,  80, 38);   // Weapons bottom → right vert
+  // ── Draw polygon wall outline ──
+  function strokePoly(pts,thick,col,alpha){
+    wg.lineStyle(thick,col,alpha||1);
+    wg.strokePoints(pts,true);
+  }
 
-  // ── RIGHT VERTICAL ──
-  drawHallway(1088,249,  52,350);   // Right vertical corridor (tight 52px)
-
-  // ── CENTER ──
-  drawHallway(428, 291,  50, 72);   // Security top door
-  drawHallway(548, 396,  76, 48);   // Security right → MedBay
-  drawHallway(430, 524,  48, 96);   // Security bottom → bottom hall
-  drawHallway(549, 398,  78, 46);   // MedBay left door
-  drawHallway(797, 318,  14, 52);   // MedBay ↔ O2 connector
-  drawHallway(843, 444,  60, 58);   // O2 bottom → Storage
-
-  // ── BOTTOM ──
-  drawHallway(280, 620, 484, 48);   // Main bottom hall (tight 48px tall)
-  drawHallway(372, 566,  50, 56);   // Electrical top connector
-  drawHallway(707, 530,  26, 92);   // Storage top-left connector
-  drawHallway(556, 618, 152, 50);   // Electrical → Storage bottom hall
-  drawHallway(892, 538,  60, 52);   // Storage → Admin right door
-  drawHallway(800, 540,  60, 50);   // Admin left door ↔ Storage
-  drawHallway(1042,568,  50,100);   // Admin right → Comms
-
-
-  // ── PLACE REAL ROOM IMAGES ──
-  // [textureKey, centerX, centerY, displayW, displayH]
-  var ROOMS=[
-    ['rm_cafeteria',      502, 172, 320, 250],
-    ['rm_sec_hall',       904, 147, 190, 200],
-    ['rm_navigation',    1216, 152, 248, 210],
-    ['rm_shields',       1210, 412, 260, 200],
-    ['rm_communications',1210, 677, 260, 170],
-    ['rm_admin',          949, 590, 190, 200],
-    ['rm_storage',        800, 624, 192, 252],
-    ['rm_electrical',     452, 657, 220, 170],
-    ['rm_o2',             893, 362, 186, 168],
-    ['rm_medbay',         710, 362, 186, 168],
-    ['rm_security',       451, 443, 202, 170],
-    ['rm_upper_engine',   170, 127, 220, 160],
-    ['rm_lower_engine',   170, 628, 220, 180],
-    ['rm_reactor',        172, 345, 225, 290],
-  ];
-
-  ROOMS.forEach(function(r){
-    var key=r[0],cx=r[1],cy=r[2],dw=r[3],dh=r[4];
-    if(sc.textures.exists(key)){
-      sc.add.image(cx,cy,key).setDisplaySize(dw,dh).setDepth(3);
+  // ── Draw a hallway rect (floor + walls) ──
+  function drawHall(rx,ry,rw,rh){
+    var isH=rw>=rh;
+    g.fillStyle(0x16202a,1);g.fillRect(rx,ry,rw,rh);
+    // checker
+    var ts=20;
+    for(var ty2=ry;ty2<ry+rh;ty2+=ts){
+      for(var tx2=rx;tx2<rx+rw;tx2+=ts){
+        if(((Math.floor((tx2-rx)/ts)+(Math.floor((ty2-ry)/ts)))%2)===0){
+          g.fillStyle(0x1e2e3c,0.6);
+          g.fillRect(Math.max(tx2,rx),Math.max(ty2,ry),
+            Math.min(tx2+ts,rx+rw)-Math.max(tx2,rx),
+            Math.min(ty2+ts,ry+rh)-Math.max(ty2,ry));
+        }
+      }
+    }
+    // center stripe
+    if(isH){
+      var sp=Math.max(3,Math.floor(rh*0.25));
+      g.fillStyle(0x22303e,0.7);g.fillRect(rx,ry+sp,rw,rh-sp*2);
+      wg.lineStyle(4,0x030608,1);wg.lineBetween(rx,ry,rx+rw,ry);wg.lineBetween(rx,ry+rh,rx+rw,ry+rh);
+      wg.lineStyle(1,0x3a5a70,0.5);wg.lineBetween(rx,ry+2,rx+rw,ry+2);wg.lineBetween(rx,ry+rh-2,rx+rw,ry+rh-2);
+      // rivets
+      wg.fillStyle(0x3a5060,1);
+      for(var bx=rx+16;bx<rx+rw-6;bx+=36){wg.fillCircle(bx,ry+3,1.8);wg.fillCircle(bx,ry+rh-3,1.8);}
     } else {
-      // Fallback: draw a labeled placeholder box
-      var fg=sc.add.graphics().setDepth(3);
-      fg.fillStyle(0x2a3035,1);fg.fillRect(cx-dw/2,cy-dh/2,dw,dh);
-      fg.lineStyle(2,0x4a6070,1);fg.strokeRect(cx-dw/2,cy-dh/2,dw,dh);
-      sc.add.text(cx,cy,key.replace('rm_','').toUpperCase(),{fontSize:'7px',color:'#aabbcc',fontFamily:'Nunito'}).setOrigin(.5).setDepth(4);
+      var sp2=Math.max(3,Math.floor(rw*0.25));
+      g.fillStyle(0x22303e,0.7);g.fillRect(rx+sp2,ry,rw-sp2*2,rh);
+      wg.lineStyle(4,0x030608,1);wg.lineBetween(rx,ry,rx,ry+rh);wg.lineBetween(rx+rw,ry,rx+rw,ry+rh);
+      wg.lineStyle(1,0x3a5a70,0.5);wg.lineBetween(rx+2,ry,rx+2,ry+rh);wg.lineBetween(rx+rw-2,ry,rx+rw-2,ry+rh);
+      wg.fillStyle(0x3a5060,1);
+      for(var by2=ry+16;by2<ry+rh-6;by2+=36){wg.fillCircle(rx+3,by2,1.8);wg.fillCircle(rx+rw-3,by2,1.8);}
     }
+  }
+
+  // ── Add room label ──
+  function roomLabel(x,y,name){
+    sc.add.text(x,y,name,{
+      fontSize:'7px',color:'#90b8cc',fontFamily:'Nunito',fontStyle:'bold',
+      stroke:'#000',strokeThickness:3
+    }).setOrigin(.5).setDepth(6).setAlpha(0.65);
+  }
+
+  // ─────────────────────────────────────────
+  // DEEP SPACE BACKGROUND + STARS
+  // ─────────────────────────────────────────
+  g.fillStyle(0x010108,1);g.fillRect(0,0,MAP_W,MAP_H);
+  var rng=new Phaser.Math.RandomDataGenerator(['skeld42']);
+  for(var si=0;si<250;si++){
+    var bri=rng.frac();
+    g.fillStyle(0xffffff,0.08+bri*0.55);
+    g.fillRect(Math.floor(rng.frac()*MAP_W),Math.floor(rng.frac()*MAP_H),bri<0.06?2:1,bri<0.06?2:1);
+  }
+
+  // ─────────────────────────────────────────
+  // HALLWAYS — drawn first (rooms paint over)
+  // ─────────────────────────────────────────
+  // Left vertical corridor (alongside Reactor)
+  drawHall(304,126,48,496);
+  // Upper Engine exit bridge
+  drawHall(252,104,54,44);
+  // Lower Engine exit bridge
+  drawHall(252,562,54,44);
+  // Top horizontal: Cafeteria → Weapons
+  drawHall(656,118,164,52);
+  // Weapons → Navigation
+  drawHall(998,68,100,46);
+  // Weapons bottom → right vertical
+  drawHall(856,238,56,64);
+  // Right vertical corridor
+  drawHall(1092,250,48,354);
+  // Cafeteria down → Security
+  drawHall(428,286,48,78);
+  // Security right → MedBay
+  drawHall(546,394,78,44);
+  // Security bottom → bottom hall
+  drawHall(430,520,44,104);
+  // MedBay ↔ O2 (tiny gap)
+  drawHall(796,314,20,44);
+  // O2 bottom → Storage
+  drawHall(852,438,52,68);
+  // Bottom main hall
+  drawHall(306,616,456,48);
+  // Electrical top connector
+  drawHall(374,568,46,52);
+  // Storage top-left connector
+  drawHall(712,504,32,116);
+  // Electrical → Storage (bottom)
+  drawHall(558,616,156,48);
+  // Storage → Admin
+  drawHall(890,538,66,50);
+  // Admin → Comms
+  drawHall(1040,568,56,96);
+  // Cafeteria → MedBay/O2 area (top of medbay hall)
+  drawHall(648,250,68,36);
+
+  // ─────────────────────────────────────────
+  // ROOMS — polygon shapes matching real Skeld
+  // ─────────────────────────────────────────
+
+  // ── UPPER ENGINE ──
+  // Roughly hexagonal: left side vertical, right side angled toward the corridor
+  var upperEng=[
+    {x:72, y:55},{x:252,y:55},{x:252,y:104},{x:304,y:126},{x:304,y:148},
+    {x:252,y:148},{x:72, y:148}
+  ];
+  fillPoly(upperEng,0x1a2e35,0x22404d);
+  strokePoly(upperEng,4,0x040709);
+  strokePoly(upperEng,1.5,0x3a6070,0.5);
+  roomLabel(172,102,'UPPER ENGINE');
+
+  // ── REACTOR ──
+  // Tall room with angled top-right and bottom-right corners
+  var reactor=[
+    {x:66, y:208},{x:250,y:208},{x:304,y:240},{x:304,y:480},
+    {x:250,y:490},{x:66, y:490}
+  ];
+  fillPoly(reactor,0x1e1628,0x2a1e38);
+  strokePoly(reactor,4,0x040709);
+  strokePoly(reactor,1.5,0x5a3a6a,0.5);
+  roomLabel(172,349,'REACTOR');
+
+  // ── LOWER ENGINE ──
+  // Mirror of upper engine
+  var lowerEng=[
+    {x:72, y:562},{x:252,y:562},{x:304,y:562},{x:304,y:584},
+    {x:252,y:606},{x:252,y:706},{x:72, y:706}
+  ];
+  fillPoly(lowerEng,0x1a2e35,0x22404d);
+  strokePoly(lowerEng,4,0x040709);
+  strokePoly(lowerEng,1.5,0x3a6070,0.5);
+  roomLabel(172,634,'LOWER ENGINE');
+
+  // ── CAFETERIA ──
+  // Large room, bottom-left and bottom-right have small notches for corridor exits
+  var cafe=[
+    {x:350,y:50},{x:658,y:50},{x:658,y:118},{x:820,y:118},
+    {x:820,y:170},{x:658,y:170},{x:658,y:286},
+    {x:476,y:286},{x:476,y:364},{x:428,y:364},
+    {x:428,y:286},{x:350,y:286}
+  ];
+  fillPoly(cafe,0x20203a,0x2c2c50);
+  strokePoly(cafe,4,0x040709);
+  strokePoly(cafe,1.5,0x5050a0,0.5);
+  roomLabel(500,168,'CAFETERIA');
+
+  // ── WEAPONS (top right area — labeled as Weapons/Storage on right side) ──
+  // Pentagonal shape
+  var weapons=[
+    {x:818,y:50},{x:998,y:50},{x:1044,y:68},{x:1044,y:114},
+    {x:998,y:114},{x:998,y:238},{x:912,y:238},{x:856,y:238},
+    {x:818,y:200}
+  ];
+  fillPoly(weapons,0x1e1a2e,0x2a2440);
+  strokePoly(weapons,4,0x040709);
+  strokePoly(weapons,1.5,0x5040a0,0.5);
+  roomLabel(908,138,'WEAPONS');
+
+  // ── NAVIGATION ──
+  // Wide room top-right, trapezoidal
+  var navi=[
+    {x:1044,y:50},{x:1338,y:50},{x:1338,y:250},{x:1092,y:250},
+    {x:1092,y:114},{x:1044,y:114}
+  ];
+  fillPoly(navi,0x182038,0x202c50);
+  strokePoly(navi,4,0x040709);
+  strokePoly(navi,1.5,0x3858a8,0.5);
+  roomLabel(1216,150,'NAVIGATION');
+
+  // ── SHIELDS ──
+  // Wide room right side middle
+  var shields=[
+    {x:1092,y:312},{x:1338,y:312},{x:1338,y:506},{x:1092,y:506}
+  ];
+  fillPoly(shields,0x182838,0x203848);
+  strokePoly(shields,4,0x040709);
+  strokePoly(shields,1.5,0x3870a0,0.5);
+  roomLabel(1215,409,'SHIELDS');
+
+  // ── COMMUNICATIONS ──
+  // Right side bottom room
+  var comms=[
+    {x:1040,y:596},{x:1092,y:566},{x:1338,y:566},{x:1338,y:762},{x:1040,y:762}
+  ];
+  fillPoly(comms,0x2a1818,0x3a2020);
+  strokePoly(comms,4,0x040709);
+  strokePoly(comms,1.5,0x904040,0.5);
+  roomLabel(1196,664,'COMMS');
+
+  // ── SECURITY ──
+  // Slightly irregular room center-left
+  var security=[
+    {x:354,y:364},{x:476,y:364},{x:546,y:394},{x:546,y:438},
+    {x:476,y:438},{x:476,y:524},{x:428,y:524},
+    {x:428,y:438},{x:354,y:438}
+  ];
+  fillPoly(security,0x182818,0x223828);
+  strokePoly(security,4,0x040709);
+  strokePoly(security,1.5,0x406050,0.5);
+  roomLabel(440,401,'SECURITY');
+
+  // ── MEDBAY ──
+  // Roughly rectangular with right side open to O2
+  var medbay=[
+    {x:624,y:280},{x:796,y:280},{x:796,y:314},{x:816,y:314},
+    {x:816,y:358},{x:796,y:358},{x:796,y:438},{x:624,y:438}
+  ];
+  fillPoly(medbay,0x18202e,0x202c40);
+  strokePoly(medbay,4,0x040709);
+  strokePoly(medbay,1.5,0x4060a0,0.5);
+  roomLabel(710,359,'MEDBAY');
+
+  // ── O2 ──
+  var o2=[
+    {x:816,y:280},{x:984,y:280},{x:984,y:438},{x:904,y:438},
+    {x:904,y:506},{x:856,y:506},{x:856,y:438},{x:816,y:438},
+    {x:816,y:358},{x:796,y:358},{x:796,y:314},{x:816,y:314}
+  ];
+  fillPoly(o2,0x1e1828,0x2a2038);
+  strokePoly(o2,4,0x040709);
+  strokePoly(o2,1.5,0x7040a0,0.5);
+  roomLabel(900,344,'O2');
+
+  // ── STORAGE ──
+  // Wide irregular room center-bottom
+  var storage=[
+    {x:712,y:438},{x:856,y:438},{x:904,y:438},{x:904,y:506},
+    {x:890,y:506},{x:890,y:588},{x:960,y:588},
+    {x:960,y:664},{x:712,y:664}
+  ];
+  fillPoly(storage,0x242018,0x342e20);
+  strokePoly(storage,4,0x040709);
+  strokePoly(storage,1.5,0x906840,0.5);
+  roomLabel(810,556,'STORAGE');
+
+  // ── ELECTRICAL ──
+  // Left of storage, irregular
+  var electrical=[
+    {x:350,y:620},{x:374,y:568},{x:420,y:568},{x:420,y:620},
+    {x:558,y:620},{x:558,y:664},{x:350,y:664}
+  ];
+  fillPoly(electrical,0x281414,0x381c1c);
+  strokePoly(electrical,4,0x040709);
+  strokePoly(electrical,1.5,0xb03030,0.5);
+  roomLabel(452,636,'ELECTRICAL');
+
+  // ── ADMIN ──
+  // Octagonal-ish room
+  var admin=[
+    {x:880,y:494},{x:1010,y:494},{x:1040,y:520},{x:1040,y:664},
+    {x:1010,y:688},{x:880,y:688},{x:856,y:664},{x:856,y:588},
+    {x:890,y:588},{x:890,y:506},{x:856,y:506},{x:856,y:520}
+  ];
+  fillPoly(admin,0x1c1c2e,0x262640);
+  strokePoly(admin,4,0x040709);
+  strokePoly(admin,1.5,0x4848a8,0.5);
+  roomLabel(952,591,'ADMIN');
+
+  // ─────────────────────────────────────────
+  // ROOM INTERIOR DETAILS
+  // ─────────────────────────────────────────
+  var det=sc.add.graphics().setDepth(4);
+
+  // Cafeteria — long table
+  det.fillStyle(0x2a2850,1);det.fillRect(390,140,220,24);
+  det.fillStyle(0x3a3870,1);det.fillRect(392,142,216,20);
+  det.lineStyle(1,0x5050a0,0.5);det.strokeRect(390,140,220,24);
+  // Cafeteria chairs
+  for(var ci=0;ci<5;ci++){det.fillStyle(0x222040,1);det.fillCircle(406+ci*44,130,7);det.fillCircle(406+ci*44,176,7);}
+
+  // Reactor — center circle
+  det.fillStyle(0x301030,1);det.fillCircle(170,349,52);
+  det.fillStyle(0x4a1a5a,1);det.fillCircle(170,349,42);
+  det.fillStyle(0x6a2a7a,1);det.fillCircle(170,349,32);
+  det.fillStyle(0x8a3a9a,1);det.fillCircle(170,349,18);
+  det.fillStyle(0xaa50bb,0.7);det.fillCircle(170,349,10);
+  det.lineStyle(1.5,0x9a40aa,0.6);det.strokeCircle(170,349,48);
+
+  // Engine rooms — engine cylinders
+  det.fillStyle(0x183040,1);det.fillRect(90,80,40,90);
+  det.fillStyle(0x204050,1);det.fillRect(93,83,34,84);
+  det.lineStyle(1,0x3a6070,0.5);det.strokeRect(90,80,40,90);
+  det.fillStyle(0x183040,1);det.fillRect(148,80,40,90);
+  det.fillStyle(0x204050,1);det.fillRect(151,83,34,84);
+  det.lineStyle(1,0x3a6070,0.5);det.strokeRect(148,80,40,90);
+  // Lower engine mirrors
+  det.fillStyle(0x183040,1);det.fillRect(90,582,40,90);
+  det.fillStyle(0x204050,1);det.fillRect(93,585,34,84);
+  det.lineStyle(1,0x3a6070,0.5);det.strokeRect(90,582,40,90);
+  det.fillStyle(0x183040,1);det.fillRect(148,582,40,90);
+  det.fillStyle(0x204050,1);det.fillRect(151,585,34,84);
+  det.lineStyle(1,0x3a6070,0.5);det.strokeRect(148,582,40,90);
+
+  // MedBay — med table
+  det.fillStyle(0x1a2840,1);det.fillRect(638,310,120,60);
+  det.fillStyle(0x243656,1);det.fillRect(640,312,116,56);
+  det.lineStyle(1,0x3868a0,0.6);det.strokeRect(638,310,120,60);
+  // cross symbol
+  det.fillStyle(0x40a060,1);det.fillRect(690,322,16,36);det.fillRect(678,334,40,12);
+
+  // O2 — oxygen tanks
+  det.fillStyle(0x1e1828,1);det.fillEllipse(856,330,26,50);det.fillEllipse(892,330,26,50);
+  det.fillStyle(0x2e2440,1);det.fillEllipse(854,328,22,46);det.fillEllipse(890,328,22,46);
+  det.lineStyle(1,0x6040a0,0.5);det.strokeEllipse(856,330,26,50);det.strokeEllipse(892,330,26,50);
+
+  // Security — monitor screens
+  det.fillStyle(0x0a1a14,1);det.fillRect(368,378,50,36);
+  det.fillStyle(0x0e2a1e,1);det.fillRect(370,380,46,32);
+  det.lineStyle(1,0x208040,0.6);det.strokeRect(368,378,50,36);
+  // Green scan line
+  det.lineStyle(1.5,0x20c060,0.4);det.lineBetween(370,396,416,396);
+
+  // Navigation — big screen
+  det.fillStyle(0x0a0a1e,1);det.fillRect(1110,68,200,130);
+  det.fillStyle(0x0e1030,1);det.fillRect(1112,70,196,126);
+  det.lineStyle(1,0x2040a0,0.5);det.strokeRect(1110,68,200,130);
+  // Stars on screen
+  det.fillStyle(0xffffff,1);
+  for(var ssi=0;ssi<20;ssi++){
+    det.fillCircle(1115+Math.floor(rng.frac()*186),73+Math.floor(rng.frac()*118),rng.frac()<0.1?2:1);
+  }
+
+  // Admin — table
+  det.fillStyle(0x16163a,1);det.fillRect(900,540,100,80);
+  det.fillStyle(0x20205a,1);det.fillRect(902,542,96,76);
+  det.lineStyle(1,0x4040c0,0.4);det.strokeRect(900,540,100,80);
+
+  // Shields — shield panels
+  det.fillStyle(0x162838,1);det.fillRect(1110,330,200,150);
+  det.fillStyle(0x1e3448,1);det.fillRect(1112,332,196,146);
+  det.lineStyle(1,0x3070a0,0.4);det.strokeRect(1110,330,200,150);
+  // Horizontal lines = shield bars
+  for(var shi=0;shi<6;shi++){det.lineStyle(1,0x2870a0,0.35);det.lineBetween(1114,340+shi*22,1306,340+shi*22);}
+
+  // Comms — dish
+  det.fillStyle(0x281418,1);det.fillCircle(1220,660,44);
+  det.fillStyle(0x401c20,1);det.fillCircle(1220,660,38);
+  det.lineStyle(2,0x803040,0.5);det.strokeCircle(1220,660,44);
+  det.lineStyle(1,0x803040,0.4);det.lineBetween(1220,616,1220,660);det.lineBetween(1176,660,1264,660);
+
+  // Electrical — electric panel
+  det.fillStyle(0x2a0808,1);det.fillRect(368,630,160,22);
+  det.fillStyle(0x3a0a0a,1);det.fillRect(370,632,156,18);
+  det.lineStyle(1,0xc03030,0.5);det.strokeRect(368,630,160,22);
+  for(var eli=0;eli<5;eli++){
+    det.fillStyle(eli%2===0?0xff4040:0x880000,1);det.fillCircle(385+eli*32,641,4);
+  }
+
+  // Storage — crates
+  var cratePositions=[[728,460],[758,460],[728,490],[758,490],[788,460]];
+  cratePositions.forEach(function(cp){
+    det.fillStyle(0x2a2010,1);det.fillRect(cp[0],cp[1],26,26);
+    det.fillStyle(0x3a2e18,1);det.fillRect(cp[0]+2,cp[1]+2,22,22);
+    det.lineStyle(1,0x705030,0.6);det.strokeRect(cp[0],cp[1],26,26);
+    det.lineStyle(0.5,0x705030,0.3);det.lineBetween(cp[0],cp[1]+13,cp[0]+26,cp[1]+13);det.lineBetween(cp[0]+13,cp[1],cp[0]+13,cp[1]+26);
   });
 
-  // ── VENTS ──
+  // ─────────────────────────────────────────
+  // VENTS — authentic grate look
+  // ─────────────────────────────────────────
   VENTS.forEach(function(v){
-    var vgr=sc.add.graphics().setDepth(8);
-    vgr.fillStyle(0x18252e,1);
-    vgr.fillRect(v.x-16,v.y-8,32,16);
-    vgr.lineStyle(2,0x3a5060,1);vgr.strokeRect(v.x-16,v.y-8,32,16);
-    for(var vk=0;vk<5;vk++){
-      vgr.lineStyle(1.5,0x4a6070,.9);
-      vgr.lineBetween(v.x-10+vk*5,v.y-5,v.x-10+vk*5,v.y+5);
+    var vg2=sc.add.graphics().setDepth(8);
+    vg2.fillStyle(0x0c1820,1);vg2.fillRect(v.x-18,v.y-9,36,18);
+    vg2.fillStyle(0x16222e,1);vg2.fillRect(v.x-16,v.y-7,32,14);
+    vg2.lineStyle(2,0x2a4258,1);vg2.strokeRect(v.x-18,v.y-9,36,18);
+    for(var vk=0;vk<6;vk++){
+      vg2.lineStyle(1.5,0x3a5870,0.9);
+      vg2.lineBetween(v.x-12+vk*5,v.y-6,v.x-12+vk*5,v.y+6);
     }
-    vgr.fillStyle(0x000000,.2);vgr.fillRect(v.x-14,v.y-6,28,12);
+    vg2.fillStyle(0x3a5468,1);
+    vg2.fillCircle(v.x-15,v.y-6,1.5);vg2.fillCircle(v.x+15,v.y-6,1.5);
+    vg2.fillCircle(v.x-15,v.y+6,1.5);vg2.fillCircle(v.x+15,v.y+6,1.5);
+    vg2.fillStyle(0x000000,0.3);vg2.fillRect(v.x-16,v.y-7,32,14);
   });
 
-  // ── EMERGENCY BUTTON ──
+  // ─────────────────────────────────────────
+  // EMERGENCY BUTTON
+  // ─────────────────────────────────────────
   var eb=sc.add.graphics().setDepth(7);
-  eb.fillStyle(0x111122,1);eb.fillEllipse(502,228,108,44);
-  eb.fillStyle(0x7b0000,1);eb.fillEllipse(502,224,90,34);
-  eb.fillStyle(0xaa1111,1);eb.fillEllipse(502,222,80,28);
-  eb.fillStyle(0xee2222,1);eb.fillEllipse(502,220,68,22);
-  eb.lineStyle(2,0xff6666,.5);eb.strokeEllipse(502,222,80,28);
+  eb.fillStyle(0x0e1628,1);eb.fillEllipse(502,232,120,50);
+  eb.lineStyle(2,0x2a3a5a,1);eb.strokeEllipse(502,232,120,50);
+  eb.fillStyle(0x5e0a0a,1);eb.fillEllipse(502,228,98,38);
+  eb.fillStyle(0x8a1010,1);eb.fillEllipse(502,225,82,30);
+  eb.fillStyle(0xbb1a1a,1);eb.fillEllipse(502,223,68,24);
+  eb.fillStyle(0xee2828,1);eb.fillEllipse(502,221,56,18);
+  eb.fillStyle(0xff8888,0.3);eb.fillEllipse(496,218,28,8);
+  eb.lineStyle(1.5,0xff5555,0.4);eb.strokeEllipse(502,222,68,24);
   var ebGlow=sc.add.graphics().setDepth(6);
-  ebGlow.fillStyle(0xff0000,.06);ebGlow.fillCircle(502,220,56);
-  sc.tweens.add({targets:ebGlow,alpha:{from:.3,to:1},yoyo:true,repeat:-1,duration:1400});
-  sc.add.text(502,220,'EMERGENCY',{fontSize:'5px',color:'#ffbbbb',fontFamily:'Nunito',fontStyle:'bold'}).setOrigin(.5).setDepth(9);
-  var eHit=sc.add.rectangle(502,222,96,34).setInteractive().setDepth(10).setAlpha(.001);
+  ebGlow.fillStyle(0xff0000,0.05);ebGlow.fillCircle(502,222,62);
+  sc.tweens.add({targets:ebGlow,alpha:{from:.2,to:.9},yoyo:true,repeat:-1,duration:1500});
+  sc.add.text(502,221,'EMERGENCY',{fontSize:'5px',color:'#ffcccc',fontFamily:'Nunito',fontStyle:'bold',
+    stroke:'#4a0000',strokeThickness:3}).setOrigin(.5).setDepth(9);
+  var eHit=sc.add.rectangle(502,222,104,36).setInteractive().setDepth(10).setAlpha(.001);
   eHit.on('pointerdown',callEmerg);
   eHit.on('pointerover',function(){document.body.style.cursor='pointer';});
   eHit.on('pointerout',function(){document.body.style.cursor='default';});
 
-  // ── TASK DOTS - Real AU style yellow diamond ──
+  // ─────────────────────────────────────────
+  // TASK DOTS
+  // ─────────────────────────────────────────
   TLOCS.forEach(function(t,i){
-    // Outer glow pulse ring
-    var glow=sc.add.graphics().setDepth(7);
-    glow.fillStyle(0xf1c40f,.08);glow.fillCircle(t.x,t.y,22);
-    sc.tweens.add({targets:glow,scaleX:{from:.6,to:2.2},scaleY:{from:.6,to:2.2},alpha:{from:.35,to:0},repeat:-1,duration:1200+i*80,ease:'Sine.Out'});
-    // AU task marker: yellow diamond shape
+    var glow2=sc.add.graphics().setDepth(7);
+    glow2.fillStyle(0xf1c40f,0.07);glow2.fillCircle(t.x,t.y,24);
+    sc.tweens.add({targets:glow2,scaleX:{from:.5,to:2.4},scaleY:{from:.5,to:2.4},alpha:{from:.4,to:0},
+      repeat:-1,duration:1100+i*70,ease:'Sine.Out'});
     var tg2=sc.add.graphics().setDepth(9);
-    // Outer dark border diamond
     tg2.fillStyle(0xb8860b,1);
-    tg2.fillTriangle(t.x,t.y-12, t.x+10,t.y, t.x,t.y+12);
-    tg2.fillTriangle(t.x,t.y-12, t.x-10,t.y, t.x,t.y+12);
-    // Inner bright yellow diamond
+    tg2.fillTriangle(t.x,t.y-13,t.x+11,t.y,t.x,t.y+13);
+    tg2.fillTriangle(t.x,t.y-13,t.x-11,t.y,t.x,t.y+13);
     tg2.fillStyle(0xf1c40f,1);
-    tg2.fillTriangle(t.x,t.y-9, t.x+7.5,t.y, t.x,t.y+9);
-    tg2.fillTriangle(t.x,t.y-9, t.x-7.5,t.y, t.x,t.y+9);
-    // Center shine
-    tg2.fillStyle(0xffffff,.7);tg2.fillCircle(t.x-1,t.y-2,2.5);
-    // Pulsing alpha
-    sc.tweens.add({targets:tg2,alpha:{from:.55,to:1},yoyo:true,repeat:-1,duration:600+i*55,ease:'Sine.InOut'});
-    // Task label
-    sc.add.text(t.x,t.y+17,t.n,{fontSize:'5px',color:'#f1c40f',fontFamily:'Nunito',fontStyle:'bold',stroke:'#000',strokeThickness:3}).setOrigin(.5,0).setDepth(9).setAlpha(.7);
+    tg2.fillTriangle(t.x,t.y-10,t.x+8,t.y,t.x,t.y+10);
+    tg2.fillTriangle(t.x,t.y-10,t.x-8,t.y,t.x,t.y+10);
+    tg2.fillStyle(0xffffff,0.75);tg2.fillCircle(t.x-1,t.y-2,2.5);
+    sc.tweens.add({targets:tg2,alpha:{from:.5,to:1},yoyo:true,repeat:-1,duration:580+i*50,ease:'Sine.InOut'});
+    sc.add.text(t.x,t.y+17,t.n,{fontSize:'5px',color:'#f1c40f',fontFamily:'Nunito',fontStyle:'bold',
+      stroke:'#000',strokeThickness:3}).setOrigin(.5,0).setDepth(9).setAlpha(0.75);
   });
 }
+
 
 
 // ── PLAYER SPRITES ──

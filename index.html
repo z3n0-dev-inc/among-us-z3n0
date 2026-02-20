@@ -889,15 +889,28 @@ function walkableBox(x,y){
   return pts.every(function(p){return walkable(p.x,p.y);});
 }
 
+// ── BARRIER COLLISION (AABB rects, no physics sprites) ──
+var barrierRects=[];
+function addBarrier(cx,cy,w,h){barrierRects.push({x:cx-w/2,y:cy-h/2,w:w,h:h});}
+function playerHitsBarrier(px,py,pr){
+  for(var i=0;i<barrierRects.length;i++){
+    var b=barrierRects[i];
+    if(px+pr>b.x&&px-pr<b.x+b.w&&py+pr>b.y&&py-pr<b.y+b.h)return true;
+  }
+  return false;
+}
+var PLAYER_R=16; // player collision half-size
+
 // ── PHASER ──
 function initPhaser(){
   if(pg)return;
   pg=new Phaser.Game({
     type:Phaser.CANVAS,width:innerWidth,height:innerHeight,
     transparent:true,parent:document.body,
+    physics:{default:'arcade',arcade:{debug:false}},
     scene:{preload:scPreload,create:scCreate,update:scUpdate}
   });
-  setTimeout(function(){if(pg&&pg.canvas)pg.canvas.style.cssText='position:fixed;top:0;left:0;z-index:5;pointer-events:auto';},200);
+  setTimeout(function(){if(pg&&pg.canvas)pg.canvas.style.cssText='position:fixed;top:0;left:0;z-index:5;pointer-events:none';},200);
   window.addEventListener('resize',function(){if(pg)pg.scale.resize(innerWidth,innerHeight);});
 }
 
@@ -926,248 +939,134 @@ function scPreload(){
   this._roomImgDone=function(){return loaded>=total;};
 }
 
-// ──────────────────────────────────────────────────────────────────────────────
-// FIXED: Precise physics barriers + improved collision logic
-// Paste this OVER your existing scCreate(), scUpdate(), updRoomLabel(), buildSkeldMap()
-// Barriers now match every visual wall/table/console — no clipping
-// ──────────────────────────────────────────────────────────────────────────────
-
-let barriers; // Global for physics group
-
 function scCreate(){
-  gsc = this;
+  gsc=this;
   gsc.cameras.main.setBackgroundColor(0x010108);
   gsc.cameras.main.setZoom(ZOOM);
-  
-  // Auto-calculate map size from your ROOMS (max extent + padding)
-  let maxX = 0, maxY = 0;
-  ROOMS.forEach(r => {
-    maxX = Math.max(maxX, r[1] + r[3]/2);
-    maxY = Math.max(maxY, r[2] + r[4]/2);
-  });
-  const MAP_W = Math.ceil(maxX * 1.1); // 10% padding
-  const MAP_H = Math.ceil(maxY * 1.1);
-  gsc.cameras.main.setBounds(0, 0, MAP_W, MAP_H);
-
-  gsc._mapBuilt = false;
-  gsc.cursors = gsc.input.keyboard.createCursorKeys();
-  gsc.wasd = gsc.input.keyboard.addKeys({
-    up: Phaser.Input.Keyboard.KeyCodes.W,
-    down: Phaser.Input.Keyboard.KeyCodes.S,
-    left: Phaser.Input.Keyboard.KeyCodes.A,
-    right: Phaser.Input.Keyboard.KeyCodes.D
+  gsc.cameras.main.setBounds(0,0,MAP_W,MAP_H);
+  gsc._mapBuilt=false;
+  gsc.cursors=gsc.input.keyboard.createCursorKeys();
+  gsc.wasd=gsc.input.keyboard.addKeys({
+    up:Phaser.Input.Keyboard.KeyCodes.W,
+    down:Phaser.Input.Keyboard.KeyCodes.S,
+    left:Phaser.Input.Keyboard.KeyCodes.A,
+    right:Phaser.Input.Keyboard.KeyCodes.D
   });
   setupTrailCanvas();
 
-  // ── PHYSICS BARRIERS ──
-  barriers = gsc.physics.add.staticGroup();
-
-  // Outer map bounds
-  barriers.create(MAP_W/2, 10, null).setSize(MAP_W, 20).setDisplaySize(MAP_W, 20).body.setImmovable(true).setVisible(false);
-  barriers.create(MAP_W/2, MAP_H-10, null).setSize(MAP_W, 20).setDisplaySize(MAP_W, 20).body.setImmovable(true).setVisible(false);
-  barriers.create(10, MAP_H/2, null).setSize(20, MAP_H).setDisplaySize(20, MAP_H).body.setImmovable(true).setVisible(false);
-  barriers.create(MAP_W-10, MAP_H/2, null).setSize(20, MAP_H).setDisplaySize(20, MAP_H).body.setImmovable(true).setVisible(false);
-
-  // Precise wall colliders matching your ROOMS centers/sizes
-  const preciseWalls = [
-    // Reactor (172,345,225,290)
-    {x:172-112.5, y:345-145, w:225, h:20}, // top
-    {x:172-112.5, y:345+145, w:225, h:20}, // bottom
-    {x:172-112.5, y:345, w:20, h:290}, // left
-    {x:172+112.5, y:345, w:20, h:290}, // right
-    {x:172, y:345, w:80, h:80}, // central console
-
-    // Upper Engine (170,127,220,160)
-    {x:170-110, y:127-80, w:220, h:20},
-    {x:170-110, y:127+80, w:220, h:20},
-    {x:170-110, y:127, w:20, h:160},
-    {x:170+110, y:127, w:20, h:160},
-
-    // Lower Engine (170,628,220,180)
-    {x:170-110, y:628-90, w:220, h:20},
-    {x:170-110, y:628+90, w:220, h:20},
-    {x:170-110, y:628, w:20, h:180},
-    {x:170+110, y:628, w:20, h:180},
-
-    // Cafeteria (502,172,320,250)
-    {x:502-160, y:172-125, w:320, h:20}, // top
-    {x:502-160, y:172+125, w:320, h:20}, // bottom
-    {x:502-160, y:172, w:20, h:250}, // left
-    {x:502+160, y:172, w:20, h:250}, // right
-    // Caf tables (approximate positions based on typical Skeld)
-    {x:502-80, y:172-40, w:60, h:60},
-    {x:502+80, y:172-40, w:60, h:60},
-    {x:502-40, y:172+40, w:60, h:60},
-    {x:502+40, y:172+40, w:60, h:60},
-    {x:502, y:172, w:60, h:60}, // center table
-
-    // Security (451,443,202,170)
-    {x:451-101, y:443-85, w:202, h:20},
-    {x:451-101, y:443+85, w:202, h:20},
-    {x:451-101, y:443, w:20, h:170},
-    {x:451+101, y:443, w:20, h:170},
-
-    // MedBay (710,362,186,168)
-    {x:710-93, y:362-84, w:186, h:20},
-    {x:710-93, y:362+84, w:186, h:20},
-    {x:710-93, y:362, w:20, h:168},
-    {x:710+93, y:362, w:20, h:168},
-
-    // Electrical (452,657,220,170)
-    {x:452-110, y:657-85, w:220, h:20},
-    {x:452-110, y:657+85, w:220, h:20},
-    {x:452-110, y:657, w:20, h:170},
-    {x:452+110, y:657, w:20, h:170},
-
-    // Storage (800,624,192,252)
-    {x:800-96, y:624-126, w:192, h:20},
-    {x:800-96, y:624+126, w:192, h:20},
-    {x:800-96, y:624, w:20, h:252},
-    {x:800+96, y:624, w:20, h:252},
-
-    // Admin (949,590,190,200)
-    {x:949-95, y:590-100, w:190, h:20},
-    {x:949-95, y:590+100, w:190, h:20},
-    {x:949-95, y:590, w:20, h:200},
-    {x:949+95, y:590, w:20, h:200},
-
-    // Communications (1210,677,260,170)
-    {x:1210-130, y:677-85, w:260, h:20},
-    {x:1210-130, y:677+85, w:260, h:20},
-    {x:1210-130, y:677, w:20, h:170},
-    {x:1210+130, y:677, w:20, h:170},
-
-    // Shields (1210,412,260,200)
-    {x:1210-130, y:412-100, w:260, h:20},
-    {x:1210-130, y:412+100, w:260, h:20},
-    {x:1210-130, y:412, w:20, h:200},
-    {x:1210+130, y:412, w:20, h:200},
-
-    // O2 (893,362,186,168)
-    {x:893-93, y:362-84, w:186, h:20},
-    {x:893-93, y:362+84, w:186, h:20},
-    {x:893-93, y:362, w:20, h:168},
-    {x:893+93, y:362, w:20, h:168},
-
-    // Navigation (1216,152,248,210)
-    {x:1216-124, y:152-105, w:248, h:20},
-    {x:1216-124, y:152+105, w:248, h:20},
-    {x:1216-124, y:152, w:20, h:210},
-    {x:1216+124, y:152, w:20, h:210},
-
-    // Hallway edge colliders (thin walls where needed for doors/turns)
-    // Left vertical hallway edges
-    {x:266+32, y:248+122, w:4, h:244}, // left side of left vert hall
-    {x:266+60, y:248+122, w:4, h:244}, // right side
-    // Add more as needed after testing - these are starters for common clip spots
-  ];
-
-  preciseWalls.forEach(rect => {
-    let wall = barriers.create(rect.x, rect.y, null, null, false);
-    wall.setSize(rect.w, rect.h);
-    wall.setDisplaySize(rect.w, rect.h);
-    wall.body.setImmovable(true);
-    wall.setVisible(false); // Invisible collider
+  // ── BUILD BARRIER RECTS (room walls, blocking walking through solid walls) ──
+  barrierRects=[];
+  // Outer map boundary
+  addBarrier(MAP_W/2,10,MAP_W,20);
+  addBarrier(MAP_W/2,MAP_H-10,MAP_W,20);
+  addBarrier(10,MAP_H/2,20,MAP_H);
+  addBarrier(MAP_W-10,MAP_H/2,20,MAP_H);
+  // Room outer walls (center x, center y, width, height)
+  // Each room gets 4 thin wall strips around its perimeter
+  [
+    // [cx, cy, roomW, roomH]
+    [172,345,225,290],[170,127,220,160],[170,628,220,180],
+    [502,172,320,250],[451,443,202,170],[710,362,186,168],
+    [452,657,220,170],[800,624,192,252],[949,590,190,200],
+    [1210,677,260,170],[1210,412,260,200],[893,362,186,168],
+    [1216,152,248,210],[904,147,190,200],
+  ].forEach(function(r){
+    var cx=r[0],cy=r[1],rw=r[2],rh=r[3],t=14;
+    addBarrier(cx,cy-rh/2,rw,t); // top
+    addBarrier(cx,cy+rh/2,rw,t); // bottom
+    addBarrier(cx-rw/2,cy,t,rh); // left
+    addBarrier(cx+rw/2,cy,t,rh); // right
   });
-
-  // Build visual map
-  var checkReady = setInterval(function(){
-    if(gsc._roomImgDone && gsc._roomImgDone()){
+  // Build map once images loaded
+  var checkReady=setInterval(function(){
+    if(gsc._roomImgDone&&gsc._roomImgDone()){
       clearInterval(checkReady);
       buildSkeldMap(gsc);
-      gsc._mapBuilt = true;
+      gsc._mapBuilt=true;
     }
   },50);
-
+  // Fallback: build after 2s even if some fail
   setTimeout(function(){
-    if(!gsc._mapBuilt){ buildSkeldMap(gsc); gsc._mapBuilt = true; }
+    if(!gsc._mapBuilt){buildSkeldMap(gsc);gsc._mapBuilt=true;}
   },2000);
 }
 
 function scUpdate(){
-  if(!myId || !gs || gs.phase !== 'game') return;
-  var me = gs.players[myId]; if(!me || !me.alive) return;
-  var mod = pmods[myId]; if(mod && mod.frozen) return;
+  if(!myId||!gs||gs.phase!=='game')return;
+  var me=gs.players[myId];if(!me||!me.alive)return;
+  var mod=pmods[myId];if(mod&&mod.frozen)return;
+  var dx=0,dy=0,spd=SPEED*(mySpd||1);
+  var k=gsc.wasd;
+  if(k.left.isDown||window.mL)dx-=spd;
+  if(k.right.isDown||window.mR)dx+=spd;
+  if(k.up.isDown||window.mU)dy-=spd;
+  if(k.down.isDown||window.mD)dy+=spd;
+  if(!dx&&!dy){updKillBtn();return;}
+  if(dx&&dy){var d=Math.SQRT2;dx/=d;dy/=d;}
+  var nx=Math.max(62,Math.min(MAP_W-62,me.x+dx));
+  var ny=Math.max(52,Math.min(MAP_H-52,me.y+dy));
 
-  var dx=0, dy=0, spd = SPEED * (mySpd || 1);
-  var k = gsc.wasd;
-  if(k.left.isDown || window.mL) dx -= spd;
-  if(k.right.isDown || window.mR) dx += spd;
-  if(k.up.isDown || window.mU) dy -= spd;
-  if(k.down.isDown || window.mD) dy += spd;
-
-  if(!dx && !dy){ updKillBtn(); return; }
-  if(dx && dy){ var d = Math.sqrt(2); dx /= d; dy /= d; }
-
-  var nx = Math.max(62, Math.min(MAP_W-62, me.x + dx));
-  var ny = Math.max(52, Math.min(MAP_H-52, me.y + dy));
-
-  // Physics-based collision check (test proposed position)
-  let testSprite = gsc.physics.add.sprite(nx, ny, null).setSize(62, 62); // approx player size
-  let collided = gsc.physics.overlap(testSprite, barriers);
-  testSprite.destroy();
-
-  if(collided || !walkableBox(nx,ny)){
-    // Try sliding horizontally
-    testSprite = gsc.physics.add.sprite(nx, me.y, null).setSize(62, 62);
-    if(!gsc.physics.overlap(testSprite, barriers)){
-      ny = me.y;
-    } else {
-      // Try sliding vertically
-      testSprite = gsc.physics.add.sprite(me.x, ny, null).setSize(62, 62);
-      if(!gsc.physics.overlap(testSprite, barriers)){
-        nx = me.x;
-      } else {
-        nx = me.x; ny = me.y; // blocked
-      }
-    }
-    testSprite.destroy();
+  // Combined collision: WALK zones + barrier rects
+  function blocked(px,py){return playerHitsBarrier(px,py,PLAYER_R)||!walkableBox(px,py);}
+  if(!blocked(nx,ny)){
+    me.x=nx;me.y=ny;
+  } else if(!blocked(nx,me.y)){
+    me.x=nx;
+  } else if(!blocked(me.x,ny)){
+    me.y=ny;
   }
-
-  me.x = nx; me.y = ny;
-  movSprite(myId, nx, ny);
-  gsc.cameras.main.centerOn(nx, ny);
-  sendTick++; if(sendTick >= 2){ sendTick = 0; wsSend({type:'move',x:nx,y:ny}); }
-  checkNear(nx,ny); updKillBtn();
-  updRoomLabel(nx,ny);
+  // else fully blocked, don't move
+  me.x=nx;me.y=ny;
+  movSprite(myId,me.x,me.y);
+  gsc.cameras.main.centerOn(me.x,me.y);
+  sendTick++;if(sendTick>=2){sendTick=0;wsSend({type:'move',x:me.x,y:me.y});}
+  checkNear(me.x,me.y);updKillBtn();
+  updRoomLabel(me.x,me.y);
 }
 
 function updRoomLabel(x,y){
-  var zone = WALK.find(function(z){ return x>=z.x && x<=z.x+z.w && y>=z.y && y<=z.y+z.h; });
-  var el = document.getElementById('room-name-overlay');
-  if(!el) return;
-  var name = zone ? zone.n : '';
-  if(name && name !== 'Hall'){
-    el.textContent = name;
-    el.style.display = 'block';
-    currentRoomName = name;
+  var zone=WALK.find(function(z){return x>=z.x&&x<=z.x+z.w&&y>=z.y&&y<=z.y+z.h;});
+  var el=document.getElementById('room-name-overlay');
+  if(!el)return;
+  var name=zone?zone.n:'';
+  if(name&&name!=='Hall'){
+    el.textContent=name;el.style.display='block';
+    currentRoomName=name;
   } else {
-    el.style.display = 'none';
+    el.style.display='none';
   }
 }
 
-// Your original buildSkeldMap() — unchanged, visuals are perfect
+// ══════════════════════════════════════
+// SKELD MAP — AUTHENTIC AU RECREATION
+// KEY FIX: No strokeArc - use beginPath + arc + stroke
+// ══════════════════════════════════════
 function buildSkeldMap(sc){
-  var g = sc.add.graphics();
+  var g=sc.add.graphics();
+
   // Deep space background
-  g.fillStyle(0x010108,1); g.fillRect(0,0,MAP_W,MAP_H);
+  g.fillStyle(0x010108,1);g.fillRect(0,0,MAP_W,MAP_H);
   // Stars
-  var rng = new Phaser.Math.RandomDataGenerator(['skeld']);
+  var rng=new Phaser.Math.RandomDataGenerator(['skeld']);
   g.fillStyle(0xffffff,1);
   for(var si=0;si<200;si++){
-    var bri = rng.frac();
-    g.fillStyle(0xffffff, 0.1 + bri*0.6);
-    g.fillRect(Math.floor(rng.frac()*MAP_W), Math.floor(rng.frac()*MAP_H), bri<0.08?2:1, bri<0.08?2:1);
+    var bri=rng.frac();
+    g.fillStyle(0xffffff,0.1+bri*0.6);
+    g.fillRect(Math.floor(rng.frac()*MAP_W),Math.floor(rng.frac()*MAP_H),bri<0.08?2:1,bri<0.08?2:1);
   }
-  // Hallway floors (your original texture functions)
+
+  // ── HALLWAY FLOORS (connecting rooms) ──
   function tileFloor(rx,ry,rw,rh,col1,col2){
     g.fillStyle(col1,1);g.fillRect(rx,ry,rw,rh);
-    var ts=16; g.fillStyle(col2,1);
+    var ts=16;g.fillStyle(col2,1);
     for(var ty=ry;ty<ry+rh;ty+=ts)
       for(var tx=rx;tx<rx+rw;tx+=ts)
         if(((Math.floor((tx-rx)/ts)+(Math.floor((ty-ry)/ts)))%2)===0)
           g.fillRect(tx,ty,ts,ts);
   }
+
+  // ── AU-AUTHENTIC HALLWAY TEXTURE ──
+  // Matches WALK zone corridors exactly for visual accuracy
   function drawHallway(rx,ry,rw,rh){
     // Base — dark steel
     g.fillStyle(0x1c2226,1); g.fillRect(rx,ry,rw,rh);
@@ -1213,65 +1112,78 @@ function buildSkeldMap(sc){
     g.lineStyle(3,0x080c0e,1); g.strokeRect(rx,ry,rw,rh);
   }
 
-  // Your hallway draws (unchanged)
-  drawHallway(278, 92, 72, 50);
-  drawHallway(266, 200, 64, 52);
-  drawHallway(266, 248, 64,244);
-  drawHallway(266, 490, 64, 52);
-  drawHallway(266, 538, 64, 56);
-  drawHallway(655, 140, 158, 64);
-  drawHallway(420, 290, 80, 72);
-  drawHallway(993, 49, 103, 52);
-  drawHallway(843, 240, 92, 40);
-  drawHallway(1085,250, 52, 68);
-  drawHallway(1072,250, 64, 68);
-  drawHallway(1072,312, 64,202);
-  drawHallway(1072,510, 64, 86);
-  drawHallway(394, 358, 64, 64);
-  drawHallway(548, 390, 74, 56);
-  drawHallway(394, 522, 64, 98);
-  drawHallway(548, 316, 74, 56);
-  drawHallway(644, 244, 72, 40);
-  drawHallway(795, 316, 12, 56);
-  drawHallway(839, 442, 80, 60);
-  drawHallway(262, 616, 500, 56);
-  drawHallway(366, 564, 62, 56);
-  drawHallway(702, 528, 28, 92);
-  drawHallway(558, 614, 148, 56);
-  drawHallway(750, 440, 84, 62);
-  drawHallway(892, 532, 66, 60);
-  drawHallway(796, 532, 62, 60);
-  drawHallway(1040,564, 46,106);
+  // Draw corridors — exactly matching WALK corridor zones above
+  // ── LEFT SIDE ──
+  drawHallway(278, 92,   72, 50);   // Upper Eng → caf top hall
+  drawHallway(266, 200,  64, 52);   // Upper Eng bottom → left vert top
+  drawHallway(266, 248,  64,244);   // Left vert main (alongside Reactor)
+  drawHallway(266, 490,  64, 52);   // LEFT VERT GAP FIX: Reactor bottom → Lower Eng top
+  drawHallway(266, 538,  64, 56);   // Left vert → Lower Eng junction
 
-  // Room images (unchanged)
+  // ── TOP ──
+  drawHallway(655, 140, 158, 64);   // Cafeteria → Weapons
+  drawHallway(420, 290,  80, 72);   // Cafeteria bottom → Security top
+  drawHallway(993,  49, 103, 52);   // Weapons → Nav top
+  drawHallway(843, 240,  92, 40);   // Weapons bottom → right vert
+  drawHallway(1085,250,  52, 68);   // Nav bottom → right vert
+
+  // ── RIGHT VERTICAL ──
+  drawHallway(1072,250,  64, 68);   // Nav → Shields top
+  drawHallway(1072,312,  64,202);   // Right vert mid
+  drawHallway(1072,510,  64, 86);   // Shields bottom → Comms
+
+  // ── CENTER ──
+  drawHallway(394, 358,  64, 64);   // Security top door
+  drawHallway(548, 390,  74, 56);   // Security right → MedBay
+  drawHallway(394, 522,  64, 98);   // Security bottom → bottom hall
+  drawHallway(548, 316,  74, 56);   // MedBay left connector
+  drawHallway(644, 244,  72, 40);   // MedBay top → Cafeteria
+  drawHallway(795, 316,  12, 56);   // MedBay/O2 connector
+  drawHallway(839, 442,  80, 60);   // O2 bottom → Storage
+
+  // ── BOTTOM ──
+  drawHallway(262, 616, 500, 56);   // Main bottom hall
+  drawHallway(366, 564,  62, 56);   // Electrical top connector
+  drawHallway(702, 528,  28, 92);   // Storage top connector
+  drawHallway(558, 614, 148, 56);   // Electrical → Storage bottom
+  drawHallway(750, 440,  84, 62);   // Storage top ↔ O2 bottom
+  drawHallway(892, 532,  66, 60);   // Storage → Admin
+  drawHallway(796, 532,  62, 60);   // Admin left connector
+  drawHallway(1040,564,  46,106);   // Admin → Comms
+
+
+  // ── PLACE REAL ROOM IMAGES ──
+  // [textureKey, centerX, centerY, displayW, displayH]
   var ROOMS=[
-    ['rm_cafeteria', 502, 172, 320, 250],
-    ['rm_sec_hall', 904, 147, 190, 200],
-    ['rm_navigation', 1216, 152, 248, 210],
-    ['rm_shields', 1210, 412, 260, 200],
+    ['rm_cafeteria',      502, 172, 320, 250],
+    ['rm_sec_hall',       904, 147, 190, 200],
+    ['rm_navigation',    1216, 152, 248, 210],
+    ['rm_shields',       1210, 412, 260, 200],
     ['rm_communications',1210, 677, 260, 170],
-    ['rm_admin', 949, 590, 190, 200],
-    ['rm_storage', 800, 624, 192, 252],
-    ['rm_electrical', 452, 657, 220, 170],
-    ['rm_o2', 893, 362, 186, 168],
-    ['rm_medbay', 710, 362, 186, 168],
-    ['rm_security', 451, 443, 202, 170],
-    ['rm_upper_engine', 170, 127, 220, 160],
-    ['rm_lower_engine', 170, 628, 220, 180],
-    ['rm_reactor', 172, 345, 225, 290],
+    ['rm_admin',          949, 590, 190, 200],
+    ['rm_storage',        800, 624, 192, 252],
+    ['rm_electrical',     452, 657, 220, 170],
+    ['rm_o2',             893, 362, 186, 168],
+    ['rm_medbay',         710, 362, 186, 168],
+    ['rm_security',       451, 443, 202, 170],
+    ['rm_upper_engine',   170, 127, 220, 160],
+    ['rm_lower_engine',   170, 628, 220, 180],
+    ['rm_reactor',        172, 345, 225, 290],
   ];
+
   ROOMS.forEach(function(r){
     var key=r[0],cx=r[1],cy=r[2],dw=r[3],dh=r[4];
     if(sc.textures.exists(key)){
       sc.add.image(cx,cy,key).setDisplaySize(dw,dh).setDepth(3);
     } else {
+      // Fallback: draw a labeled placeholder box
       var fg=sc.add.graphics().setDepth(3);
       fg.fillStyle(0x2a3035,1);fg.fillRect(cx-dw/2,cy-dh/2,dw,dh);
       fg.lineStyle(2,0x4a6070,1);fg.strokeRect(cx-dw/2,cy-dh/2,dw,dh);
       sc.add.text(cx,cy,key.replace('rm_','').toUpperCase(),{fontSize:'7px',color:'#aabbcc',fontFamily:'Nunito'}).setOrigin(.5).setDepth(4);
     }
   });
-}
+
   // ── VENTS ──
   VENTS.forEach(function(v){
     var vgr=sc.add.graphics().setDepth(8);
